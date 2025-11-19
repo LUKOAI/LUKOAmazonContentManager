@@ -140,6 +140,8 @@ function onOpen() {
 
   ui.createMenu('Amazon Manager')
     .addSubMenu(ui.createMenu('Export to Amazon')
+      .addItem('📤 Export Products (ProductsMain)', 'lukoExportProducts')
+      .addSeparator()
       .addItem('Sync Selected Products', 'lukoSyncSelectedProducts')
       .addItem('Sync All Marketplaces', 'lukoSyncAllMarketplaces')
       .addItem('Sync Current Marketplace', 'lukoSyncCurrentMarketplace')
@@ -151,12 +153,16 @@ function onOpen() {
       .addItem('Launch Promotions', 'lukoLaunchPromotions'))
 
     .addSubMenu(ui.createMenu('Import from Amazon')
+      .addItem('📥 Import Reverse Feed CSV', 'lukoImportReverseFeed')
+      .addSeparator()
       .addItem('Import Products', 'lukoImportProducts')
       .addItem('Import Pricing', 'lukoImportPricing')
       .addItem('Import Inventory', 'lukoImportInventory')
       .addItem('Import A+ Content', 'lukoImportAPlus'))
 
     .addSubMenu(ui.createMenu('Tools')
+      .addItem('🎨 Generate Spreadsheet', 'lukoGenerateFullSpreadsheet')
+      .addSeparator()
       .addItem('Validate Data', 'lukoValidateData')
       .addItem('Apply Template', 'lukoApplyTemplate')
       .addItem('Translate Content', 'lukoTranslateContent')
@@ -171,10 +177,12 @@ function onOpen() {
       .addItem('View Recent Logs', 'lukoViewLogs')
       .addItem('Show Errors', 'lukoShowErrors'))
 
-    .addSeparator()
-    .addItem('Settings', 'lukoShowSettings')
-    .addItem('Help', 'lukoShowHelp')
-    .addItem('About', 'lukoShowAbout')
+    .addSubMenu(ui.createMenu('Help & Settings')
+      .addItem('How to Get Reverse Feed', 'showReverseFeedHelp')
+      .addItem('General Help', 'lukoShowHelp')
+      .addSeparator()
+      .addItem('Settings', 'lukoShowSettings')
+      .addItem('About', 'lukoShowAbout'))
     .addToUi();
 }
 
@@ -311,6 +319,192 @@ function lukoSyncCurrentMarketplace() {
   } catch (error) {
     handleError('lukoSyncCurrentMarketplace', error);
   }
+}
+
+/**
+ * Export products from ProductsMain sheet to Amazon
+ * Checks ☑️ Export column, updates Status (PENDING → DONE/FAILED)
+ * Auto-generates ProductLink and tracks ExportDateTime
+ */
+function lukoExportProducts() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ProductsMain');
+
+    if (!sheet) {
+      showError('ProductsMain sheet not found. Please generate spreadsheet first.');
+      return;
+    }
+
+    // Get all rows where ☑️ Export checkbox is TRUE
+    const selectedRows = getSelectedCheckboxRows(sheet);
+
+    if (selectedRows.length === 0) {
+      showError('No products selected for export. Check the ☑️ Export boxes first.');
+      return;
+    }
+
+    const ui = SpreadsheetApp.getUi();
+    const response = ui.alert(
+      'Export Products to Amazon',
+      `Export ${selectedRows.length} products to Amazon?\n\nNote: This will update products across all marketplaces based on available translations.`,
+      ui.ButtonSet.YES_NO
+    );
+
+    if (response !== ui.Button.YES) return;
+
+    showProgress(`Exporting ${selectedRows.length} products to Amazon...`);
+
+    const results = [];
+    const headers = sheet.getRange(3, 1, 1, sheet.getLastColumn()).getValues()[0]; // Row 3 contains headers
+
+    for (const row of selectedRows) {
+      try {
+        // Set status to PENDING before export
+        const statusCol = headers.indexOf('Status') + 1;
+        if (statusCol > 0) {
+          sheet.getRange(row, statusCol).setValue('PENDING');
+        }
+
+        // Extract product data
+        const productData = extractProductDataFromMain(sheet, row, headers);
+
+        // Determine primary marketplace (based on which translations are available)
+        const marketplace = detectPrimaryMarketplace(productData);
+        const marketplaceConfig = getMarketplaceConfig(marketplace);
+
+        if (!marketplaceConfig) {
+          throw new Error(`Invalid marketplace: ${marketplace}`);
+        }
+
+        // Export to Amazon
+        const result = syncProductToAmazon(productData, marketplace, marketplaceConfig);
+        result.marketplace = marketplace;
+        results.push(result);
+
+        // Update row status
+        updateRowStatus(sheet, row, result);
+
+        SpreadsheetApp.flush(); // Force update to spreadsheet
+
+      } catch (error) {
+        Logger.log(`Error exporting row ${row}: ${error.message}`);
+        results.push({
+          row: row,
+          status: 'ERROR',
+          message: error.toString(),
+          marketplace: 'N/A'
+        });
+        updateRowStatus(sheet, row, {
+          status: 'ERROR',
+          message: error.toString(),
+          marketplace: 'DE'
+        });
+      }
+    }
+
+    // Log all operations
+    logOperations(results, 'ALL', 'EXPORT_PRODUCTS');
+
+    // Show summary
+    const successCount = results.filter(r => r.status === 'SUCCESS').length;
+    const errorCount = results.filter(r => r.status === 'ERROR').length;
+
+    ui.alert(
+      'Export Complete',
+      `✅ Success: ${successCount}\n❌ Failed: ${errorCount}\n\nCheck Status column and Logs sheet for details.`,
+      ui.ButtonSet.OK
+    );
+
+    SpreadsheetApp.getActiveSpreadsheet().toast('Export complete', 'Success', 3);
+
+  } catch (error) {
+    handleError('lukoExportProducts', error);
+  }
+}
+
+/**
+ * Extract product data from ProductsMain sheet
+ * Uses naming pattern: productTitle_DE, bulletPoint1_DE, etc.
+ */
+function extractProductDataFromMain(sheet, rowNumber, headers) {
+  const values = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+  const product = {
+    asin: getColumnValue(values, headers, 'ASIN'),
+    sku: getColumnValue(values, headers, 'SKU'),
+    productType: getColumnValue(values, headers, 'Product Type') || 'PRODUCT',
+    action: 'UPDATE', // Always UPDATE for exports (CREATE requires API call)
+    content: {}
+  };
+
+  // Extract multi-language content
+  const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
+
+  for (const lang of languages) {
+    const title = getColumnValue(values, headers, `productTitle_${lang}`);
+
+    // Only include language if it has at least a title
+    if (title) {
+      product.content[lang] = {
+        title: title,
+        brand: getColumnValue(values, headers, `brand_${lang}`),
+        bulletPoints: [
+          getColumnValue(values, headers, `bulletPoint1_${lang}`),
+          getColumnValue(values, headers, `bulletPoint2_${lang}`),
+          getColumnValue(values, headers, `bulletPoint3_${lang}`),
+          getColumnValue(values, headers, `bulletPoint4_${lang}`),
+          getColumnValue(values, headers, `bulletPoint5_${lang}`)
+        ].filter(b => b && b.trim()),
+        description: getColumnValue(values, headers, `productDescription_${lang}`),
+        keywords: getColumnValue(values, headers, `genericKeywords_${lang}`)
+      };
+    }
+  }
+
+  // Extract images
+  product.images = {
+    main: getColumnValue(values, headers, 'mainImageURL'),
+    additional: [
+      getColumnValue(values, headers, 'additionalImage1_URL'),
+      getColumnValue(values, headers, 'additionalImage2_URL'),
+      getColumnValue(values, headers, 'additionalImage3_URL'),
+      getColumnValue(values, headers, 'additionalImage4_URL'),
+      getColumnValue(values, headers, 'additionalImage5_URL')
+    ].filter(img => img && img.trim())
+  };
+
+  // Extract variation info
+  product.parentSKU = getColumnValue(values, headers, 'Parent SKU');
+  product.parentASIN = getColumnValue(values, headers, 'Parent ASIN');
+
+  return product;
+}
+
+/**
+ * Detect primary marketplace based on available translations
+ * Priority: DE > EN (UK) > FR > IT > ES > NL > PL > SE
+ */
+function detectPrimaryMarketplace(productData) {
+  const priority = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
+
+  for (const lang of priority) {
+    if (productData.content[lang] && productData.content[lang].title) {
+      // Map language to marketplace
+      const langToMarketplace = {
+        'DE': 'DE',
+        'EN': 'UK',
+        'FR': 'FR',
+        'IT': 'IT',
+        'ES': 'ES',
+        'NL': 'NL',
+        'PL': 'PL',
+        'SE': 'SE'
+      };
+      return langToMarketplace[lang] || 'DE';
+    }
+  }
+
+  return 'DE'; // Default to Germany
 }
 
 // ========================================
@@ -1375,6 +1569,22 @@ function getMarketplaceConfig(marketplace) {
   return MARKETPLACE_LANGUAGES[marketplace] || null;
 }
 
+function getMarketplaceDomain(marketplace) {
+  const domains = {
+    'DE': 'amazon.de',
+    'FR': 'amazon.fr',
+    'IT': 'amazon.it',
+    'ES': 'amazon.es',
+    'UK': 'amazon.co.uk',
+    'NL': 'amazon.nl',
+    'BE': 'amazon.com.be',
+    'PL': 'amazon.pl',
+    'SE': 'amazon.se',
+    'IE': 'amazon.ie'
+  };
+  return domains[marketplace] || 'amazon.de'; // Default to DE
+}
+
 function getCredentials() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.config);
   if (!sheet) {
@@ -1443,20 +1653,61 @@ function callCloudFunction(payload) {
 
 function updateRowStatus(sheet, rowNumber, result) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const values = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+  // Find column indices
   const statusCol = headers.indexOf('Status') + 1;
-  const errorCol = headers.indexOf('Errors') + 1;
-  const lastSyncCol = headers.indexOf('Last Sync Date') + 1;
+  const errorCol = headers.indexOf('ErrorMessage') + 1;
+  const exportDateTimeCol = headers.indexOf('ExportDateTime') + 1;
+  const productLinkCol = headers.indexOf('ProductLink') + 1;
+  const lastModifiedCol = headers.indexOf('LastModified') + 1;
+  const modifiedByCol = headers.indexOf('ModifiedBy') + 1;
+  const asinCol = headers.indexOf('ASIN') + 1;
 
+  // Convert status to spec format: SUCCESS → DONE, ERROR → FAILED
+  const status = result.status === 'SUCCESS' ? 'DONE' : result.status === 'ERROR' ? 'FAILED' : result.status;
+
+  // Update Status column
   if (statusCol > 0) {
-    sheet.getRange(rowNumber, statusCol).setValue(result.status);
+    sheet.getRange(rowNumber, statusCol).setValue(status);
   }
 
-  if (errorCol > 0 && result.status === 'ERROR') {
-    sheet.getRange(rowNumber, errorCol).setValue(result.message);
+  // Update ErrorMessage column (only on failure)
+  if (errorCol > 0) {
+    if (status === 'FAILED') {
+      sheet.getRange(rowNumber, errorCol).setValue(result.message || '');
+    } else {
+      sheet.getRange(rowNumber, errorCol).setValue(''); // Clear error on success
+    }
   }
 
-  if (lastSyncCol > 0 && result.status === 'SUCCESS') {
-    sheet.getRange(rowNumber, lastSyncCol).setValue(new Date());
+  // Update ExportDateTime with EU format (dd.MM.yyyy HH:mm:ss)
+  if (exportDateTimeCol > 0 && status === 'DONE') {
+    const now = new Date();
+    const dateStr = Utilities.formatDate(now, Session.getScriptTimeZone(), 'dd.MM.yyyy HH:mm:ss');
+    sheet.getRange(rowNumber, exportDateTimeCol).setValue(dateStr);
+  }
+
+  // Auto-generate ProductLink (https://www.amazon.{domain}/dp/{ASIN})
+  if (productLinkCol > 0 && asinCol > 0 && status === 'DONE') {
+    const asin = values[asinCol - 1];
+    const marketplace = result.marketplace || 'DE';
+    const domain = getMarketplaceDomain(marketplace);
+
+    if (asin && domain) {
+      const productLink = `https://www.${domain}/dp/${asin}`;
+      sheet.getRange(rowNumber, productLinkCol).setValue(productLink);
+    }
+  }
+
+  // Update LastModified timestamp
+  if (lastModifiedCol > 0) {
+    sheet.getRange(rowNumber, lastModifiedCol).setValue(new Date());
+  }
+
+  // Update ModifiedBy with user email
+  if (modifiedByCol > 0) {
+    sheet.getRange(rowNumber, modifiedByCol).setValue(Session.getActiveUser().getEmail());
   }
 }
 

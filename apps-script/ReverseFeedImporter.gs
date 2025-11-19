@@ -413,20 +413,8 @@ function logImportOperation(imported, warnings, errors) {
 }
 
 // ========================================
-// MENU INTEGRATION
+// HELP FUNCTIONS
 // ========================================
-
-function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-
-  ui.createMenu('Amazon Manager')
-    .addSubMenu(ui.createMenu('Import')
-      .addItem('Import Reverse Feed CSV', 'lukoImportReverseFeed')
-      .addItem('Import by ASIN (API)', 'lukoImportByASIN')
-      .addSeparator()
-      .addItem('Help: How to Get Reverse Feed', 'showReverseFeedHelp'))
-    .addToUi();
-}
 
 function showReverseFeedHelp() {
   const ui = SpreadsheetApp.getUi();
