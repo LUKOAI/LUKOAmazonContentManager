@@ -1,0 +1,385 @@
+{
+  "version": "2025.1",
+  "effectiveDate": "2025-01-21",
+  "description": "Amazon Listings Validation Rules - EU Marketplaces (Updated Jan 2025)",
+
+  "globalRules": {
+    "title": {
+      "maxLength": 200,
+      "maxWordRepetition": 2,
+      "prohibitedCharacters": ["!", "$", "?", "_", "{", "}", "^", "¬", "¦"],
+      "allowedCharactersInBrand": ["!", "$", "?", "_", "{", "}", "^", "¬", "¦"],
+      "description": "Title max 200 chars, no special chars unless in brand name, same word max 2x"
+    },
+    "bulletPoints": {
+      "maxCount": 5,
+      "maxLength": 500,
+      "minRecommended": 3,
+      "description": "Amazon allows up to 5 bullet points, 500 chars each"
+    },
+    "description": {
+      "maxLength": 2000,
+      "allowHTML": false,
+      "description": "Product description max 2000 characters, no HTML"
+    },
+    "keywords": {
+      "maxLength": 250,
+      "maxBytes": 249,
+      "separator": " ",
+      "description": "Generic keywords max 250 chars (249 bytes), space-separated"
+    },
+    "brand": {
+      "maxLength": 50,
+      "required": true,
+      "description": "Brand name required, max 50 chars"
+    },
+    "images": {
+      "main": {
+        "required": true,
+        "minWidth": 1000,
+        "minHeight": 1000,
+        "recommended": {
+          "width": 2000,
+          "height": 2000
+        },
+        "maxFileSize": 10485760,
+        "formats": ["JPEG", "PNG", "GIF"],
+        "backgroundColor": "white",
+        "backgroundRGB": [255, 255, 255],
+        "noText": true,
+        "noLogos": true,
+        "noWatermarks": true,
+        "description": "Main image: 1000x1000 min (2000x2000 recommended), white background, no text/logos"
+      },
+      "additional": {
+        "maxCount": 8,
+        "minWidth": 500,
+        "minHeight": 500,
+        "maxFileSize": 10485760,
+        "formats": ["JPEG", "PNG", "GIF"],
+        "allowText": true,
+        "allowLifestyle": true,
+        "description": "Additional images: 500x500 min, lifestyle and infographics allowed"
+      }
+    }
+  },
+
+  "prohibitedTerms": {
+    "global": {
+      "EN": [
+        "best", "best seller", "best-selling", "cheapest", "free shipping", "free",
+        "amazon", "amazon's choice", "top rated", "number 1", "#1", "guaranteed",
+        "FDA approved", "FDA", "miracle", "cure", "treatment", "diagnose",
+        "COVID", "COVID-19", "coronavirus", "pandemic", "virus", "anti-viral",
+        "eco-friendly", "biodegradable", "compostable", "sustainable",
+        "anti-bacterial", "anti-fungal", "antimicrobial", "antibacterial",
+        "kills germs", "kills bacteria", "kills 99.9%", "sanitizes", "disinfects",
+        "pesticide", "CBD", "cancer", "diabetes", "obesity", "sex", "sexual",
+        "weight loss", "fat burner", "detox", "detoxify", "cleanse",
+        "non-toxic", "chemical-free", "natural", "organic", "hypoallergenic",
+        "medical grade", "hospital grade", "clinical", "therapeutic",
+        "whitening", "brightening", "lightening", "bleach",
+        "stress relief", "anxiety", "depression", "mental health",
+        "HIV", "AIDS", "hepatitis", "herpes", "STD", "infection"
+      ],
+      "DE": [
+        "beste", "bestseller", "am billigsten", "kostenlos", "gratis",
+        "amazon", "top bewertet", "nummer 1", "garantiert",
+        "FDA-zugelassen", "Wundermittel", "Heilung", "Behandlung", "Diagnose",
+        "COVID", "Coronavirus", "Pandemie", "Virus", "antiviral",
+        "umweltfreundlich", "biologisch abbaubar", "kompostierbar", "nachhaltig",
+        "antibakteriell", "antimykotisch", "antimikrobiell",
+        "tötet Keime", "desinfiziert", "Pestizid", "CBD",
+        "Krebs", "Diabetes", "Fettleibigkeit", "sexuell",
+        "Gewichtsverlust", "Fettverbrenner", "Entgiftung",
+        "ungiftig", "chemiefrei", "natürlich", "Bio", "hypoallergen",
+        "medizinisch", "klinisch", "therapeutisch",
+        "Aufhellung", "Bleichen", "Stress", "Angst", "Depression"
+      ],
+      "FR": [
+        "meilleur", "best-seller", "moins cher", "gratuit", "livraison gratuite",
+        "amazon", "mieux noté", "numéro 1", "garanti",
+        "approuvé FDA", "miracle", "guérison", "traitement", "diagnostic",
+        "COVID", "coronavirus", "pandémie", "virus", "antiviral",
+        "écologique", "biodégradable", "compostable", "durable",
+        "antibactérien", "antifongique", "antimicrobien",
+        "tue les germes", "désinfecte", "pesticide", "CBD",
+        "cancer", "diabète", "obésité", "sexuel",
+        "perte de poids", "brûleur de graisse", "détox", "détoxification",
+        "non toxique", "sans produits chimiques", "naturel", "bio",
+        "médical", "clinique", "thérapeutique",
+        "blanchiment", "éclaircissement", "stress", "anxiété", "dépression"
+      ],
+      "IT": [
+        "migliore", "bestseller", "più economico", "gratuito", "spedizione gratuita",
+        "amazon", "più votato", "numero 1", "garantito",
+        "approvato FDA", "miracolo", "cura", "trattamento", "diagnosi",
+        "COVID", "coronavirus", "pandemia", "virus", "antivirale",
+        "ecologico", "biodegradabile", "compostabile", "sostenibile",
+        "antibatterico", "antimicotico", "antimicrobico",
+        "uccide i germi", "disinfetta", "pesticida", "CBD",
+        "cancro", "diabete", "obesità", "sessuale",
+        "perdita di peso", "brucia grassi", "disintossicazione",
+        "non tossico", "senza sostanze chimiche", "naturale", "biologico",
+        "grado medico", "clinico", "terapeutico",
+        "sbiancamento", "schiarimento", "stress", "ansia", "depressione"
+      ],
+      "ES": [
+        "mejor", "más vendido", "más barato", "gratis", "envío gratis",
+        "amazon", "mejor valorado", "número 1", "garantizado",
+        "aprobado FDA", "milagro", "cura", "tratamiento", "diagnóstico",
+        "COVID", "coronavirus", "pandemia", "virus", "antiviral",
+        "ecológico", "biodegradable", "compostable", "sostenible",
+        "antibacteriano", "antifúngico", "antimicrobiano",
+        "mata gérmenes", "desinfecta", "pesticida", "CBD",
+        "cáncer", "diabetes", "obesidad", "sexual",
+        "pérdida de peso", "quema grasa", "desintoxicación",
+        "no tóxico", "sin químicos", "natural", "orgánico",
+        "grado médico", "clínico", "terapéutico",
+        "blanqueamiento", "aclaramiento", "estrés", "ansiedad", "depresión"
+      ],
+      "NL": [
+        "beste", "bestseller", "goedkoopste", "gratis", "gratis verzending",
+        "amazon", "best beoordeeld", "nummer 1", "gegarandeerd",
+        "FDA-goedgekeurd", "wonder", "genezing", "behandeling", "diagnose",
+        "COVID", "coronavirus", "pandemie", "virus", "antiviraal",
+        "milieuvriendelijk", "biologisch afbreekbaar", "composteerbaar", "duurzaam",
+        "antibacterieel", "schimmelwerend", "antimicrobieel",
+        "doodt ziektekiemen", "desinfecteert", "pesticiden", "CBD",
+        "kanker", "diabetes", "obesitas", "seksueel",
+        "gewichtsverlies", "vetverbrander", "detox", "ontgifting",
+        "niet-giftig", "chemicaliënvrij", "natuurlijk", "biologisch",
+        "medisch", "klinisch", "therapeutisch",
+        "bleken", "verlichten", "stress", "angst", "depressie"
+      ],
+      "PL": [
+        "najlepszy", "bestseller", "najtańszy", "darmowy", "darmowa wysyłka",
+        "amazon", "najwyżej oceniony", "numer 1", "gwarantowany",
+        "zatwierdzony przez FDA", "cud", "leczyć", "leczenie", "diagnoza",
+        "COVID", "koronawirus", "pandemia", "wirus", "antywirusowy",
+        "ekologiczny", "biodegradowalny", "kompostowalny", "zrównoważony",
+        "antybakteryjny", "przeciwgrzybiczy", "przeciwdrobnoustrojowy",
+        "zabija zarazki", "dezynfekuje", "pestycydy", "CBD",
+        "rak", "cukrzyca", "otyłość", "seksualny",
+        "utrata wagi", "spalacz tłuszczu", "detoks", "detoksykacja",
+        "nietoksyczny", "bez chemikaliów", "naturalny", "organiczny",
+        "medyczny", "kliniczny", "terapeutyczny",
+        "wybielanie", "rozjaśnianie", "stres", "lęk", "depresja"
+      ],
+      "SE": [
+        "bäst", "bästsäljare", "billigast", "gratis", "gratis frakt",
+        "amazon", "högst rankad", "nummer 1", "garanterad",
+        "FDA-godkänd", "mirakel", "bota", "behandling", "diagnos",
+        "COVID", "coronavirus", "pandemi", "virus", "antiviral",
+        "miljövänlig", "biologiskt nedbrytbar", "kompostbar", "hållbar",
+        "antibakteriell", "antimykotisk", "antimikrobiell",
+        "dödar bakterier", "desinficerar", "bekämpningsmedel", "CBD",
+        "cancer", "diabetes", "fetma", "sexuell",
+        "viktminskning", "fettförbränning", "avgiftning",
+        "giftfri", "kemikaliefri", "naturlig", "ekologisk",
+        "medicinsk", "klinisk", "terapeutisk",
+        "blekning", "ljusning", "stress", "ångest", "depression"
+      ]
+    },
+    "allowedAlternatives": {
+      "EN": {
+        "eco-friendly": ["go green", "responsibly made", "thoughtfully sourced"],
+        "best": ["high-quality", "premium", "professional"],
+        "guaranteed": ["backed by", "supported by"],
+        "kills bacteria": ["helps reduce", "helps control"]
+      },
+      "DE": {
+        "umweltfreundlich": ["verantwortungsvoll hergestellt", "nachhaltig produziert"],
+        "beste": ["hochwertig", "premium", "professionell"]
+      },
+      "FR": {
+        "écologique": ["fabriqué de manière responsable", "produit avec soin"],
+        "meilleur": ["haute qualité", "premium", "professionnel"]
+      }
+    }
+  },
+
+  "categorySpecificRules": {
+    "fashion": {
+      "productType": ["SHIRT", "PANTS", "DRESS", "SHOES", "ACCESSORY"],
+      "requiredFields": ["brand", "productTitle", "size", "color", "material"],
+      "titleFormat": "{Brand} {Gender} {ProductType} {Material} {Size} {Color}",
+      "titleMaxLength": 200,
+      "bulletPoints": {
+        "maxCount": 5,
+        "recommended": ["Material composition", "Care instructions", "Fit type", "Closure type", "Special features"]
+      },
+      "images": {
+        "mainImage": "Product on white background, no model for flat lays",
+        "lifestyleImages": "Model wearing product encouraged",
+        "minImages": 3
+      },
+      "prohibitedInTitle": ["sale", "discount", "promo", "offer", "deal"]
+    },
+    "home_garden": {
+      "productType": ["FURNITURE", "DECOR", "KITCHEN", "GARDEN", "BEDDING"],
+      "requiredFields": ["brand", "productTitle", "dimensions", "material", "color"],
+      "titleFormat": "{Brand} {ProductType} {Material} {Color} {Size/Dimensions}",
+      "titleMaxLength": 200,
+      "bulletPoints": {
+        "maxCount": 5,
+        "recommended": ["Dimensions", "Material", "Assembly required", "Care instructions", "Weight capacity"]
+      },
+      "dimensions": {
+        "required": true,
+        "units": ["cm", "m", "kg"],
+        "format": "Length x Width x Height"
+      }
+    },
+    "electronics": {
+      "productType": ["CONSUMER_ELECTRONICS", "COMPUTER", "CAMERA", "AUDIO"],
+      "requiredFields": ["brand", "productTitle", "model", "specifications"],
+      "titleMaxLength": 200,
+      "bulletPoints": {
+        "maxCount": 5,
+        "recommended": ["Key specifications", "Compatibility", "What's in the box", "Warranty", "Special features"]
+      },
+      "prohibitedClaims": ["fastest", "most powerful", "revolutionary", "patented" ]
+    },
+    "health_beauty": {
+      "productType": ["BEAUTY", "HEALTH_PERSONAL_CARE", "COSMETICS"],
+      "requiredFields": ["brand", "productTitle", "ingredients", "volume"],
+      "titleMaxLength": 200,
+      "strictProhibitions": true,
+      "prohibitedClaims": [
+        "All medical/health claims", "Anti-aging", "Wrinkle removal",
+        "Skin whitening", "FDA approved", "Clinically proven"
+      ],
+      "allowedClaims": ["moisturizing", "nourishing", "gentle", "suitable for"],
+      "ingredientsRequired": true
+    },
+    "toys_baby": {
+      "productType": ["TOY", "BABY_PRODUCT"],
+      "requiredFields": ["brand", "productTitle", "ageRange", "safetyWarnings"],
+      "titleMaxLength": 200,
+      "safetyRequired": true,
+      "certifications": ["CE", "EN71", "REACH", "CPSIA"],
+      "choking": {
+        "warningRequired": "For products with small parts",
+        "ageRestriction": "Not suitable for children under 3"
+      }
+    }
+  },
+
+  "aplusContentRules": {
+    "basic": {
+      "maxModules": 5,
+      "availableModules": [
+        "StandardCompanyLogo", "StandardSingleImageSpecsDetail",
+        "StandardThreeImageText", "StandardFourImageText",
+        "StandardMultipleImageTextModule", "StandardProductDescription",
+        "StandardHeaderImageText", "StandardImageTextOverlay", "StandardTechSpecs"
+      ],
+      "textLimits": {
+        "headline": 100,
+        "paragraph": 2000,
+        "shortText": 500
+      },
+      "imageLimits": {
+        "minWidth": 970,
+        "minHeight": 300,
+        "maxFileSize": 5242880,
+        "noSmallText": "Text must be readable on mobile (min 18pt)"
+      }
+    },
+    "premium": {
+      "maxModules": 7,
+      "brandStoryRequired": true,
+      "availableModules": [
+        "StandardHeroImageTextBlock", "StandardVideoBlock",
+        "StandardCarouselModule", "StandardProductComparisonTable",
+        "StandardFAQModule", "StandardTimelineModule"
+      ]
+    }
+  },
+
+  "gpsrRules": {
+    "effectiveDate": "2024-12-13",
+    "required": true,
+    "description": "EU General Product Safety Regulation (GPSR) - Required from Dec 13, 2024",
+    "requiredFields": {
+      "manufacturer": {
+        "name": {"required": true, "maxLength": 100},
+        "address": {"required": true, "maxLength": 200},
+        "email": {"required": true, "format": "email"},
+        "phone": {"required": false, "format": "E.164"}
+      },
+      "responsiblePerson": {
+        "name": {"required": true, "maxLength": 100},
+        "address": {"required": true, "maxLength": 200},
+        "email": {"required": true, "format": "email"},
+        "phone": {"required": false, "format": "E.164"}
+      },
+      "safetyDocuments": {
+        "safetyInformation": {
+          "required": true,
+          "formats": ["PDF"],
+          "maxFileSize": 10485760,
+          "description": "Product safety information document"
+        },
+        "complianceDocument": {
+          "required": false,
+          "formats": ["PDF"],
+          "description": "CE certificate, test reports, etc."
+        },
+        "userManual": {
+          "required": false,
+          "formats": ["PDF"],
+          "languages": ["Language of target marketplace"],
+          "description": "User manual in marketplace language"
+        }
+      },
+      "warningLabels": {
+        "image": {
+          "required": false,
+          "formats": ["JPEG", "PNG"],
+          "description": "Warning label image (if applicable)"
+        }
+      }
+    },
+    "marketplaceSpecific": {
+      "EU": ["DE", "FR", "IT", "ES", "NL", "PL", "SE", "BE", "IE"],
+      "exemptions": []
+    }
+  },
+
+  "documentRules": {
+    "userManual": {
+      "formats": ["PDF"],
+      "maxFileSize": 10485760,
+      "languageRequired": true,
+      "description": "User manual in marketplace language"
+    },
+    "complianceCertificate": {
+      "formats": ["PDF", "JPEG", "PNG"],
+      "maxFileSize": 5242880,
+      "types": ["CE", "RoHS", "REACH", "FCC", "ISO"],
+      "description": "Compliance certificates"
+    },
+    "warrantyCard": {
+      "formats": ["PDF"],
+      "maxFileSize": 2097152,
+      "description": "Warranty information"
+    }
+  },
+
+  "validationLevels": {
+    "error": {
+      "blocking": true,
+      "description": "Critical errors - export blocked unless override enabled"
+    },
+    "warning": {
+      "blocking": false,
+      "description": "Warnings - export allowed but user should review"
+    },
+    "info": {
+      "blocking": false,
+      "description": "Informational - suggestions for improvement"
+    }
+  }
+}
