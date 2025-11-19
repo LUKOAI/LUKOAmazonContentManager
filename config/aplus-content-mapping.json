@@ -1,0 +1,743 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Amazon A+ Content Complete Mapping",
+  "description": "ALL A+ Content modules (Basic & Premium) with ALL fields",
+  "version": "1.0.0",
+
+  "aplusBasic": {
+    "description": "A+ Content Basic - 9 standard module types",
+    "maxModules": 7,
+
+    "module1_StandardCompanyLogo": {
+      "moduleType": "STANDARD_COMPANY_LOGO",
+      "description": "Company logo with brand description",
+      "fields": {
+        "companyLogoImage": {
+          "field": "company_logo_image",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_basic_m1_companyLogoImage_URL"
+        },
+        "companyDescription": {
+          "field": "company_description",
+          "type": "languageString",
+          "maxLength": 400,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m1_companyDescription_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      }
+    },
+
+    "module2_StandardImageTextOverlay": {
+      "moduleType": "STANDARD_IMAGE_TEXT_OVERLAY",
+      "description": "Large image with text overlay",
+      "fields": {
+        "overlayImage": {
+          "field": "overlay_image",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_basic_m2_overlayImage_URL"
+        },
+        "overlayColorType": {
+          "field": "overlay_color_type",
+          "type": "dropdown",
+          "enum": ["DARK", "LIGHT"],
+          "columnName": "aplus_basic_m2_overlayColorType"
+        },
+        "headline": {
+          "field": "headline",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m2_headline_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "body": {
+          "field": "body",
+          "type": "languageString",
+          "maxLength": 200,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m2_body_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      }
+    },
+
+    "module3_StandardSingleImageHighlights": {
+      "moduleType": "STANDARD_SINGLE_IMAGE_HIGHLIGHTS",
+      "description": "Single image with bullet points",
+      "fields": {
+        "image": {
+          "field": "image",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_basic_m3_image_URL"
+        },
+        "headline": {
+          "field": "headline",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m3_headline_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "highlight1": {
+          "field": "highlight_1",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m3_highlight1_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "highlight2": {
+          "field": "highlight_2",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m3_highlight2_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "highlight3": {
+          "field": "highlight_3",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m3_highlight3_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "highlight4": {
+          "field": "highlight_4",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m3_highlight4_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      }
+    },
+
+    "module4_StandardImageTextLeft": {
+      "moduleType": "STANDARD_IMAGE_TEXT",
+      "position": "LEFT",
+      "description": "Image on left, text on right",
+      "fields": {
+        "image": {
+          "field": "image",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_basic_m4_image_URL"
+        },
+        "headline": {
+          "field": "headline",
+          "type": "languageString",
+          "maxLength": 80,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m4_headline_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "body": {
+          "field": "body",
+          "type": "languageString",
+          "maxLength": 300,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m4_body_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      }
+    },
+
+    "module5_StandardImageTextRight": {
+      "moduleType": "STANDARD_IMAGE_TEXT",
+      "position": "RIGHT",
+      "description": "Text on left, image on right",
+      "fields": {
+        "image": {
+          "field": "image",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_basic_m5_image_URL"
+        },
+        "headline": {
+          "field": "headline",
+          "type": "languageString",
+          "maxLength": 80,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m5_headline_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "body": {
+          "field": "body",
+          "type": "languageString",
+          "maxLength": 300,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m5_body_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      }
+    },
+
+    "module6_StandardMultipleImages": {
+      "moduleType": "STANDARD_MULTIPLE_IMAGE_TEXT",
+      "description": "4 images in grid with text",
+      "fields": {
+        "image1": {
+          "field": "image_1",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_basic_m6_image1_URL"
+        },
+        "headline1": {
+          "field": "headline_1",
+          "type": "languageString",
+          "maxLength": 50,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m6_headline1_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "body1": {
+          "field": "body_1",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m6_body1_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "image2": {
+          "field": "image_2",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_basic_m6_image2_URL"
+        },
+        "headline2": {
+          "field": "headline_2",
+          "type": "languageString",
+          "maxLength": 50,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m6_headline2_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "body2": {
+          "field": "body_2",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m6_body2_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "image3": {
+          "field": "image_3",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_basic_m6_image3_URL"
+        },
+        "headline3": {
+          "field": "headline_3",
+          "type": "languageString",
+          "maxLength": 50,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m6_headline3_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "body3": {
+          "field": "body_3",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m6_body3_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "image4": {
+          "field": "image_4",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_basic_m6_image4_URL"
+        },
+        "headline4": {
+          "field": "headline_4",
+          "type": "languageString",
+          "maxLength": 50,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m6_headline4_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "body4": {
+          "field": "body_4",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m6_body4_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      }
+    },
+
+    "module7_StandardText": {
+      "moduleType": "STANDARD_TEXT",
+      "description": "Plain text block",
+      "fields": {
+        "headline": {
+          "field": "headline",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m7_headline_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "body": {
+          "field": "body",
+          "type": "languageString",
+          "maxLength": 2000,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m7_body_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      }
+    },
+
+    "module8_StandardComparisonTable": {
+      "moduleType": "STANDARD_COMPARISON_TABLE",
+      "description": "Product comparison table (up to 6 products)",
+      "fields": {
+        "tableTitle": {
+          "field": "table_title",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m8_tableTitle_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "product1_ASIN": {
+          "field": "product_1_asin",
+          "type": "string",
+          "columnName": "aplus_basic_m8_product1_ASIN"
+        },
+        "product1_Image": {
+          "field": "product_1_image",
+          "type": "url",
+          "columnName": "aplus_basic_m8_product1_Image_URL"
+        },
+        "product1_Title": {
+          "field": "product_1_title",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m8_product1_Title_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "product2_ASIN": {
+          "field": "product_2_asin",
+          "type": "string",
+          "columnName": "aplus_basic_m8_product2_ASIN"
+        },
+        "product2_Image": {
+          "field": "product_2_image",
+          "type": "url",
+          "columnName": "aplus_basic_m8_product2_Image_URL"
+        },
+        "product2_Title": {
+          "field": "product_2_title",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m8_product2_Title_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "product3_ASIN": {
+          "field": "product_3_asin",
+          "type": "string",
+          "columnName": "aplus_basic_m8_product3_ASIN"
+        },
+        "product3_Image": {
+          "field": "product_3_image",
+          "type": "url",
+          "columnName": "aplus_basic_m8_product3_Image_URL"
+        },
+        "product3_Title": {
+          "field": "product_3_title",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m8_product3_Title_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "comparisonRow1_Label": {
+          "field": "comparison_row_1_label",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m8_comparisonRow1_Label_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "comparisonRow1_Product1": {
+          "field": "comparison_row_1_product_1",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m8_comparisonRow1_Product1_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "comparisonRow1_Product2": {
+          "field": "comparison_row_1_product_2",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m8_comparisonRow1_Product2_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "comparisonRow1_Product3": {
+          "field": "comparison_row_1_product_3",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m8_comparisonRow1_Product3_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "note": "Comparison table can have up to 6 rows - expand as needed"
+    },
+
+    "module9_StandardTechSpecs": {
+      "moduleType": "STANDARD_TECH_SPECS",
+      "description": "Technical specifications table",
+      "fields": {
+        "tableTitle": {
+          "field": "table_title",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m9_tableTitle_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "spec1_Label": {
+          "field": "spec_1_label",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m9_spec1_Label_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "spec1_Value": {
+          "field": "spec_1_value",
+          "type": "languageString",
+          "maxLength": 200,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m9_spec1_Value_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "spec2_Label": {
+          "field": "spec_2_label",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m9_spec2_Label_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "spec2_Value": {
+          "field": "spec_2_value",
+          "type": "languageString",
+          "maxLength": 200,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m9_spec2_Value_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "spec3_Label": {
+          "field": "spec_3_label",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m9_spec3_Label_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "spec3_Value": {
+          "field": "spec_3_value",
+          "type": "languageString",
+          "maxLength": 200,
+          "multilanguage": true,
+          "columnPattern": "aplus_basic_m9_spec3_Value_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "note": "Tech specs can have up to 12 rows - expand as needed"
+    }
+  },
+
+  "aplusPremium": {
+    "description": "A+ Content Premium (Brand Story) - enhanced modules with video support",
+    "maxModules": 7,
+
+    "brandStory_Hero": {
+      "moduleType": "BRAND_STORY_HERO",
+      "description": "Hero section with brand logo and tagline",
+      "fields": {
+        "brandLogo": {
+          "field": "brand_logo",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_premium_hero_brandLogo_URL"
+        },
+        "heroImage": {
+          "field": "hero_image",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_premium_hero_heroImage_URL"
+        },
+        "heroVideo": {
+          "field": "hero_video",
+          "type": "url",
+          "required": false,
+          "columnName": "aplus_premium_hero_heroVideo_URL"
+        },
+        "tagline": {
+          "field": "tagline",
+          "type": "languageString",
+          "maxLength": 150,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_hero_tagline_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "backgroundColor": {
+          "field": "background_color",
+          "type": "color",
+          "format": "hex",
+          "columnName": "aplus_premium_hero_backgroundColor_HEX"
+        }
+      }
+    },
+
+    "module1_ImageTextOverlay": {
+      "moduleType": "PREMIUM_IMAGE_TEXT_OVERLAY",
+      "description": "Large image with text overlay (premium version)",
+      "fields": {
+        "backgroundImage": {
+          "field": "background_image",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_premium_m1_backgroundImage_URL"
+        },
+        "headline": {
+          "field": "headline",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m1_headline_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "body": {
+          "field": "body",
+          "type": "languageString",
+          "maxLength": 300,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m1_body_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "overlayPosition": {
+          "field": "overlay_position",
+          "type": "dropdown",
+          "enum": ["TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT", "CENTER"],
+          "columnName": "aplus_premium_m1_overlayPosition"
+        }
+      }
+    },
+
+    "module2_VideoWithText": {
+      "moduleType": "PREMIUM_VIDEO_WITH_TEXT",
+      "description": "Video block with accompanying text",
+      "fields": {
+        "videoURL": {
+          "field": "video_url",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_premium_m2_video_URL"
+        },
+        "videoThumbnail": {
+          "field": "video_thumbnail",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_premium_m2_videoThumbnail_URL"
+        },
+        "headline": {
+          "field": "headline",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m2_headline_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "body": {
+          "field": "body",
+          "type": "languageString",
+          "maxLength": 500,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m2_body_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "videoPosition": {
+          "field": "video_position",
+          "type": "dropdown",
+          "enum": ["LEFT", "RIGHT"],
+          "columnName": "aplus_premium_m2_videoPosition"
+        }
+      }
+    },
+
+    "module3_ImageCarousel": {
+      "moduleType": "PREMIUM_IMAGE_CAROUSEL",
+      "description": "Carousel with multiple images",
+      "maxImages": 7,
+      "fields": {
+        "carousel_image1": {
+          "field": "carousel_image_1",
+          "type": "url",
+          "required": true,
+          "columnName": "aplus_premium_m3_carouselImage1_URL"
+        },
+        "carousel_caption1": {
+          "field": "carousel_caption_1",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m3_carouselCaption1_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "carousel_image2": {
+          "field": "carousel_image_2",
+          "type": "url",
+          "required": false,
+          "columnName": "aplus_premium_m3_carouselImage2_URL"
+        },
+        "carousel_caption2": {
+          "field": "carousel_caption_2",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m3_carouselCaption2_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "carousel_image3": {
+          "field": "carousel_image_3",
+          "type": "url",
+          "required": false,
+          "columnName": "aplus_premium_m3_carouselImage3_URL"
+        },
+        "carousel_caption3": {
+          "field": "carousel_caption_3",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m3_carouselCaption3_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "note": "Carousel supports up to 7 images - expand as needed"
+    },
+
+    "module4_ComparisonChart": {
+      "moduleType": "PREMIUM_COMPARISON_CHART",
+      "description": "Enhanced comparison chart with more customization",
+      "fields": {
+        "chartTitle": {
+          "field": "chart_title",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m4_chartTitle_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "product1_ASIN": {
+          "field": "product_1_asin",
+          "type": "string",
+          "columnName": "aplus_premium_m4_product1_ASIN"
+        },
+        "product1_Label": {
+          "field": "product_1_label",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m4_product1_Label_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "product2_ASIN": {
+          "field": "product_2_asin",
+          "type": "string",
+          "columnName": "aplus_premium_m4_product2_ASIN"
+        },
+        "product2_Label": {
+          "field": "product_2_label",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m4_product2_Label_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "feature1_Label": {
+          "field": "feature_1_label",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m4_feature1_Label_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "feature1_Product1": {
+          "field": "feature_1_product_1",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m4_feature1_Product1_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "feature1_Product2": {
+          "field": "feature_1_product_2",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m4_feature1_Product2_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "note": "Comparison chart supports up to 6 products and 10 features"
+    },
+
+    "module5_BrandTimeline": {
+      "moduleType": "PREMIUM_BRAND_TIMELINE",
+      "description": "Timeline showing brand history",
+      "fields": {
+        "timelineTitle": {
+          "field": "timeline_title",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m5_timelineTitle_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "event1_Year": {
+          "field": "event_1_year",
+          "type": "number",
+          "columnName": "aplus_premium_m5_event1_Year"
+        },
+        "event1_Image": {
+          "field": "event_1_image",
+          "type": "url",
+          "columnName": "aplus_premium_m5_event1_Image_URL"
+        },
+        "event1_Title": {
+          "field": "event_1_title",
+          "type": "languageString",
+          "maxLength": 100,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m5_event1_Title_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "event1_Description": {
+          "field": "event_1_description",
+          "type": "languageString",
+          "maxLength": 300,
+          "multilanguage": true,
+          "columnPattern": "aplus_premium_m5_event1_Description_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "note": "Timeline supports up to 5 events"
+    }
+  }
+}
