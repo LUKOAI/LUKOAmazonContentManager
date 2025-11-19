@@ -84,6 +84,31 @@ exports.lukoSpApiHandler = async (req, res) => {
         result = await translateText(operationData);
         break;
 
+      // Extended Features (Phase 2)
+      case 'exportGpsr':
+        result = await exportGpsrCompliance(operationData, marketplace, marketplaceId, accessToken, credentials.sellerId);
+        break;
+
+      case 'exportDocuments':
+        result = await exportDocuments(operationData, marketplace, marketplaceId, accessToken, credentials.sellerId);
+        break;
+
+      case 'exportCustomization':
+        result = await exportCustomization(operationData, marketplace, marketplaceId, accessToken, credentials.sellerId);
+        break;
+
+      case 'exportBrandStrip':
+        result = await exportBrandStrip(operationData, marketplace, marketplaceId, accessToken, credentials.sellerId);
+        break;
+
+      case 'exportBrandStore':
+        result = await exportBrandStore(operationData, marketplace, marketplaceId, accessToken, credentials.sellerId);
+        break;
+
+      case 'exportVideos':
+        result = await exportVideos(operationData, marketplace, marketplaceId, accessToken, credentials.sellerId);
+        break;
+
       default:
         throw new Error(`Unknown operation: ${operation}`);
     }
@@ -810,6 +835,358 @@ function getMarketplaceLocale(marketplace) {
 }
 
 // ========================================
+// EXTENDED FEATURES (PHASE 2) HANDLERS
+// ========================================
+
+/**
+ * Export GPSR Compliance data to Amazon
+ * Updates product compliance information via SP-API
+ */
+async function exportGpsrCompliance(operationData, marketplace, marketplaceId, accessToken, sellerId) {
+  const { data } = operationData;
+
+  console.log(`Exporting GPSR compliance for ${data.length} products`);
+
+  const results = [];
+
+  for (const item of data) {
+    try {
+      // Prepare GPSR compliance data for SP-API
+      const gpsrData = {
+        productIdentifier: {
+          marketplaceId: marketplaceId,
+          asin: item.asin
+        },
+        complianceData: {
+          gpsrCompliant: item.gpsrCompliant === 'Yes',
+          manufacturer: item.manufacturer,
+          importer: item.importer,
+          responsiblePerson: item.responsiblePerson,
+          safetyDocuments: item.documents
+        }
+      };
+
+      // Call SP-API to update compliance data
+      // Note: This is a placeholder - actual SP-API endpoint may vary
+      const result = await callSpApi(
+        'PUT',
+        `/listings/2021-08-01/items/${sellerId}/${item.sku}/compliance`,
+        marketplaceId,
+        accessToken,
+        gpsrData
+      );
+
+      results.push({
+        asin: item.asin,
+        sku: item.sku,
+        success: true,
+        message: 'GPSR data updated successfully'
+      });
+
+    } catch (error) {
+      results.push({
+        asin: item.asin,
+        sku: item.sku,
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  return {
+    success: true,
+    results: results,
+    message: `Processed ${results.length} GPSR compliance updates`
+  };
+}
+
+/**
+ * Export Documents to Amazon
+ * Uploads product documentation via SP-API
+ */
+async function exportDocuments(operationData, marketplace, marketplaceId, accessToken, sellerId) {
+  const { data } = operationData;
+
+  console.log(`Exporting documents for ${data.length} products`);
+
+  const results = [];
+
+  for (const item of data) {
+    try {
+      // Prepare document data for SP-API
+      const documentData = {
+        productIdentifier: {
+          marketplaceId: marketplaceId,
+          asin: item.asin
+        },
+        document: {
+          type: item.documentType,
+          language: item.language,
+          title: item.title,
+          url: item.pdfUrl,
+          description: item.description,
+          visibleToCustomer: item.visibleToCustomer
+        }
+      };
+
+      // Call SP-API to add document
+      const result = await callSpApi(
+        'POST',
+        `/listings/2021-08-01/items/${sellerId}/${item.sku}/documents`,
+        marketplaceId,
+        accessToken,
+        documentData
+      );
+
+      results.push({
+        asin: item.asin,
+        sku: item.sku,
+        success: true,
+        message: 'Document uploaded successfully'
+      });
+
+    } catch (error) {
+      results.push({
+        asin: item.asin,
+        sku: item.sku,
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  return {
+    success: true,
+    results: results,
+    message: `Processed ${results.length} document uploads`
+  };
+}
+
+/**
+ * Export Customization options to Amazon
+ * Sets up product personalization via SP-API
+ */
+async function exportCustomization(operationData, marketplace, marketplaceId, accessToken, sellerId) {
+  const { data } = operationData;
+
+  console.log(`Exporting customization for ${data.length} products`);
+
+  const results = [];
+
+  for (const item of data) {
+    try {
+      // Prepare customization data for SP-API
+      const customizationData = {
+        productIdentifier: {
+          marketplaceId: marketplaceId,
+          asin: item.asin
+        },
+        customization: {
+          enabled: item.enabled,
+          textFields: item.textCustomization,
+          surfaces: item.surfaceCustomization,
+          imageUpload: item.imageUpload,
+          pricing: item.pricing,
+          giftOptions: item.giftOptions
+        }
+      };
+
+      // Call SP-API to update customization
+      const result = await callSpApi(
+        'PUT',
+        `/listings/2021-08-01/items/${sellerId}/${item.sku}/customization`,
+        marketplaceId,
+        accessToken,
+        customizationData
+      );
+
+      results.push({
+        asin: item.asin,
+        sku: item.sku,
+        success: true,
+        message: 'Customization updated successfully'
+      });
+
+    } catch (error) {
+      results.push({
+        asin: item.asin,
+        sku: item.sku,
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  return {
+    success: true,
+    results: results,
+    message: `Processed ${results.length} customization updates`
+  };
+}
+
+/**
+ * Export Brand Strip to Amazon
+ * Updates brand strip content via SP-API
+ */
+async function exportBrandStrip(operationData, marketplace, marketplaceId, accessToken, sellerId) {
+  const { data } = operationData;
+
+  console.log(`Exporting brand strip for ${data.length} products`);
+
+  const results = [];
+
+  for (const item of data) {
+    try {
+      // Prepare brand strip data
+      const stripData = {
+        productIdentifier: {
+          marketplaceId: marketplaceId,
+          asin: item.asin
+        },
+        brandStrip: {
+          enabled: item.enabled,
+          type: item.type,
+          content: item.type === 'Classic' ? item.classic : item.enhanced
+        }
+      };
+
+      // Call SP-API to update brand strip
+      const result = await callSpApi(
+        'PUT',
+        `/aplus/2020-11-01/contentDocuments/brandStrip/${item.asin}`,
+        marketplaceId,
+        accessToken,
+        stripData
+      );
+
+      results.push({
+        asin: item.asin,
+        sku: item.sku,
+        success: true,
+        message: 'Brand strip updated successfully'
+      });
+
+    } catch (error) {
+      results.push({
+        asin: item.asin,
+        sku: item.sku,
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  return {
+    success: true,
+    results: results,
+    message: `Processed ${results.length} brand strip updates`
+  };
+}
+
+/**
+ * Export Brand Store to Amazon
+ * Creates/updates complete brand store via SP-API
+ */
+async function exportBrandStore(operationData, marketplace, marketplaceId, accessToken, sellerId) {
+  const { data } = operationData;
+
+  console.log(`Exporting brand store with ${data.pages.length} pages`);
+
+  try {
+    // Prepare brand store data
+    const storeData = {
+      marketplaceId: marketplaceId,
+      storeConfiguration: data.config,
+      pages: data.pages
+    };
+
+    // Call SP-API to create/update brand store
+    const result = await callSpApi(
+      'PUT',
+      `/stores/2020-07-01/brands/${sellerId}/store`,
+      marketplaceId,
+      accessToken,
+      storeData
+    );
+
+    return {
+      success: true,
+      message: `Brand store updated successfully with ${data.pages.length} pages`,
+      storeId: result.storeId || 'N/A'
+    };
+
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Export Videos to Amazon
+ * Uploads product videos via SP-API
+ */
+async function exportVideos(operationData, marketplace, marketplaceId, accessToken, sellerId) {
+  const { data } = operationData;
+
+  console.log(`Exporting videos for ${data.length} products`);
+
+  const results = [];
+
+  for (const item of data) {
+    try {
+      // Prepare video data for SP-API
+      const videoData = {
+        productIdentifier: {
+          marketplaceId: marketplaceId,
+          asin: item.asin
+        },
+        videos: item.videos.map(video => ({
+          url: video.url,
+          thumbnail: video.thumbnail,
+          duration: video.duration,
+          title: video.title,
+          description: video.description,
+          type: video.type,
+          language: video.language
+        }))
+      };
+
+      // Call SP-API to upload videos
+      const result = await callSpApi(
+        'POST',
+        `/listings/2021-08-01/items/${sellerId}/${item.sku}/videos`,
+        marketplaceId,
+        accessToken,
+        videoData
+      );
+
+      results.push({
+        asin: item.asin,
+        sku: item.sku,
+        success: true,
+        message: `${item.videos.length} videos uploaded successfully`
+      });
+
+    } catch (error) {
+      results.push({
+        asin: item.asin,
+        sku: item.sku,
+        success: false,
+        error: error.message
+      });
+    }
+  }
+
+  return {
+    success: true,
+    results: results,
+    message: `Processed ${results.length} video uploads`
+  };
+}
+
+// ========================================
 // EXPORTS
 // ========================================
 
@@ -823,6 +1200,13 @@ if (typeof module !== 'undefined' && module.exports) {
     uploadImages,
     publishAPlusContent,
     createCoupon,
-    getProductTypeSchema
+    getProductTypeSchema,
+    // Extended features
+    exportGpsrCompliance,
+    exportDocuments,
+    exportCustomization,
+    exportBrandStrip,
+    exportBrandStore,
+    exportVideos
   };
 }

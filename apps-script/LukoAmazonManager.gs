@@ -187,6 +187,52 @@ function onOpen() {
       .addItem('View Recent Logs', 'lukoViewLogs')
       .addItem('View Error Log', 'lukoViewErrorLog'))
 
+    .addSubMenu(ui.createMenu('Extended Features')
+      .addSubMenu(ui.createMenu('GPSR Compliance')
+        .addItem('Validate GPSR Data', 'lukoValidateGpsrData')
+        .addItem('Export GPSR to Amazon', 'lukoExportGpsrToAmazon')
+        .addItem('Generate GPSR Report', 'lukoGenerateGpsrReport')
+        .addSeparator()
+        .addItem('Bulk Update Status', 'lukoBulkUpdateGpsrStatus')
+        .addItem('Copy Manufacturer to All Parties', 'lukoCopyManufacturerToAllParties'))
+      .addSubMenu(ui.createMenu('Documents')
+        .addItem('Validate Documents', 'lukoValidateDocuments')
+        .addItem('Export Documents to Amazon', 'lukoExportDocumentsToAmazon')
+        .addSeparator()
+        .addItem('Bulk Upload from Folder', 'lukoBulkUploadDocuments')
+        .addItem('Organize by Product', 'lukoOrganizeDocumentsByProduct')
+        .addItem('Generate Coverage Report', 'lukoGenerateDocumentCoverageReport')
+        .addItem('Bulk Set Visibility', 'lukoBulkSetDocumentVisibility'))
+      .addSubMenu(ui.createMenu('Customization')
+        .addItem('Validate Customization', 'lukoValidateCustomization')
+        .addItem('Export Customization to Amazon', 'lukoExportCustomizationToAmazon')
+        .addSeparator()
+        .addItem('Apply Template', 'lukoApplyCustomizationTemplate')
+        .addItem('Bulk Enable', 'lukoBulkEnableCustomization')
+        .addItem('Bulk Disable', 'lukoBulkDisableCustomization')
+        .addItem('Calculate Pricing', 'lukoCalculatePricing'))
+      .addSubMenu(ui.createMenu('Brand Strip')
+        .addItem('Validate Brand Strip', 'lukoValidateBrandStrip')
+        .addItem('Export Brand Strip to Amazon', 'lukoExportBrandStripToAmazon'))
+      .addSubMenu(ui.createMenu('Brand Store')
+        .addItem('Validate Store Config', 'lukoValidateBrandStoreConfig')
+        .addItem('Validate Homepage', 'lukoValidateBrandStoreHomepage')
+        .addItem('Validate Page 2', 'lukoValidateBrandStorePage2')
+        .addItem('Validate Page 3', 'lukoValidateBrandStorePage3')
+        .addSeparator()
+        .addItem('Export Complete Store to Amazon', 'lukoExportBrandStoreToAmazon')
+        .addSeparator()
+        .addItem('Add Module to Page', 'lukoAddModuleToBrandStorePage'))
+      .addSubMenu(ui.createMenu('Videos')
+        .addItem('Validate Videos', 'lukoValidateVideos')
+        .addItem('Export Videos to Amazon', 'lukoExportVideosToAmazon')
+        .addSeparator()
+        .addItem('Auto-Calculate Video Count', 'lukoAutoCalculateVideoCount')
+        .addItem('Bulk Set Video Type', 'lukoBulkSetVideoType')
+        .addItem('Bulk Set Language', 'lukoBulkSetVideoLanguage')
+        .addItem('Generate Coverage Report', 'lukoGenerateVideoCoverageReport')
+        .addItem('Check Missing Metadata', 'lukoCheckMissingVideoMetadata')))
+
     .addSubMenu(ui.createMenu('Help & Settings')
       .addItem('How to Get Reverse Feed', 'showReverseFeedHelp')
       .addItem('General Help', 'lukoShowHelp')
@@ -1830,4 +1876,24 @@ function lukoViewTemplates() {
     const ui = SpreadsheetApp.getUi();
     ui.alert('Templates sheet not found. Generate spreadsheet first.', ui.ButtonSet.OK);
   }
+}
+
+// ========================================
+// EXTENDED FEATURES - BRAND STORE WRAPPERS
+// ========================================
+
+/**
+ * Wrapper functions for Brand Store page validation
+ * (Each menu item calls the generic function with specific page name)
+ */
+function lukoValidateBrandStoreHomepage() {
+  lukoValidateBrandStorePage('BrandStore-Homepage');
+}
+
+function lukoValidateBrandStorePage2() {
+  lukoValidateBrandStorePage('BrandStore-Page2');
+}
+
+function lukoValidateBrandStorePage3() {
+  lukoValidateBrandStorePage('BrandStore-Page3');
 }
