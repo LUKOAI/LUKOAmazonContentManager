@@ -76,6 +76,10 @@ exports.lukoSpApiHandler = async (req, res) => {
         result = await launchPromotion(operationData, marketplace, marketplaceId, accessToken);
         break;
 
+      case 'get_product_schema':
+        result = await getProductTypeSchema(operationData, marketplace, marketplaceId, accessToken, credentials.sellerId);
+        break;
+
       case 'translate':
         result = await translateText(operationData);
         break;
@@ -632,6 +636,180 @@ function sleep(ms) {
 }
 
 // ========================================
+// DYNAMIC PRODUCT TYPE SCHEMA FETCHER
+// ========================================
+
+/**
+ * Fetch Product Type Definition Schema from Amazon SP-API
+ * This provides LIVE, always-up-to-date validation rules per product type
+ *
+ * @param {Object} data - { productType: 'PRODUCT', requirements: 'LISTING' }
+ * @param {String} marketplace - 'DE', 'FR', 'IT', etc.
+ * @param {String} marketplaceId - Amazon marketplace ID
+ * @param {String} accessToken - LWA access token
+ * @param {String} sellerId - Seller/Merchant ID
+ * @returns {Object} JSON Schema with all product type requirements
+ */
+async function getProductTypeSchema(data, marketplace, marketplaceId, accessToken, sellerId) {
+  const { productType, requirements = 'LISTING' } = data;
+
+  console.log(`Fetching schema for product type: ${productType}, marketplace: ${marketplace}`);
+
+  const endpoint = getMarketplaceEndpoint(marketplace);
+  const url = `${endpoint}/definitions/2020-09-01/productTypes/${productType}`;
+
+  try {
+    const response = await axios.get(url, {
+      params: {
+        marketplaceIds: marketplaceId,
+        requirements: requirements, // LISTING, LISTING_PRODUCT_ONLY, or LISTING_OFFER_ONLY
+        locale: getMarketplaceLocale(marketplace)
+      },
+      headers: {
+        'x-amz-access-token': accessToken,
+        'Accept': 'application/json',
+        'User-Agent': 'LUKO-ACM/2.0.0'
+      }
+    });
+
+    const schema = response.data;
+
+    // Parse schema to extract validation rules
+    const validationRules = parseProductTypeSchema(schema, productType);
+
+    return {
+      status: 'SUCCESS',
+      productType: productType,
+      marketplace: marketplace,
+      schema: schema,
+      validationRules: validationRules,
+      message: `Schema fetched successfully for ${productType}`
+    };
+
+  } catch (error) {
+    console.error('Error fetching product type schema:', error.message);
+
+    // Fallback to basic validation if schema fetch fails
+    return {
+      status: 'ERROR',
+      productType: productType,
+      marketplace: marketplace,
+      error: error.message,
+      message: 'Using default validation rules',
+      validationRules: getDefaultValidationRules(productType)
+    };
+  }
+}
+
+/**
+ * Parse Amazon Product Type Definition Schema
+ * Extract field requirements, validations, character limits
+ *
+ * @param {Object} schema - Raw schema from Amazon
+ * @param {String} productType - Product type name
+ * @returns {Object} Parsed validation rules
+ */
+function parseProductTypeSchema(schema, productType) {
+  const validationRules = {
+    productType: productType,
+    requiredFields: [],
+    optionalFields: [],
+    fieldValidations: {},
+    maxLengths: {},
+    enums: {},
+    patterns: {}
+  };
+
+  if (!schema || !schema.schema || !schema.schema.properties) {
+    console.warn('Invalid schema structure, returning empty rules');
+    return validationRules;
+  }
+
+  const properties = schema.schema.properties;
+
+  // Iterate through all properties in schema
+  for (const [fieldName, fieldDef] of Object.entries(properties)) {
+    // Check if required
+    if (schema.schema.required && schema.schema.required.includes(fieldName)) {
+      validationRules.requiredFields.push(fieldName);
+    } else {
+      validationRules.optionalFields.push(fieldName);
+    }
+
+    // Extract validations
+    const validation = {};
+
+    if (fieldDef.maxLength) {
+      validationRules.maxLengths[fieldName] = fieldDef.maxLength;
+      validation.maxLength = fieldDef.maxLength;
+    }
+
+    if (fieldDef.minLength) {
+      validation.minLength = fieldDef.minLength;
+    }
+
+    if (fieldDef.pattern) {
+      validationRules.patterns[fieldName] = fieldDef.pattern;
+      validation.pattern = fieldDef.pattern;
+    }
+
+    if (fieldDef.enum) {
+      validationRules.enums[fieldName] = fieldDef.enum;
+      validation.enum = fieldDef.enum;
+    }
+
+    if (fieldDef.type) {
+      validation.type = fieldDef.type;
+    }
+
+    if (fieldDef.description) {
+      validation.description = fieldDef.description;
+    }
+
+    validationRules.fieldValidations[fieldName] = validation;
+  }
+
+  return validationRules;
+}
+
+/**
+ * Get default validation rules (fallback)
+ * Used when schema fetch fails
+ */
+function getDefaultValidationRules(productType) {
+  return {
+    productType: productType,
+    requiredFields: ['item_name', 'brand', 'product_description'],
+    maxLengths: {
+      'item_name': 200,
+      'bullet_point': 500,
+      'product_description': 2000,
+      'generic_keywords': 250
+    },
+    message: 'Using default validation rules - schema fetch failed'
+  };
+}
+
+/**
+ * Get marketplace locale for schema requests
+ */
+function getMarketplaceLocale(marketplace) {
+  const locales = {
+    'DE': 'de_DE',
+    'FR': 'fr_FR',
+    'IT': 'it_IT',
+    'ES': 'es_ES',
+    'UK': 'en_GB',
+    'NL': 'nl_NL',
+    'BE': 'nl_BE',
+    'PL': 'pl_PL',
+    'SE': 'sv_SE',
+    'IE': 'en_IE'
+  };
+  return locales[marketplace] || 'en_GB';
+}
+
+// ========================================
 // EXPORTS
 // ========================================
 
@@ -644,6 +822,7 @@ if (typeof module !== 'undefined' && module.exports) {
     importProducts,
     uploadImages,
     publishAPlusContent,
-    createCoupon
+    createCoupon,
+    getProductTypeSchema
   };
 }

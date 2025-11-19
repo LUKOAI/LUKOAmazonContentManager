@@ -47,6 +47,8 @@ function lukoGenerateFullSpreadsheet() {
     generateAPlusPremiumSheet(ss);
     generateImagesSheet(ss);
     generateVariationsSheet(ss);
+    generateCouponsSheet(ss);
+    generatePromoCodesSheet(ss);
     generateLogsSheet(ss);
     generateErrorLogSheet(ss);
     generateSettingsSheet(ss);
@@ -606,6 +608,252 @@ function generateVariationsSheet(ss) {
     .setFontColor('#FFFFFF');
 
   Logger.log('Variations sheet generated');
+}
+
+// ========================================
+// COUPONS SHEET
+// ========================================
+
+function generateCouponsSheet(ss) {
+  const sheet = ss.insertSheet('Coupons');
+
+  // Header
+  sheet.getRange('A1:M1').merge()
+    .setValue('🎟️ Coupons & Promotions Manager')
+    .setFontWeight('bold')
+    .setFontSize(16)
+    .setBackground('#E91E63')
+    .setFontColor('#FFFFFF')
+    .setHorizontalAlignment('center');
+
+  // Instructions
+  sheet.getRange('A2:M2').merge()
+    .setValue('Create and manage Amazon coupons and promotions. Generated codes will appear in PromoCodes sheet.')
+    .setFontStyle('italic')
+    .setBackground('#FCE4EC')
+    .setWrapText(true);
+
+  // Column headers
+  const headers = [
+    '☑️ Create',
+    'Coupon ID',
+    'Title',
+    'Discount Type',
+    'Discount Value',
+    'Target Type',
+    'Target ASINs/SKUs',
+    'Start Date',
+    'End Date',
+    'Total Budget',
+    'Uses Per Customer',
+    'Code Visibility',
+    'Generated Codes Count',
+    'Status',
+    'Created Date',
+    'Notes'
+  ];
+
+  sheet.getRange(3, 1, 1, headers.length).setValues([headers])
+    .setFontWeight('bold')
+    .setBackground('#F06292')
+    .setFontColor('#FFFFFF');
+
+  // Data validation for Discount Type
+  const discountTypeRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['Percentage', 'Fixed Amount'], true)
+    .build();
+  sheet.getRange(4, 4, 100, 1).setDataValidation(discountTypeRule);
+
+  // Data validation for Target Type
+  const targetTypeRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['All Products', 'Specific ASINs', 'Specific SKUs', 'Category'], true)
+    .build();
+  sheet.getRange(4, 6, 100, 1).setDataValidation(targetTypeRule);
+
+  // Data validation for Code Visibility
+  const visibilityRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['Public (Single Code)', 'Private (Multiple Codes)', 'Auto-Apply'], true)
+    .build();
+  sheet.getRange(4, 12, 100, 1).setDataValidation(visibilityRule);
+
+  // Column widths
+  sheet.setColumnWidth(1, 80);  // Checkbox
+  sheet.setColumnWidth(2, 150); // Coupon ID
+  sheet.setColumnWidth(3, 200); // Title
+  sheet.setColumnWidth(4, 130); // Discount Type
+  sheet.setColumnWidth(5, 110); // Discount Value
+  sheet.setColumnWidth(6, 130); // Target Type
+  sheet.setColumnWidth(7, 250); // Target ASINs/SKUs
+  sheet.setColumnWidth(8, 110); // Start Date
+  sheet.setColumnWidth(9, 110); // End Date
+  sheet.setColumnWidth(10, 100); // Budget
+  sheet.setColumnWidth(11, 130); // Uses Per Customer
+  sheet.setColumnWidth(12, 180); // Code Visibility
+  sheet.setColumnWidth(13, 150); // Generated Codes Count
+  sheet.setColumnWidth(14, 100); // Status
+  sheet.setColumnWidth(15, 120); // Created Date
+  sheet.setColumnWidth(16, 200); // Notes
+
+  // Example row
+  const exampleRow = [
+    false,
+    'SUMMER2025',
+    '15% Summer Sale on Furniture',
+    'Percentage',
+    15,
+    'Specific ASINs',
+    'B0ABC123, B0DEF456, B0GHI789',
+    '2025-06-01',
+    '2025-08-31',
+    5000,
+    1,
+    'Public (Single Code)',
+    1,
+    'Draft',
+    new Date(),
+    'Summer promotion for furniture category'
+  ];
+
+  sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow])
+    .setBackground('#FFF0F5')
+    .setFontStyle('italic');
+
+  // Instructions section
+  const instrRow = 7;
+  sheet.getRange(instrRow, 1, 1, 16).merge()
+    .setValue('💡 How to Create Coupons')
+    .setFontWeight('bold')
+    .setBackground('#F8BBD0')
+    .setHorizontalAlignment('center');
+
+  const instructions = [
+    ['1. Fill in coupon details (Title, Discount Type, Value, Dates)'],
+    ['2. Choose Target Type: All Products, Specific ASINs, or Category'],
+    ['3. Select Code Visibility:'],
+    ['   • Public (Single Code): One code for everyone (e.g., SUMMER15)'],
+    ['   • Private (Multiple Codes): Generate unique codes (e.g., 1000 unique codes)'],
+    ['   • Auto-Apply: Automatically applies at checkout (no code needed)'],
+    ['4. Check ☑️ Create box'],
+    ['5. Menu → Promotions → Create Coupons'],
+    ['6. Generated codes will appear in PromoCodes sheet'],
+    [''],
+    ['⚠️ Important:'],
+    ['• Budget in EUR (total amount Amazon will reimburse you)'],
+    ['• Uses Per Customer: how many times one customer can use it (usually 1)'],
+    ['• For Private codes: enter count in "Generated Codes Count" BEFORE creating']
+  ];
+
+  sheet.getRange(instrRow + 1, 1, instructions.length, 1).setValues(instructions)
+    .setBackground('#FCE4EC')
+    .setWrapText(true);
+
+  Logger.log('Coupons sheet generated');
+}
+
+// ========================================
+// PROMO CODES SHEET
+// ========================================
+
+function generatePromoCodesSheet(ss) {
+  const sheet = ss.insertSheet('PromoCodes');
+
+  // Header
+  sheet.getRange('A1:H1').merge()
+    .setValue('🎫 Generated Promo Codes')
+    .setFontWeight('bold')
+    .setFontSize(16)
+    .setBackground('#9C27B0')
+    .setFontColor('#FFFFFF')
+    .setHorizontalAlignment('center');
+
+  // Instructions
+  sheet.getRange('A2:H2').merge()
+    .setValue('This sheet is automatically populated when you create coupons with "Private (Multiple Codes)" visibility.')
+    .setFontStyle('italic')
+    .setBackground('#E1BEE7')
+    .setWrapText(true);
+
+  // Column headers
+  const headers = [
+    'Coupon ID',
+    'Promo Code',
+    'Status',
+    'Used Count',
+    'Max Uses',
+    'Created Date',
+    'Claimed By',
+    'Claimed Date'
+  ];
+
+  sheet.getRange(3, 1, 1, headers.length).setValues([headers])
+    .setFontWeight('bold')
+    .setBackground('#BA68C8')
+    .setFontColor('#FFFFFF');
+
+  // Example codes (will be deleted when first real codes imported)
+  const exampleCodes = [
+    ['SUMMER2025', 'SUM-ABC-123', 'Active', 0, 1, new Date(), '', ''],
+    ['SUMMER2025', 'SUM-DEF-456', 'Active', 0, 1, new Date(), '', ''],
+    ['SUMMER2025', 'SUM-GHI-789', 'Active', 1, 1, new Date(), 'customer@example.com', new Date()],
+    ['SUMMER2025', 'SUM-JKL-012', 'Active', 0, 1, new Date(), '', '']
+  ];
+
+  sheet.getRange(4, 1, exampleCodes.length, exampleCodes[0].length).setValues(exampleCodes)
+    .setBackground('#F3E5F5')
+    .setFontStyle('italic');
+
+  // Column widths
+  sheet.setColumnWidth(1, 150); // Coupon ID
+  sheet.setColumnWidth(2, 150); // Promo Code
+  sheet.setColumnWidth(3, 100); // Status
+  sheet.setColumnWidth(4, 100); // Used Count
+  sheet.setColumnWidth(5, 100); // Max Uses
+  sheet.setColumnWidth(6, 150); // Created Date
+  sheet.setColumnWidth(7, 200); // Claimed By
+  sheet.setColumnWidth(8, 150); // Claimed Date
+
+  // Usage stats section
+  const statsRow = 4 + exampleCodes.length + 2;
+  sheet.getRange(statsRow, 1, 1, 8).merge()
+    .setValue('📊 Usage Statistics (per Coupon ID)')
+    .setFontWeight('bold')
+    .setBackground('#CE93D8')
+    .setFontColor('#FFFFFF')
+    .setHorizontalAlignment('center');
+
+  const statsHeaders = [
+    'Coupon ID',
+    'Total Codes Generated',
+    'Total Used',
+    'Total Available',
+    'Usage %',
+    'Total Revenue Impact',
+    'Average Discount',
+    'Last Used'
+  ];
+
+  sheet.getRange(statsRow + 1, 1, 1, statsHeaders.length).setValues([statsHeaders])
+    .setFontWeight('bold')
+    .setBackground('#E1BEE7');
+
+  // Example stats
+  const exampleStats = [
+    ['SUMMER2025', 1000, 247, 753, '24.7%', '€3,705', '€15.00', new Date()],
+    ['WINTER2024', 500, 482, 18, '96.4%', '€7,230', '€15.00', new Date()]
+  ];
+
+  sheet.getRange(statsRow + 2, 1, exampleStats.length, exampleStats[0].length).setValues(exampleStats)
+    .setBackground('#F3E5F5')
+    .setFontStyle('italic');
+
+  // Instructions footer
+  sheet.getRange(statsRow + 4 + exampleStats.length, 1, 1, 8).merge()
+    .setValue('💡 TIP: You can export this sheet to CSV and distribute codes via email campaigns, influencers, or your website.')
+    .setBackground('#FFF9C4')
+    .setFontStyle('italic')
+    .setWrapText(true);
+
+  Logger.log('PromoCodes sheet generated');
 }
 
 // ========================================
