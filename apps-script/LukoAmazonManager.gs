@@ -160,22 +160,32 @@ function onOpen() {
       .addItem('Import Inventory', 'lukoImportInventory')
       .addItem('Import A+ Content', 'lukoImportAPlus'))
 
+    .addSubMenu(ui.createMenu('Validation')
+      .addItem('✅ Validate Selected Products', 'lukoValidateSelectedProducts')
+      .addItem('Clear Error Highlights', 'lukoClearErrorHighlights')
+      .addSeparator()
+      .addItem('View ErrorLog Sheet', 'lukoViewErrorLog'))
+
+    .addSubMenu(ui.createMenu('Templates')
+      .addItem('📋 Template Selector', 'lukoShowTemplateSelector')
+      .addItem('Apply Template Highlighting', 'lukoApplyTemplateHighlighting')
+      .addItem('Clear Template Highlighting', 'lukoClearTemplateHighlighting')
+      .addSeparator()
+      .addItem('View Templates Sheet', 'lukoViewTemplates'))
+
     .addSubMenu(ui.createMenu('Tools')
       .addItem('🎨 Generate Spreadsheet', 'lukoGenerateFullSpreadsheet')
       .addSeparator()
-      .addItem('Validate Data', 'lukoValidateData')
-      .addItem('Apply Template', 'lukoApplyTemplate')
       .addItem('Translate Content', 'lukoTranslateContent')
       .addItem('Generate Variants', 'lukoGenerateVariants')
       .addSeparator()
-      .addItem('Clear Errors', 'lukoClearErrors')
       .addItem('Refresh Status', 'lukoRefreshStatus'))
 
     .addSubMenu(ui.createMenu('Reports')
       .addItem('Content Completion Report', 'lukoReportCompletion')
       .addItem('Language Coverage Report', 'lukoReportLanguageCoverage')
       .addItem('View Recent Logs', 'lukoViewLogs')
-      .addItem('Show Errors', 'lukoShowErrors'))
+      .addItem('View Error Log', 'lukoViewErrorLog'))
 
     .addSubMenu(ui.createMenu('Help & Settings')
       .addItem('How to Get Reverse Feed', 'showReverseFeedHelp')
@@ -1796,4 +1806,28 @@ function lukoShowAbout() {
     `Version: ${CONFIG.version}\n\nEnterprise Multi-Language Content Management for Amazon Sellers\n\nDeveloped for managing ALL product content across European Amazon marketplaces.`,
     ui.ButtonSet.OK
   );
+}
+
+function lukoViewErrorLog() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const errorLogSheet = ss.getSheetByName('ErrorLog');
+  if (errorLogSheet) {
+    ss.setActiveSheet(errorLogSheet);
+    SpreadsheetApp.getActiveSpreadsheet().toast('Viewing ErrorLog sheet', 'Success', 2);
+  } else {
+    const ui = SpreadsheetApp.getUi();
+    ui.alert('ErrorLog sheet not found. Generate spreadsheet first.', ui.ButtonSet.OK);
+  }
+}
+
+function lukoViewTemplates() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const templatesSheet = ss.getSheetByName('Templates');
+  if (templatesSheet) {
+    ss.setActiveSheet(templatesSheet);
+    SpreadsheetApp.getActiveSpreadsheet().toast('Viewing Templates sheet', 'Success', 2);
+  } else {
+    const ui = SpreadsheetApp.getUi();
+    ui.alert('Templates sheet not found. Generate spreadsheet first.', ui.ButtonSet.OK);
+  }
 }
