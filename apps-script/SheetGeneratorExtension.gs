@@ -41,11 +41,12 @@ function generateGpsrSheet() {
     'Export Status', 'Export DateTime', 'Last Modified', 'Modified By', 'Error Messages'
   ];
 
-  sheet.getRange(3, 1, 1, headers.length).setValues([headers])
-    .setFontWeight('bold')
-    .setBackground('#1a73e8')
-    .setFontColor('#FFFFFF')
-    .setWrapText(true);
+  sheet.getRange(3, 1, 1, headers.length).setValues([headers]);
+  const range3 = sheet.getRange(3, 1, 1, headers.length);
+  range3.setFontWeight('bold');
+  range3.setBackground('#1a73e8');
+  range3.setFontColor('#FFFFFF');
+  range3.setWrapText(true);
 
   // Freeze header rows
   sheet.setFrozenRows(3);
@@ -76,20 +77,20 @@ function generateGpsrSheet() {
   const complianceRangeYes = sheet.getRange(4, 4, 1000, 1);
   const ruleYes = SpreadsheetApp.newConditionalFormatRule()
     .whenTextEqualTo('Yes')
-    .setBackground('#d4f4dd')
+  range2.setBackground('#d4f4dd');
     .setRanges([complianceRangeYes])
     .build();
 
   const ruleNo = SpreadsheetApp.newConditionalFormatRule()
     .whenTextEqualTo('No')
-    .setBackground('#fff4c3')
+  range2.setBackground('#fff4c3');
     .setRanges([complianceRangeYes])
     .build();
 
   const statusRange = sheet.getRange(4, 23, 1000, 1);
   const ruleFailed = SpreadsheetApp.newConditionalFormatRule()
     .whenTextEqualTo('FAILED')
-    .setBackground('#f4c7c3')
+  range2.setBackground('#f4c7c3');
     .setRanges([statusRange])
     .build();
 
@@ -124,8 +125,8 @@ function generateGpsrSheet() {
   ];
 
   sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow])
-    .setBackground('#f8f9fa')
-    .setFontStyle('italic');
+  range2.setBackground('#f8f9fa');
+  range2.setFontStyle('italic');
 
   Logger.log('GPSR sheet generated');
 }
@@ -145,14 +146,14 @@ function generateDocumentsSheet() {
   range.setFontSize(14);
   range.setBackground('#0f9d58');
   range.setFontColor('#FFFFFF');
-  range.setHorizontalAlignment('center');;
+  range.setHorizontalAlignment('center');
 
   // Instructions
-  const range = sheet.getRange('A2:Q2');
-  range.setValue('Upload and manage product documents (user manuals, warranties, certificates, etc.);. Documents will be visible to customers on product pages.')
-    .setFontStyle('italic')
-    .setBackground('#d4edda')
-    .setWrapText(true);
+  const range2 = sheet.getRange('A2:Q2');
+  range2.setValue('Upload and manage product documents (user manuals, warranties, certificates, etc.). Documents will be visible to customers on product pages.');
+  range2.setFontStyle('italic');
+  range2.setBackground('#d4edda');
+  range2.setWrapText(true);
 
   // Column headers
   const headers = [
@@ -162,11 +163,12 @@ function generateDocumentsSheet() {
     'Export Status', 'Export DateTime', 'Last Modified', 'Modified By', 'Error Messages'
   ];
 
-  sheet.getRange(3, 1, 1, headers.length).setValues([headers])
-    .setFontWeight('bold')
-    .setBackground('#0f9d58')
-    .setFontColor('#FFFFFF')
-    .setWrapText(true);
+  sheet.getRange(3, 1, 1, headers.length).setValues([headers]);
+  const range3 = sheet.getRange(3, 1, 1, headers.length);
+  range3.setFontWeight('bold');
+  range3.setBackground('#0f9d58');
+  range3.setFontColor('#FFFFFF');
+  range3.setWrapText(true);
 
   sheet.setFrozenRows(3);
   sheet.setFrozenColumns(3);
@@ -227,8 +229,8 @@ function generateDocumentsSheet() {
   ];
 
   sheet.getRange(4, 1, examples.length, examples[0].length).setValues(examples)
-    .setBackground('#f8f9fa')
-    .setFontStyle('italic');
+  range2.setBackground('#f8f9fa');
+  range2.setFontStyle('italic');
 
   Logger.log('Documents sheet generated');
 }
@@ -248,14 +250,14 @@ function generateCustomizationSheet() {
   range.setFontSize(14);
   range.setBackground('#9c27b0');
   range.setFontColor('#FFFFFF');
-  range.setHorizontalAlignment('center');;
+  range.setHorizontalAlignment('center');
 
   // Instructions
-  const range = sheet.getRange('A2:BF2');
-  range.setValue('Enable product customization: text engraving, color selection, material choice, image upload. Customers can personalize products before purchase.');
-  range.setFontStyle('italic');
-  range.setBackground('#f3e5f5');
-  range.setWrapText(true);;
+  const range2 = sheet.getRange('A2:BF2');
+  range2.setValue('Enable product customization: text engraving, color selection, material choice, image upload. Customers can personalize products before purchase.');
+  range2.setFontStyle('italic');
+  range2.setBackground('#f3e5f5');
+  range2.setWrapText(true);
 
   // Column headers (grouped for clarity)
   const headers = [
@@ -278,12 +280,13 @@ function generateCustomizationSheet() {
     'Export Status', 'Export DateTime', 'Last Modified', 'Modified By', 'Error Messages'
   ];
 
-  sheet.getRange(3, 1, 1, headers.length).setValues([headers])
-    .setFontWeight('bold')
-    .setBackground('#9c27b0')
-    .setFontColor('#FFFFFF')
-    .setWrapText(true)
-    .setFontSize(9);
+  sheet.getRange(3, 1, 1, headers.length).setValues([headers]);
+  const range3 = sheet.getRange(3, 1, 1, headers.length);
+  range3.setFontWeight('bold');
+  range3.setBackground('#9c27b0');
+  range3.setFontColor('#FFFFFF');
+  range3.setWrapText(true);
+  range3.setFontSize(9);
 
   sheet.setFrozenRows(3);
   sheet.setFrozenColumns(3);
@@ -331,17 +334,17 @@ function generateCustomizationSheet() {
   ];
 
   sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow])
-    .setBackground('#f8f9fa')
-    .setFontStyle('italic');
+  range2.setBackground('#f8f9fa');
+  range2.setFontStyle('italic');
 
   // Templates section
   const templatesRow = 7;
   sheet.getRange(templatesRow, 1, 1, 58).merge()
-    .setValue('📋 Pre-built Customization Templates')
-    .setFontWeight('bold')
-    .setBackground('#ce93d8')
-    .setFontColor('#FFFFFF')
-    .setHorizontalAlignment('center');
+    range2.setValue('📋 Pre-built Customization Templates');
+  range2.setFontWeight('bold');
+  range2.setBackground('#ce93d8');
+  range2.setFontColor('#FFFFFF');
+  range2.setHorizontalAlignment('center');
 
   const templateExamples = [
     ['Template Name', 'Type', 'Description', 'Use For'],
@@ -353,7 +356,7 @@ function generateCustomizationSheet() {
   ];
 
   sheet.getRange(templatesRow + 1, 1, templateExamples.length, 4).setValues(templateExamples)
-    .setBackground('#f3e5f5');
+  range2.setBackground('#f3e5f5');
   sheet.getRange(templatesRow + 1, 1, 1, 4).setFontWeight('bold');
 
   Logger.log('Customization sheet generated');
@@ -374,14 +377,14 @@ function generateBrandStripSheet() {
   range.setFontSize(14);
   range.setBackground('#ff6f00');
   range.setFontColor('#FFFFFF');
-  range.setHorizontalAlignment('center');;
+  range.setHorizontalAlignment('center');
 
   // Instructions
-  const range = sheet.getRange('A2:AB2');
-  range.setValue('Create brand strip banners for product pages. Classic = simple logo/headline. Enhanced = hero image with products showcase.');
-  range.setFontStyle('italic');
-  range.setBackground('#fff3e0');
-  range.setWrapText(true);;
+  const range2 = sheet.getRange('A2:AB2');
+  range2.setValue('Create brand strip banners for product pages. Classic = simple logo/headline. Enhanced = hero image with products showcase.');
+  range2.setFontStyle('italic');
+  range2.setBackground('#fff3e0');
+  range2.setWrapText(true);
 
   // Column headers
   const headers = [
@@ -397,11 +400,12 @@ function generateBrandStripSheet() {
     'Export Status', 'Export DateTime', 'Last Modified', 'Modified By', 'Error Messages'
   ];
 
-  sheet.getRange(3, 1, 1, headers.length).setValues([headers])
-    .setFontWeight('bold')
-    .setBackground('#ff6f00')
-    .setFontColor('#FFFFFF')
-    .setWrapText(true);
+  sheet.getRange(3, 1, 1, headers.length).setValues([headers]);
+  const range3 = sheet.getRange(3, 1, 1, headers.length);
+  range3.setFontWeight('bold');
+  range3.setBackground('#ff6f00');
+  range3.setFontColor('#FFFFFF');
+  range3.setWrapText(true);
 
   sheet.setFrozenRows(3);
   sheet.setFrozenColumns(3);
@@ -439,8 +443,8 @@ function generateBrandStripSheet() {
   ];
 
   sheet.getRange(4, 1, examples.length, examples[0].length).setValues(examples)
-    .setBackground('#f8f9fa')
-    .setFontStyle('italic');
+  range2.setBackground('#f8f9fa');
+  range2.setFontStyle('italic');
 
   Logger.log('BrandStrip sheet generated');
 }
@@ -460,14 +464,14 @@ function generateVideosSheet() {
   range.setFontSize(14);
   range.setBackground('#e91e63');
   range.setFontColor('#FFFFFF');
-  range.setHorizontalAlignment('center');;
+  range.setHorizontalAlignment('center');
 
   // Instructions
-  const range = sheet.getRange('A2:AC2');
-  range.setValue('Upload product videos (up to 3 per product);. Video increases conversion by 80%! Supported: MP4, MOV, AVI. Max 500MB.')
-    .setFontStyle('italic')
-    .setBackground('#fce4ec')
-    .setWrapText(true);
+  const range2 = sheet.getRange('A2:AC2');
+  range2.setValue('Upload product videos (up to 3 per product);. Video increases conversion by 80%! Supported: MP4, MOV, AVI. Max 500MB.')
+  range2.setFontStyle('italic');
+  range2.setBackground('#fce4ec');
+  range2.setWrapText(true);
 
   // Column headers
   const headers = [
@@ -482,11 +486,12 @@ function generateVideosSheet() {
     'Export Status', 'Export DateTime', 'Last Modified', 'Modified By', 'Error Messages'
   ];
 
-  sheet.getRange(3, 1, 1, headers.length).setValues([headers])
-    .setFontWeight('bold')
-    .setBackground('#e91e63')
-    .setFontColor('#FFFFFF')
-    .setWrapText(true);
+  sheet.getRange(3, 1, 1, headers.length).setValues([headers]);
+  const range3 = sheet.getRange(3, 1, 1, headers.length);
+  range3.setFontWeight('bold');
+  range3.setBackground('#e91e63');
+  range3.setFontColor('#FFFFFF');
+  range3.setWrapText(true);
 
   sheet.setFrozenRows(3);
   sheet.setFrozenColumns(3);
@@ -534,8 +539,8 @@ function generateVideosSheet() {
   ];
 
   sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow])
-    .setBackground('#f8f9fa')
-    .setFontStyle('italic');
+  range2.setBackground('#f8f9fa');
+  range2.setFontStyle('italic');
 
   Logger.log('Videos sheet generated');
 }
@@ -565,14 +570,14 @@ function generateBrandStoreConfigSheet() {
   range.setFontSize(14);
   range.setBackground('#673ab7');
   range.setFontColor('#FFFFFF');
-  range.setHorizontalAlignment('center');;
+  range.setHorizontalAlignment('center');
 
   // Instructions
-  const range = sheet.getRange('A2:O2');
-  range.setValue('Configure your multi-page Amazon Brand Store. Build a complete shopping experience with homepage, category pages, and more.');
-  range.setFontStyle('italic');
-  range.setBackground('#ede7f6');
-  range.setWrapText(true);;
+  const range2 = sheet.getRange('A2:O2');
+  range2.setValue('Configure your multi-page Amazon Brand Store. Build a complete shopping experience with homepage, category pages, and more.');
+  range2.setFontStyle('italic');
+  range2.setBackground('#ede7f6');
+  range2.setWrapText(true);
 
   // Column headers
   const headers = [
@@ -582,11 +587,12 @@ function generateBrandStoreConfigSheet() {
     'Status', 'Last Published', 'Last Modified'
   ];
 
-  sheet.getRange(3, 1, 1, headers.length).setValues([headers])
-    .setFontWeight('bold')
-    .setBackground('#673ab7')
-    .setFontColor('#FFFFFF')
-    .setWrapText(true);
+  sheet.getRange(3, 1, 1, headers.length).setValues([headers]);
+  const range3 = sheet.getRange(3, 1, 1, headers.length);
+  range3.setFontWeight('bold');
+  range3.setBackground('#673ab7');
+  range3.setFontColor('#FFFFFF');
+  range3.setWrapText(true);
 
   // Data validation - Homepage Layout
   const layoutRule = SpreadsheetApp.newDataValidation()
@@ -615,8 +621,8 @@ function generateBrandStoreConfigSheet() {
   ];
 
   sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow])
-    .setBackground('#f8f9fa')
-    .setFontStyle('italic');
+  range2.setBackground('#f8f9fa');
+  range2.setFontStyle('italic');
 
   Logger.log('BrandStore-Config sheet generated');
 }
@@ -634,14 +640,14 @@ function generateBrandStorePageSheet(sheetName) {
   range.setFontSize(14);
   range.setBackground('#673ab7');
   range.setFontColor('#FFFFFF');
-  range.setHorizontalAlignment('center');;
+  range.setHorizontalAlignment('center');
 
   // Instructions
-  const range = sheet.getRange('A2:AL2');
-  range.setValue('Each row = one module. Modules stack vertically. Use Module Order to arrange. Choose Module Type, then fill relevant fields.');
-  range.setFontStyle('italic');
-  range.setBackground('#ede7f6');
-  range.setWrapText(true);;
+  const range2 = sheet.getRange('A2:AL2');
+  range2.setValue('Each row = one module. Modules stack vertically. Use Module Order to arrange. Choose Module Type, then fill relevant fields.');
+  range2.setFontStyle('italic');
+  range2.setBackground('#ede7f6');
+  range2.setWrapText(true);
 
   // Column headers
   const headers = [
@@ -656,12 +662,13 @@ function generateBrandStorePageSheet(sheetName) {
     'Notes'
   ];
 
-  sheet.getRange(3, 1, 1, headers.length).setValues([headers])
-    .setFontWeight('bold')
-    .setBackground('#673ab7')
-    .setFontColor('#FFFFFF')
-    .setWrapText(true)
-    .setFontSize(9);
+  sheet.getRange(3, 1, 1, headers.length).setValues([headers]);
+  const range3 = sheet.getRange(3, 1, 1, headers.length);
+  range3.setFontWeight('bold');
+  range3.setBackground('#673ab7');
+  range3.setFontColor('#FFFFFF');
+  range3.setWrapText(true);
+  range3.setFontSize(9);
 
   sheet.setFrozenRows(3);
   sheet.setFrozenColumns(3);
@@ -712,8 +719,8 @@ function generateBrandStorePageSheet(sheetName) {
     ];
 
     sheet.getRange(4, 1, examples.length, examples[0].length).setValues(examples)
-      .setBackground('#f8f9fa')
-      .setFontStyle('italic');
+      range2.setBackground('#f8f9fa');
+      range2.setFontStyle('italic');
   }
 
   Logger.log(`${sheetName} generated`);
