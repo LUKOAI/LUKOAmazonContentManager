@@ -35,7 +35,7 @@ function generateGpsrSheet() {
   instrRange.setValue('General Product Safety Regulation - Required for ALL products sold in EU. Fill in manufacturer, importer, and responsible person details.');
   instrRange.setFontStyle('italic');
   instrRange.setBackground('#d3e3fd');
-  instrRange.setWrapText(true);
+  instrRange.setWrap(true);
 
   // Column headers
   const headers = [
@@ -53,7 +53,7 @@ function generateGpsrSheet() {
   range3.setFontWeight('bold');
   range3.setBackground('#1a73e8');
   range3.setFontColor('#FFFFFF');
-  range3.setWrapText(true);
+  range3.setWrap(true);
 
   // Freeze header rows
   sheet.setFrozenRows(3);
@@ -168,7 +168,7 @@ function generateDocumentsSheet() {
   range2.setValue('Upload and manage product documents (user manuals, warranties, certificates, etc.). Documents will be visible to customers on product pages.');
   range2.setFontStyle('italic');
   range2.setBackground('#d4edda');
-  range2.setWrapText(true);
+  range2.setWrap(true);
 
   // Column headers
   const headers = [
@@ -183,7 +183,7 @@ function generateDocumentsSheet() {
   range3.setFontWeight('bold');
   range3.setBackground('#0f9d58');
   range3.setFontColor('#FFFFFF');
-  range3.setWrapText(true);
+  range3.setWrap(true);
 
   sheet.setFrozenRows(3);
   sheet.setFrozenColumns(3);
@@ -280,7 +280,7 @@ function generateCustomizationSheet() {
   range2.setValue('Enable product customization: text engraving, color selection, material choice, image upload. Customers can personalize products before purchase.');
   range2.setFontStyle('italic');
   range2.setBackground('#f3e5f5');
-  range2.setWrapText(true);
+  range2.setWrap(true);
 
   // Column headers (grouped for clarity)
   const headers = [
@@ -308,7 +308,7 @@ function generateCustomizationSheet() {
   range3.setFontWeight('bold');
   range3.setBackground('#9c27b0');
   range3.setFontColor('#FFFFFF');
-  range3.setWrapText(true);
+  range3.setWrap(true);
   range3.setFontSize(9);
 
   sheet.setFrozenRows(3);
@@ -416,7 +416,7 @@ function generateBrandStripSheet() {
   range2.setValue('Create brand strip banners for product pages. Classic = simple logo/headline. Enhanced = hero image with products showcase.');
   range2.setFontStyle('italic');
   range2.setBackground('#fff3e0');
-  range2.setWrapText(true);
+  range2.setWrap(true);
 
   // Column headers
   const headers = [
@@ -437,7 +437,7 @@ function generateBrandStripSheet() {
   range3.setFontWeight('bold');
   range3.setBackground('#ff6f00');
   range3.setFontColor('#FFFFFF');
-  range3.setWrapText(true);
+  range3.setWrap(true);
 
   sheet.setFrozenRows(3);
   sheet.setFrozenColumns(3);
@@ -511,7 +511,7 @@ function generateVideosSheet() {
   range2.setValue('Upload product videos (up to 3 per product);. Video increases conversion by 80%! Supported: MP4, MOV, AVI. Max 500MB.')
   range2.setFontStyle('italic');
   range2.setBackground('#fce4ec');
-  range2.setWrapText(true);
+  range2.setWrap(true);
 
   // Column headers
   const headers = [
@@ -531,7 +531,7 @@ function generateVideosSheet() {
   range3.setFontWeight('bold');
   range3.setBackground('#e91e63');
   range3.setFontColor('#FFFFFF');
-  range3.setWrapText(true);
+  range3.setWrap(true);
 
   sheet.setFrozenRows(3);
   sheet.setFrozenColumns(3);
@@ -625,7 +625,7 @@ function generateBrandStoreConfigSheet() {
   range2.setValue('Configure your multi-page Amazon Brand Store. Build a complete shopping experience with homepage, category pages, and more.');
   range2.setFontStyle('italic');
   range2.setBackground('#ede7f6');
-  range2.setWrapText(true);
+  range2.setWrap(true);
 
   // Column headers
   const headers = [
@@ -640,7 +640,7 @@ function generateBrandStoreConfigSheet() {
   range3.setFontWeight('bold');
   range3.setBackground('#673ab7');
   range3.setFontColor('#FFFFFF');
-  range3.setWrapText(true);
+  range3.setWrap(true);
 
   // Data validation - Homepage Layout
   const layoutRule = SpreadsheetApp.newDataValidation()
@@ -703,7 +703,7 @@ function generateBrandStorePageSheet(sheetName) {
   range2.setValue('Each row = one module. Modules stack vertically. Use Module Order to arrange. Choose Module Type, then fill relevant fields.');
   range2.setFontStyle('italic');
   range2.setBackground('#ede7f6');
-  range2.setWrapText(true);
+  range2.setWrap(true);
 
   // Column headers
   const headers = [
@@ -723,7 +723,7 @@ function generateBrandStorePageSheet(sheetName) {
   range3.setFontWeight('bold');
   range3.setBackground('#673ab7');
   range3.setFontColor('#FFFFFF');
-  range3.setWrapText(true);
+  range3.setWrap(true);
   range3.setFontSize(9);
 
   sheet.setFrozenRows(3);
