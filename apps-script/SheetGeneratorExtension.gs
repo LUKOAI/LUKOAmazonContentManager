@@ -133,8 +133,8 @@ function generateGpsrSheet() {
 
   sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow]);
   const range4 = sheet.getRange(4, 1, 1, exampleRow.length);
-  range4.setBackground(\'#f8f9fa\');
-  range4.setFontStyle(\'italic\');
+  range4.setBackground('#f8f9fa');
+  range4.setFontStyle('italic');
 
   Logger.log('GPSR sheet generated');
 }
@@ -358,8 +358,8 @@ function generateCustomizationSheet() {
 
   sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow]);
   const range4 = sheet.getRange(4, 1, 1, exampleRow.length);
-  range4.setBackground(\'#f8f9fa\');
-  range4.setFontStyle(\'italic\');
+  range4.setBackground('#f8f9fa');
+  range4.setFontStyle('italic');
 
   // Templates section
   const templatesRow = 7;
@@ -580,8 +580,8 @@ function generateVideosSheet() {
 
   sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow]);
   const range4 = sheet.getRange(4, 1, 1, exampleRow.length);
-  range4.setBackground(\'#f8f9fa\');
-  range4.setFontStyle(\'italic\');
+  range4.setBackground('#f8f9fa');
+  range4.setFontStyle('italic');
 
   Logger.log('Videos sheet generated');
 }
@@ -670,8 +670,8 @@ function generateBrandStoreConfigSheet() {
 
   sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow]);
   const range4 = sheet.getRange(4, 1, 1, exampleRow.length);
-  range4.setBackground(\'#f8f9fa\');
-  range4.setFontStyle(\'italic\');
+  range4.setBackground('#f8f9fa');
+  range4.setFontStyle('italic');
 
   Logger.log('BrandStore-Config sheet generated');
 }
