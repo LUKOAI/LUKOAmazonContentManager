@@ -142,15 +142,17 @@ function generateConfigSheet() {
   // Set sheet color
   sheet.setTabColor('#4a86e8'); // Blue
 
-  // Header row
+  // Header row (NO MERGE to avoid conflicts)
   sheet.getRange('A1').setValue('LUKO Amazon Content Manager - Configuration');
   sheet.getRange('A1').setFontSize(14).setFontWeight('bold').setBackground('#4a86e8').setFontColor('#ffffff');
-  sheet.getRange('A1:B1').merge();
+  // Extend background instead of merge
+  sheet.getRange('A1:B1').setBackground('#4a86e8').setFontColor('#ffffff');
 
-  // Instructions row
+  // Instructions row (NO MERGE to avoid conflicts)
   sheet.getRange('A2').setValue('Fill in your Amazon SP-API credentials and Cloud Function URL below:');
-  sheet.getRange('A2').setFontStyle('italic').setBackground('#d9ead3');
-  sheet.getRange('A2:B2').merge();
+  sheet.getRange('A2').setFontStyle('italic');
+  // Extend background instead of merge
+  sheet.getRange('A2:B2').setBackground('#d9ead3');
 
   // Configuration data (Key-Value pairs)
   const configData = [
@@ -267,10 +269,11 @@ function generateTemplatesSheet() {
   }
   sheet.setTabColor('#f4b400'); // Yellow
 
-  // Header
+  // Header (NO MERGE to avoid conflicts)
   sheet.getRange('A1').setValue('Product Templates');
   sheet.getRange('A1').setFontSize(14).setFontWeight('bold').setBackground('#f4b400').setFontColor('#ffffff');
-  sheet.getRange('A1:E1').merge();
+  // Extend background instead of merge
+  sheet.getRange('A1:E1').setBackground('#f4b400').setFontColor('#ffffff');
 
   // Column headers
   const headers = ['Template Name', 'Product Type', 'Category', 'Description', 'Use Count'];
@@ -319,15 +322,17 @@ function generateProductsMainSheet() {
   }
   sheet.setTabColor('#34a853'); // Green
 
-  // Title row
+  // Title row (NO MERGE - to avoid frozen column conflict)
   sheet.getRange('A1').setValue('LUKO Amazon Content Manager - Products Main');
   sheet.getRange('A1').setFontSize(14).setFontWeight('bold').setBackground('#34a853').setFontColor('#ffffff');
-  sheet.getRange('A1:P1').merge();
+  // Extend background color across row instead of merge
+  sheet.getRange('A1:P1').setBackground('#34a853').setFontColor('#ffffff');
 
-  // Instructions row
+  // Instructions row (NO MERGE - to avoid frozen column conflict)
   sheet.getRange('A2').setValue('Add your products here. Fill ASIN, SKU, and content in multiple languages. Check ☑️ Export to export to Amazon.');
-  sheet.getRange('A2').setFontStyle('italic').setBackground('#d9ead3');
-  sheet.getRange('A2:P2').merge();
+  sheet.getRange('A2').setFontStyle('italic');
+  // Extend background color across row instead of merge
+  sheet.getRange('A2:P2').setBackground('#d9ead3');
 
   // Headers (simplified - core fields only)
   const headers = [
