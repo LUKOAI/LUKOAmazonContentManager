@@ -77,20 +77,20 @@ function generateGpsrSheet() {
   const complianceRangeYes = sheet.getRange(4, 4, 1000, 1);
   const ruleYes = SpreadsheetApp.newConditionalFormatRule()
     .whenTextEqualTo('Yes')
-  range2.setBackground('#d4f4dd');
+    .setBackground('#d4f4dd')
     .setRanges([complianceRangeYes])
     .build();
 
   const ruleNo = SpreadsheetApp.newConditionalFormatRule()
     .whenTextEqualTo('No')
-  range2.setBackground('#fff4c3');
+    .setBackground('#fff4c3')
     .setRanges([complianceRangeYes])
     .build();
 
   const statusRange = sheet.getRange(4, 23, 1000, 1);
   const ruleFailed = SpreadsheetApp.newConditionalFormatRule()
     .whenTextEqualTo('FAILED')
-  range2.setBackground('#f4c7c3');
+    .setBackground('#f4c7c3')
     .setRanges([statusRange])
     .build();
 
