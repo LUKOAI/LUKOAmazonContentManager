@@ -175,6 +175,7 @@ function onOpen() {
 
     .addSubMenu(ui.createMenu('Tools')
       .addItem('🎨 Generate Spreadsheet', 'lukoGenerateFullSpreadsheet')
+      .addItem('🔧 Regenerate Config Only', 'lukoRegenerateConfigOnly')
       .addSeparator()
       .addItem('Translate Content', 'lukoTranslateContent')
       .addItem('Generate Variants', 'lukoGenerateVariants')
