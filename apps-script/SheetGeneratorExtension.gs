@@ -15,20 +15,20 @@ function generateGpsrSheet() {
   const sheet = ss.insertSheet('GPSR');
 
   // Header
-  sheet.getRange('A1:AA1').merge()
-    .setValue('🇪🇺 GPSR Compliance - EU Mandatory (Effective Dec 13, 2024)')
-    .setFontWeight('bold')
-    .setFontSize(14)
-    .setBackground('#1a73e8')
-    .setFontColor('#FFFFFF')
-    .setHorizontalAlignment('center');
+  const headerRange = sheet.getRange('A1:AA1');
+  headerRange.setValue('🇪🇺 GPSR Compliance - EU Mandatory (Effective Dec 13, 2024)');
+  headerRange.setFontWeight('bold');
+  headerRange.setFontSize(14);
+  headerRange.setBackground('#1a73e8');
+  headerRange.setFontColor('#FFFFFF');
+  headerRange.setHorizontalAlignment('center');
 
   // Instructions
-  sheet.getRange('A2:AA2').merge()
-    .setValue('General Product Safety Regulation - Required for ALL products sold in EU. Fill in manufacturer, importer, and responsible person details.')
-    .setFontStyle('italic')
-    .setBackground('#d3e3fd')
-    .setWrapText(true);
+  const instrRange = sheet.getRange('A2:AA2');
+  instrRange.setValue('General Product Safety Regulation - Required for ALL products sold in EU. Fill in manufacturer, importer, and responsible person details.');
+  instrRange.setFontStyle('italic');
+  instrRange.setBackground('#d3e3fd');
+  instrRange.setWrapText(true);
 
   // Column headers
   const headers = [
@@ -139,17 +139,17 @@ function generateDocumentsSheet() {
   const sheet = ss.insertSheet('Documents');
 
   // Header
-  sheet.getRange('A1:Q1').merge()
-    .setValue('📄 Product Documents Management')
-    .setFontWeight('bold')
-    .setFontSize(14)
-    .setBackground('#0f9d58')
-    .setFontColor('#FFFFFF')
-    .setHorizontalAlignment('center');
+  const range = sheet.getRange('A1:Q1');
+  range.setValue('📄 Product Documents Management');
+  range.setFontWeight('bold');
+  range.setFontSize(14);
+  range.setBackground('#0f9d58');
+  range.setFontColor('#FFFFFF');
+  range.setHorizontalAlignment('center');;
 
   // Instructions
-  sheet.getRange('A2:Q2').merge()
-    .setValue('Upload and manage product documents (user manuals, warranties, certificates, etc.). Documents will be visible to customers on product pages.')
+  const range = sheet.getRange('A2:Q2');
+  range.setValue('Upload and manage product documents (user manuals, warranties, certificates, etc.);. Documents will be visible to customers on product pages.')
     .setFontStyle('italic')
     .setBackground('#d4edda')
     .setWrapText(true);
@@ -242,20 +242,20 @@ function generateCustomizationSheet() {
   const sheet = ss.insertSheet('Customization');
 
   // Header
-  sheet.getRange('A1:BF1').merge()
-    .setValue('✨ Product Customization & Personalization')
-    .setFontWeight('bold')
-    .setFontSize(14)
-    .setBackground('#9c27b0')
-    .setFontColor('#FFFFFF')
-    .setHorizontalAlignment('center');
+  const range = sheet.getRange('A1:BF1');
+  range.setValue('✨ Product Customization & Personalization');
+  range.setFontWeight('bold');
+  range.setFontSize(14);
+  range.setBackground('#9c27b0');
+  range.setFontColor('#FFFFFF');
+  range.setHorizontalAlignment('center');;
 
   // Instructions
-  sheet.getRange('A2:BF2').merge()
-    .setValue('Enable product customization: text engraving, color selection, material choice, image upload. Customers can personalize products before purchase.')
-    .setFontStyle('italic')
-    .setBackground('#f3e5f5')
-    .setWrapText(true);
+  const range = sheet.getRange('A2:BF2');
+  range.setValue('Enable product customization: text engraving, color selection, material choice, image upload. Customers can personalize products before purchase.');
+  range.setFontStyle('italic');
+  range.setBackground('#f3e5f5');
+  range.setWrapText(true);;
 
   // Column headers (grouped for clarity)
   const headers = [
@@ -368,20 +368,20 @@ function generateBrandStripSheet() {
   const sheet = ss.insertSheet('BrandStrip');
 
   // Header
-  sheet.getRange('A1:AB1').merge()
-    .setValue('🎨 Brand Strip - Classic & Enhanced')
-    .setFontWeight('bold')
-    .setFontSize(14)
-    .setBackground('#ff6f00')
-    .setFontColor('#FFFFFF')
-    .setHorizontalAlignment('center');
+  const range = sheet.getRange('A1:AB1');
+  range.setValue('🎨 Brand Strip - Classic & Enhanced');
+  range.setFontWeight('bold');
+  range.setFontSize(14);
+  range.setBackground('#ff6f00');
+  range.setFontColor('#FFFFFF');
+  range.setHorizontalAlignment('center');;
 
   // Instructions
-  sheet.getRange('A2:AB2').merge()
-    .setValue('Create brand strip banners for product pages. Classic = simple logo/headline. Enhanced = hero image with products showcase.')
-    .setFontStyle('italic')
-    .setBackground('#fff3e0')
-    .setWrapText(true);
+  const range = sheet.getRange('A2:AB2');
+  range.setValue('Create brand strip banners for product pages. Classic = simple logo/headline. Enhanced = hero image with products showcase.');
+  range.setFontStyle('italic');
+  range.setBackground('#fff3e0');
+  range.setWrapText(true);;
 
   // Column headers
   const headers = [
@@ -454,17 +454,17 @@ function generateVideosSheet() {
   const sheet = ss.insertSheet('Videos');
 
   // Header
-  sheet.getRange('A1:AC1').merge()
-    .setValue('🎬 Product Videos Management')
-    .setFontWeight('bold')
-    .setFontSize(14)
-    .setBackground('#e91e63')
-    .setFontColor('#FFFFFF')
-    .setHorizontalAlignment('center');
+  const range = sheet.getRange('A1:AC1');
+  range.setValue('🎬 Product Videos Management');
+  range.setFontWeight('bold');
+  range.setFontSize(14);
+  range.setBackground('#e91e63');
+  range.setFontColor('#FFFFFF');
+  range.setHorizontalAlignment('center');;
 
   // Instructions
-  sheet.getRange('A2:AC2').merge()
-    .setValue('Upload product videos (up to 3 per product). Video increases conversion by 80%! Supported: MP4, MOV, AVI. Max 500MB.')
+  const range = sheet.getRange('A2:AC2');
+  range.setValue('Upload product videos (up to 3 per product);. Video increases conversion by 80%! Supported: MP4, MOV, AVI. Max 500MB.')
     .setFontStyle('italic')
     .setBackground('#fce4ec')
     .setWrapText(true);
@@ -559,20 +559,20 @@ function generateBrandStoreConfigSheet() {
   const sheet = ss.insertSheet('BrandStore-Config');
 
   // Header
-  sheet.getRange('A1:O1').merge()
-    .setValue('🏪 Brand Store Configuration')
-    .setFontWeight('bold')
-    .setFontSize(14)
-    .setBackground('#673ab7')
-    .setFontColor('#FFFFFF')
-    .setHorizontalAlignment('center');
+  const range = sheet.getRange('A1:O1');
+  range.setValue('🏪 Brand Store Configuration');
+  range.setFontWeight('bold');
+  range.setFontSize(14);
+  range.setBackground('#673ab7');
+  range.setFontColor('#FFFFFF');
+  range.setHorizontalAlignment('center');;
 
   // Instructions
-  sheet.getRange('A2:O2').merge()
-    .setValue('Configure your multi-page Amazon Brand Store. Build a complete shopping experience with homepage, category pages, and more.')
-    .setFontStyle('italic')
-    .setBackground('#ede7f6')
-    .setWrapText(true);
+  const range = sheet.getRange('A2:O2');
+  range.setValue('Configure your multi-page Amazon Brand Store. Build a complete shopping experience with homepage, category pages, and more.');
+  range.setFontStyle('italic');
+  range.setBackground('#ede7f6');
+  range.setWrapText(true);;
 
   // Column headers
   const headers = [
@@ -628,20 +628,20 @@ function generateBrandStorePageSheet(sheetName) {
   const pageName = sheetName.replace('BrandStore-', '');
 
   // Header
-  sheet.getRange('A1:AL1').merge()
-    .setValue(`🏪 Brand Store - ${pageName} Builder`)
-    .setFontWeight('bold')
-    .setFontSize(14)
-    .setBackground('#673ab7')
-    .setFontColor('#FFFFFF')
-    .setHorizontalAlignment('center');
+  const range = sheet.getRange('A1:AL1');
+  range.setValue(`🏪 Brand Store - ${pageName} Builder`);
+  range.setFontWeight('bold');
+  range.setFontSize(14);
+  range.setBackground('#673ab7');
+  range.setFontColor('#FFFFFF');
+  range.setHorizontalAlignment('center');;
 
   // Instructions
-  sheet.getRange('A2:AL2').merge()
-    .setValue('Each row = one module. Modules stack vertically. Use Module Order to arrange. Choose Module Type, then fill relevant fields.')
-    .setFontStyle('italic')
-    .setBackground('#ede7f6')
-    .setWrapText(true);
+  const range = sheet.getRange('A2:AL2');
+  range.setValue('Each row = one module. Modules stack vertically. Use Module Order to arrange. Choose Module Type, then fill relevant fields.');
+  range.setFontStyle('italic');
+  range.setBackground('#ede7f6');
+  range.setWrapText(true);;
 
   // Column headers
   const headers = [
