@@ -122,14 +122,22 @@ function lukoGenerateFullSpreadsheet() {
 function generateConfigSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // Delete old Config if exists
+  // Check if Config already exists
   const oldConfig = ss.getSheetByName('Config');
-  if (oldConfig) {
-    ss.deleteSheet(oldConfig);
-  }
 
-  // Create new Config sheet
-  const sheet = ss.insertSheet('Config');
+  let sheet;
+
+  if (oldConfig) {
+    // Clear existing Config instead of deleting (to avoid "can't remove all sheets" error)
+    sheet = oldConfig;
+    sheet.setFrozenRows(0);
+    sheet.setFrozenColumns(0);
+    sheet.clear();
+    sheet.clearFormats();
+  } else {
+    // Create new Config sheet
+    sheet = ss.insertSheet('Config');
+  }
 
   // Set sheet color
   sheet.setTabColor('#4a86e8'); // Blue
@@ -194,13 +202,19 @@ function generateConfigSheet() {
 function generateErrorLogSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // Delete old if exists
+  // Check if exists
   const oldSheet = ss.getSheetByName('ErrorLog');
-  if (oldSheet) {
-    ss.deleteSheet(oldSheet);
-  }
 
-  const sheet = ss.insertSheet('ErrorLog');
+  let sheet;
+  if (oldSheet) {
+    sheet = oldSheet;
+    sheet.setFrozenRows(0);
+    sheet.setFrozenColumns(0);
+    sheet.clear();
+    sheet.clearFormats();
+  } else {
+    sheet = ss.insertSheet('ErrorLog');
+  }
   sheet.setTabColor('#ea4335'); // Red
 
   // Headers
@@ -240,11 +254,17 @@ function generateTemplatesSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   const oldSheet = ss.getSheetByName('Templates');
-  if (oldSheet) {
-    ss.deleteSheet(oldSheet);
-  }
 
-  const sheet = ss.insertSheet('Templates');
+  let sheet;
+  if (oldSheet) {
+    sheet = oldSheet;
+    sheet.setFrozenRows(0);
+    sheet.setFrozenColumns(0);
+    sheet.clear();
+    sheet.clearFormats();
+  } else {
+    sheet = ss.insertSheet('Templates');
+  }
   sheet.setTabColor('#f4b400'); // Yellow
 
   // Header
@@ -285,11 +305,18 @@ function generateProductsMainSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   const oldSheet = ss.getSheetByName('ProductsMain');
-  if (oldSheet) {
-    ss.deleteSheet(oldSheet);
-  }
 
-  const sheet = ss.insertSheet('ProductsMain');
+  let sheet;
+  if (oldSheet) {
+    sheet = oldSheet;
+    sheet.setFrozenRows(0);
+    sheet.setFrozenColumns(0);
+    sheet.clear();
+    sheet.clearFormats();
+    sheet.clearConditionalFormatRules();
+  } else {
+    sheet = ss.insertSheet('ProductsMain');
+  }
   sheet.setTabColor('#34a853'); // Green
 
   // Title row
