@@ -12,6 +12,13 @@
 
 function generateGpsrSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Delete old sheet if exists
+  const oldSheet = ss.getSheetByName('GPSR');
+  if (oldSheet) {
+    ss.deleteSheet(oldSheet);
+  }
+
   const sheet = ss.insertSheet('GPSR');
 
   // Header
@@ -124,9 +131,10 @@ function generateGpsrSheet() {
     'PENDING', '', new Date(), Session.getActiveUser().getEmail(), ''
   ];
 
-  sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow])
-  range2.setBackground('#f8f9fa');
-  range2.setFontStyle('italic');
+  sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow]);
+  const range4 = sheet.getRange(4, 1, 1, exampleRow.length);
+  range4.setBackground(\'#f8f9fa\');
+  range4.setFontStyle(\'italic\');
 
   Logger.log('GPSR sheet generated');
 }
@@ -137,6 +145,13 @@ function generateGpsrSheet() {
 
 function generateDocumentsSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Delete old sheet if exists
+  const oldSheet = ss.getSheetByName('Documents');
+  if (oldSheet) {
+    ss.deleteSheet(oldSheet);
+  }
+
   const sheet = ss.insertSheet('Documents');
 
   // Header
@@ -228,9 +243,10 @@ function generateDocumentsSheet() {
     [false, 'B0EXAMPLE1', 'DOC-TEST-001', 'Warranty Information', 'DE', 'Garantieinformationen', 'warranty.pdf', 'https://example.com/docs/warranty.pdf', '2 years manufacturer warranty', true, new Date(), 0.5, 'PENDING', '', new Date(), Session.getActiveUser().getEmail(), '']
   ];
 
-  sheet.getRange(4, 1, examples.length, examples[0].length).setValues(examples)
-  range2.setBackground('#f8f9fa');
-  range2.setFontStyle('italic');
+  sheet.getRange(4, 1, examples.length, examples[0].length).setValues(examples);
+  const range4 = sheet.getRange(4, 1, examples.length, examples[0].length);
+  range4.setBackground('#f8f9fa');
+  range4.setFontStyle('italic');
 
   Logger.log('Documents sheet generated');
 }
@@ -241,6 +257,13 @@ function generateDocumentsSheet() {
 
 function generateCustomizationSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Delete old sheet if exists
+  const oldSheet = ss.getSheetByName('Customization');
+  if (oldSheet) {
+    ss.deleteSheet(oldSheet);
+  }
+
   const sheet = ss.insertSheet('Customization');
 
   // Header
@@ -333,18 +356,19 @@ function generateCustomizationSheet() {
     'PENDING', '', new Date(), Session.getActiveUser().getEmail(), ''
   ];
 
-  sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow])
-  range2.setBackground('#f8f9fa');
-  range2.setFontStyle('italic');
+  sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow]);
+  const range4 = sheet.getRange(4, 1, 1, exampleRow.length);
+  range4.setBackground(\'#f8f9fa\');
+  range4.setFontStyle(\'italic\');
 
   // Templates section
   const templatesRow = 7;
-  sheet.getRange(templatesRow, 1, 1, 58).merge()
-    range2.setValue('📋 Pre-built Customization Templates');
-  range2.setFontWeight('bold');
-  range2.setBackground('#ce93d8');
-  range2.setFontColor('#FFFFFF');
-  range2.setHorizontalAlignment('center');
+  const range6 = sheet.getRange(templatesRow, 1, 1, 58);
+  range6.setValue('📋 Pre-built Customization Templates');
+  range6.setFontWeight('bold');
+  range6.setBackground('#ce93d8');
+  range6.setFontColor('#FFFFFF');
+  range6.setHorizontalAlignment('center');
 
   const templateExamples = [
     ['Template Name', 'Type', 'Description', 'Use For'],
@@ -355,8 +379,9 @@ function generateCustomizationSheet() {
     ['Photo Upload', 'Image', 'Upload customer photo', 'Photo gifts, custom prints']
   ];
 
-  sheet.getRange(templatesRow + 1, 1, templateExamples.length, 4).setValues(templateExamples)
-  range2.setBackground('#f3e5f5');
+  sheet.getRange(templatesRow + 1, 1, templateExamples.length, 4).setValues(templateExamples);
+  const range5 = sheet.getRange(templatesRow + 1, 1, templateExamples.length, 4);
+  range5.setBackground('#f3e5f5');
   sheet.getRange(templatesRow + 1, 1, 1, 4).setFontWeight('bold');
 
   Logger.log('Customization sheet generated');
@@ -368,6 +393,13 @@ function generateCustomizationSheet() {
 
 function generateBrandStripSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Delete old sheet if exists
+  const oldSheet = ss.getSheetByName('BrandStrip');
+  if (oldSheet) {
+    ss.deleteSheet(oldSheet);
+  }
+
   const sheet = ss.insertSheet('BrandStrip');
 
   // Header
@@ -442,9 +474,10 @@ function generateBrandStripSheet() {
     [false, 'B0EXAMPLE2', 'BRAND-TEST-002', 'Enhanced', '', '', '', '', 'https://example.com/hero.jpg', 'https://example.com/logo-overlay.png', 'Top-Center', 'ExampleBrand', 'Excellence in Every Detail', 'Discover Our Collection', 'Handcrafted with passion', 'Shop Now', 'https://amazon.de/brand-store', 'B0PROD001', 'B0PROD002', 'B0PROD003', 'B0PROD004', 'https://example.com/video-bg.mp4', true, 'PENDING', '', new Date(), Session.getActiveUser().getEmail(), '']
   ];
 
-  sheet.getRange(4, 1, examples.length, examples[0].length).setValues(examples)
-  range2.setBackground('#f8f9fa');
-  range2.setFontStyle('italic');
+  sheet.getRange(4, 1, examples.length, examples[0].length).setValues(examples);
+  const range4 = sheet.getRange(4, 1, examples.length, examples[0].length);
+  range4.setBackground('#f8f9fa');
+  range4.setFontStyle('italic');
 
   Logger.log('BrandStrip sheet generated');
 }
@@ -455,6 +488,13 @@ function generateBrandStripSheet() {
 
 function generateVideosSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Delete old sheet if exists
+  const oldSheet = ss.getSheetByName('Videos');
+  if (oldSheet) {
+    ss.deleteSheet(oldSheet);
+  }
+
   const sheet = ss.insertSheet('Videos');
 
   // Header
@@ -538,9 +578,10 @@ function generateVideosSheet() {
     'PENDING', '', new Date(), Session.getActiveUser().getEmail(), ''
   ];
 
-  sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow])
-  range2.setBackground('#f8f9fa');
-  range2.setFontStyle('italic');
+  sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow]);
+  const range4 = sheet.getRange(4, 1, 1, exampleRow.length);
+  range4.setBackground(\'#f8f9fa\');
+  range4.setFontStyle(\'italic\');
 
   Logger.log('Videos sheet generated');
 }
@@ -561,6 +602,13 @@ function generateBrandStoreSheets() {
 
 function generateBrandStoreConfigSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Delete old sheet if exists
+  const oldSheet = ss.getSheetByName('BrandStore-Config');
+  if (oldSheet) {
+    ss.deleteSheet(oldSheet);
+  }
+
   const sheet = ss.insertSheet('BrandStore-Config');
 
   // Header
@@ -620,15 +668,23 @@ function generateBrandStoreConfigSheet() {
     'Draft', '', new Date()
   ];
 
-  sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow])
-  range2.setBackground('#f8f9fa');
-  range2.setFontStyle('italic');
+  sheet.getRange(4, 1, 1, exampleRow.length).setValues([exampleRow]);
+  const range4 = sheet.getRange(4, 1, 1, exampleRow.length);
+  range4.setBackground(\'#f8f9fa\');
+  range4.setFontStyle(\'italic\');
 
   Logger.log('BrandStore-Config sheet generated');
 }
 
 function generateBrandStorePageSheet(sheetName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Delete old sheet if exists
+  const oldSheet = ss.getSheetByName(sheetName);
+  if (oldSheet) {
+    ss.deleteSheet(oldSheet);
+  }
+
   const sheet = ss.insertSheet(sheetName);
 
   const pageName = sheetName.replace('BrandStore-', '');
@@ -718,9 +774,10 @@ function generateBrandStorePageSheet(sheetName) {
       [true, 3, 'Image & Text', 'Our Story', 'Craftsmanship Meets Innovation', 'Since 1990', 'We have been creating exceptional products with passion and dedication. Every piece tells a story.', '', 'https://example.com/story-bg.jpg', 'https://example.com/craftsmanship.jpg', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Learn More', 'https://example.com/about', '', '', false, '', '', 'Medium', '', '', '', '', '', '', '']
     ];
 
-    sheet.getRange(4, 1, examples.length, examples[0].length).setValues(examples)
-      range2.setBackground('#f8f9fa');
-      range2.setFontStyle('italic');
+    sheet.getRange(4, 1, examples.length, examples[0].length).setValues(examples);
+      const range4 = sheet.getRange(4, 1, examples.length, examples[0].length);
+      range4.setBackground('#f8f9fa');
+      range4.setFontStyle('italic');
   }
 
   Logger.log(`${sheetName} generated`);
