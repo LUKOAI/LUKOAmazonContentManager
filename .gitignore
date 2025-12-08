@@ -1,0 +1,97 @@
+# LUKO Amazon Content Manager - .gitignore
+
+# Credentials & Secrets
+*.secret
+*.key
+*.pem
+credentials.json
+config/credentials.json
+.env
+.env.local
+.env.production
+
+# Google Cloud
+.gcloud/
+service-account-*.json
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Build & Deploy
+dist/
+build/
+.deploy/
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+cloud-function/logs/
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+
+# Backup Files
+*.bak
+*.backup
+backup/
+
+# Google Sheets Exports
+exports/*.xlsx
+exports/*.csv
+exports/*.json
+
+# Local Configuration
+config/local.json
+config/*.local.json
+luko.config.local.json
+
+# Debug
+debug.log
+error.log
+
+# OS Files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Documentation Builds
+docs/_build/
+docs/.doctrees/
+
+# Python (if using Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+
+# Keep These
+!.gitignore
+!README.md
+!config/luko.config.json
+!config/marketplaces.json

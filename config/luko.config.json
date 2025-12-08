@@ -1,0 +1,376 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LUKO Amazon Content Manager Configuration",
+  "description": "Configuration template for LUKO-ACM system",
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "LUKO-ACM",
+          "description": "Project name (use LUKO prefix)"
+        },
+        "version": {
+          "type": "string",
+          "default": "2.0.0",
+          "description": "System version"
+        },
+        "environment": {
+          "type": "string",
+          "enum": ["development", "staging", "production"],
+          "default": "production",
+          "description": "Deployment environment"
+        }
+      }
+    },
+    "amazon": {
+      "type": "object",
+      "properties": {
+        "lwa": {
+          "type": "object",
+          "properties": {
+            "clientId": {
+              "type": "string",
+              "description": "Login with Amazon Client ID (from SP-API app)",
+              "pattern": "^amzn1\\.application-oa2-client\\..+",
+              "examples": ["amzn1.application-oa2-client.1234567890abcdef"]
+            },
+            "clientSecret": {
+              "type": "string",
+              "description": "LWA Client Secret (keep secure!)",
+              "minLength": 64,
+              "examples": ["abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"]
+            },
+            "refreshToken": {
+              "type": "string",
+              "description": "Long-lived refresh token",
+              "pattern": "^Atzr\\|.+",
+              "examples": ["Atzr|IwEBIA..."]
+            }
+          },
+          "required": ["clientId", "clientSecret", "refreshToken"]
+        },
+        "seller": {
+          "type": "object",
+          "properties": {
+            "sellerId": {
+              "type": "string",
+              "description": "Amazon Seller/Merchant ID",
+              "pattern": "^A[A-Z0-9]{12,13}$",
+              "examples": ["A1BCDEFGH2IJK"]
+            },
+            "defaultMarketplace": {
+              "type": "string",
+              "enum": ["DE", "FR", "IT", "ES", "UK", "NL", "BE", "PL", "SE", "IE"],
+              "default": "DE",
+              "description": "Default marketplace for operations"
+            }
+          },
+          "required": ["sellerId", "defaultMarketplace"]
+        },
+        "apiSettings": {
+          "type": "object",
+          "properties": {
+            "rateLimitBuffer": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.8,
+              "description": "Use only 80% of rate limit for safety"
+            },
+            "maxRetries": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10,
+              "default": 3,
+              "description": "Maximum retry attempts for failed requests"
+            },
+            "retryDelay": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 10000,
+              "default": 2000,
+              "description": "Delay in milliseconds before retry"
+            },
+            "timeout": {
+              "type": "integer",
+              "minimum": 5000,
+              "maximum": 60000,
+              "default": 30000,
+              "description": "Request timeout in milliseconds"
+            }
+          }
+        }
+      },
+      "required": ["lwa", "seller"]
+    },
+    "google": {
+      "type": "object",
+      "properties": {
+        "cloudFunction": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Cloud Function endpoint URL",
+              "examples": ["https://europe-west1-project-id.cloudfunctions.net/luko-sp-api-handler"]
+            },
+            "region": {
+              "type": "string",
+              "default": "europe-west1",
+              "description": "GCP region for deployment"
+            },
+            "memory": {
+              "type": "string",
+              "enum": ["128MB", "256MB", "512MB", "1GB", "2GB"],
+              "default": "256MB",
+              "description": "Cloud Function memory allocation"
+            },
+            "timeout": {
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 540,
+              "default": 540,
+              "description": "Cloud Function timeout in seconds"
+            },
+            "maxInstances": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "description": "Maximum concurrent function instances"
+            }
+          },
+          "required": ["url"]
+        },
+        "sheets": {
+          "type": "object",
+          "properties": {
+            "spreadsheetId": {
+              "type": "string",
+              "description": "Google Sheets document ID",
+              "examples": ["1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"]
+            },
+            "spreadsheetName": {
+              "type": "string",
+              "default": "LUKO-Master",
+              "description": "Name of master spreadsheet"
+            }
+          }
+        }
+      },
+      "required": ["cloudFunction"]
+    },
+    "operations": {
+      "type": "object",
+      "properties": {
+        "sync": {
+          "type": "object",
+          "properties": {
+            "batchSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "description": "Number of products to sync in one batch"
+            },
+            "autoRetryFailed": {
+              "type": "boolean",
+              "default": true,
+              "description": "Automatically retry failed sync operations"
+            },
+            "validateBeforeSync": {
+              "type": "boolean",
+              "default": true,
+              "description": "Run validation before syncing"
+            }
+          }
+        },
+        "import": {
+          "type": "object",
+          "properties": {
+            "autoImportSchedule": {
+              "type": "string",
+              "default": "0 2 * * *",
+              "description": "Cron schedule for auto-import (2 AM daily)"
+            },
+            "importImages": {
+              "type": "boolean",
+              "default": true,
+              "description": "Import images with products"
+            },
+            "importPricing": {
+              "type": "boolean",
+              "default": true,
+              "description": "Import pricing data"
+            }
+          }
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "properties": {
+        "validation": {
+          "type": "object",
+          "properties": {
+            "enforceCharLimits": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enforce Amazon character limits"
+            },
+            "requireAllLanguages": {
+              "type": "boolean",
+              "default": false,
+              "description": "Require content in all active languages"
+            },
+            "validateUrls": {
+              "type": "boolean",
+              "default": true,
+              "description": "Validate image and video URLs"
+            }
+          }
+        },
+        "translation": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "enum": ["google", "deepl", "aws", "manual"],
+              "default": "manual",
+              "description": "Translation service provider"
+            },
+            "autoTranslate": {
+              "type": "boolean",
+              "default": false,
+              "description": "Automatically translate content"
+            }
+          }
+        }
+      }
+    },
+    "monitoring": {
+      "type": "object",
+      "properties": {
+        "logging": {
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string",
+              "enum": ["debug", "info", "warn", "error"],
+              "default": "info",
+              "description": "Logging level"
+            },
+            "retainDays": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365,
+              "default": 90,
+              "description": "Days to retain logs"
+            }
+          }
+        },
+        "alerts": {
+          "type": "object",
+          "properties": {
+            "emailRecipients": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "email"
+              },
+              "description": "Email addresses for alerts"
+            },
+            "alertOnErrors": {
+              "type": "boolean",
+              "default": true,
+              "description": "Send alerts on errors"
+            },
+            "alertThreshold": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 5,
+              "description": "Number of errors before alert"
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["amazon", "google"],
+  "examples": [
+    {
+      "project": {
+        "name": "LUKO-ACM",
+        "version": "2.0.0",
+        "environment": "production"
+      },
+      "amazon": {
+        "lwa": {
+          "clientId": "amzn1.application-oa2-client.XXXXXX",
+          "clientSecret": "YOUR_SECRET_HERE",
+          "refreshToken": "Atzr|XXXXXX"
+        },
+        "seller": {
+          "sellerId": "A1BCDEFGH2IJK",
+          "defaultMarketplace": "DE"
+        },
+        "apiSettings": {
+          "rateLimitBuffer": 0.8,
+          "maxRetries": 3,
+          "retryDelay": 2000,
+          "timeout": 30000
+        }
+      },
+      "google": {
+        "cloudFunction": {
+          "url": "https://europe-west1-your-project.cloudfunctions.net/luko-sp-api-handler",
+          "region": "europe-west1",
+          "memory": "256MB",
+          "timeout": 540,
+          "maxInstances": 10
+        },
+        "sheets": {
+          "spreadsheetName": "LUKO-Master"
+        }
+      },
+      "operations": {
+        "sync": {
+          "batchSize": 50,
+          "autoRetryFailed": true,
+          "validateBeforeSync": true
+        },
+        "import": {
+          "autoImportSchedule": "0 2 * * *",
+          "importImages": true,
+          "importPricing": true
+        }
+      },
+      "content": {
+        "validation": {
+          "enforceCharLimits": true,
+          "requireAllLanguages": false,
+          "validateUrls": true
+        },
+        "translation": {
+          "provider": "manual",
+          "autoTranslate": false
+        }
+      },
+      "monitoring": {
+        "logging": {
+          "level": "info",
+          "retainDays": 90
+        },
+        "alerts": {
+          "emailRecipients": ["admin@yourdomain.com"],
+          "alertOnErrors": true,
+          "alertThreshold": 5
+        }
+      }
+    }
+  ]
+}

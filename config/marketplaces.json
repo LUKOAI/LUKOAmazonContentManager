@@ -1,0 +1,512 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Amazon European Marketplaces Configuration",
+  "description": "Complete configuration for all supported Amazon EU marketplaces and languages",
+  "type": "object",
+  "marketplaces": {
+    "DE": {
+      "name": "Germany",
+      "marketplaceId": "A1PA6795UKMFR9",
+      "endpoint": "https://sellingpartnerapi-eu.amazon.com",
+      "region": "eu-west-1",
+      "domain": "amazon.de",
+      "currency": "EUR",
+      "timezone": "Europe/Berlin",
+      "primary_language": "de-DE",
+      "supported_languages": [
+        {
+          "code": "de-DE",
+          "name": "Deutsch",
+          "native_name": "Deutsch",
+          "is_primary": true,
+          "active_by_default": true
+        },
+        {
+          "code": "en-GB",
+          "name": "English",
+          "native_name": "English",
+          "is_primary": false,
+          "active_by_default": true
+        },
+        {
+          "code": "pl-PL",
+          "name": "Polish",
+          "native_name": "Polski",
+          "is_primary": false,
+          "active_by_default": true
+        },
+        {
+          "code": "tr-TR",
+          "name": "Turkish",
+          "native_name": "Türkçe",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "cs-CZ",
+          "name": "Czech",
+          "native_name": "Čeština",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "da-DK",
+          "name": "Danish",
+          "native_name": "Dansk",
+          "is_primary": false,
+          "active_by_default": false
+        }
+      ]
+    },
+    "FR": {
+      "name": "France",
+      "marketplaceId": "A13V1IB3VIYZZH",
+      "endpoint": "https://sellingpartnerapi-eu.amazon.com",
+      "region": "eu-west-1",
+      "domain": "amazon.fr",
+      "currency": "EUR",
+      "timezone": "Europe/Paris",
+      "primary_language": "fr-FR",
+      "supported_languages": [
+        {
+          "code": "fr-FR",
+          "name": "French",
+          "native_name": "Français",
+          "is_primary": true,
+          "active_by_default": true
+        },
+        {
+          "code": "en-GB",
+          "name": "English",
+          "native_name": "English",
+          "is_primary": false,
+          "active_by_default": true
+        },
+        {
+          "code": "de-DE",
+          "name": "German",
+          "native_name": "Deutsch",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "es-ES",
+          "name": "Spanish",
+          "native_name": "Español",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "it-IT",
+          "name": "Italian",
+          "native_name": "Italiano",
+          "is_primary": false,
+          "active_by_default": false
+        }
+      ]
+    },
+    "IT": {
+      "name": "Italy",
+      "marketplaceId": "APJ6JRA9NG5V4",
+      "endpoint": "https://sellingpartnerapi-eu.amazon.com",
+      "region": "eu-west-1",
+      "domain": "amazon.it",
+      "currency": "EUR",
+      "timezone": "Europe/Rome",
+      "primary_language": "it-IT",
+      "supported_languages": [
+        {
+          "code": "it-IT",
+          "name": "Italian",
+          "native_name": "Italiano",
+          "is_primary": true,
+          "active_by_default": true
+        },
+        {
+          "code": "en-GB",
+          "name": "English",
+          "native_name": "English",
+          "is_primary": false,
+          "active_by_default": true
+        },
+        {
+          "code": "de-DE",
+          "name": "German",
+          "native_name": "Deutsch",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "fr-FR",
+          "name": "French",
+          "native_name": "Français",
+          "is_primary": false,
+          "active_by_default": false
+        }
+      ]
+    },
+    "ES": {
+      "name": "Spain",
+      "marketplaceId": "A1RKKUPIHCS9HS",
+      "endpoint": "https://sellingpartnerapi-eu.amazon.com",
+      "region": "eu-west-1",
+      "domain": "amazon.es",
+      "currency": "EUR",
+      "timezone": "Europe/Madrid",
+      "primary_language": "es-ES",
+      "supported_languages": [
+        {
+          "code": "es-ES",
+          "name": "Spanish",
+          "native_name": "Español",
+          "is_primary": true,
+          "active_by_default": true
+        },
+        {
+          "code": "en-GB",
+          "name": "English",
+          "native_name": "English",
+          "is_primary": false,
+          "active_by_default": true
+        },
+        {
+          "code": "ca-ES",
+          "name": "Catalan",
+          "native_name": "Català",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "eu-ES",
+          "name": "Basque",
+          "native_name": "Euskara",
+          "is_primary": false,
+          "active_by_default": false
+        }
+      ]
+    },
+    "UK": {
+      "name": "United Kingdom",
+      "marketplaceId": "A1F83G8C2ARO7P",
+      "endpoint": "https://sellingpartnerapi-eu.amazon.com",
+      "region": "eu-west-1",
+      "domain": "amazon.co.uk",
+      "currency": "GBP",
+      "timezone": "Europe/London",
+      "primary_language": "en-GB",
+      "supported_languages": [
+        {
+          "code": "en-GB",
+          "name": "English",
+          "native_name": "English",
+          "is_primary": true,
+          "active_by_default": true
+        },
+        {
+          "code": "de-DE",
+          "name": "German",
+          "native_name": "Deutsch",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "fr-FR",
+          "name": "French",
+          "native_name": "Français",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "es-ES",
+          "name": "Spanish",
+          "native_name": "Español",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "it-IT",
+          "name": "Italian",
+          "native_name": "Italiano",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "pl-PL",
+          "name": "Polish",
+          "native_name": "Polski",
+          "is_primary": false,
+          "active_by_default": false
+        }
+      ]
+    },
+    "NL": {
+      "name": "Netherlands",
+      "marketplaceId": "A1805IZSGTT6HS",
+      "endpoint": "https://sellingpartnerapi-eu.amazon.com",
+      "region": "eu-west-1",
+      "domain": "amazon.nl",
+      "currency": "EUR",
+      "timezone": "Europe/Amsterdam",
+      "primary_language": "nl-NL",
+      "supported_languages": [
+        {
+          "code": "nl-NL",
+          "name": "Dutch",
+          "native_name": "Nederlands",
+          "is_primary": true,
+          "active_by_default": true
+        },
+        {
+          "code": "en-GB",
+          "name": "English",
+          "native_name": "English",
+          "is_primary": false,
+          "active_by_default": true
+        },
+        {
+          "code": "de-DE",
+          "name": "German",
+          "native_name": "Deutsch",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "fr-FR",
+          "name": "French",
+          "native_name": "Français",
+          "is_primary": false,
+          "active_by_default": false
+        }
+      ]
+    },
+    "BE": {
+      "name": "Belgium",
+      "marketplaceId": "AMEN7PMS3EDWL",
+      "endpoint": "https://sellingpartnerapi-eu.amazon.com",
+      "region": "eu-west-1",
+      "domain": "amazon.com.be",
+      "currency": "EUR",
+      "timezone": "Europe/Brussels",
+      "primary_language": "nl-NL",
+      "supported_languages": [
+        {
+          "code": "nl-NL",
+          "name": "Dutch",
+          "native_name": "Nederlands",
+          "is_primary": true,
+          "active_by_default": true
+        },
+        {
+          "code": "fr-FR",
+          "name": "French",
+          "native_name": "Français",
+          "is_primary": false,
+          "active_by_default": true
+        },
+        {
+          "code": "en-GB",
+          "name": "English",
+          "native_name": "English",
+          "is_primary": false,
+          "active_by_default": true
+        },
+        {
+          "code": "de-DE",
+          "name": "German",
+          "native_name": "Deutsch",
+          "is_primary": false,
+          "active_by_default": false
+        }
+      ]
+    },
+    "PL": {
+      "name": "Poland",
+      "marketplaceId": "A1C3SOZRARQ6R3",
+      "endpoint": "https://sellingpartnerapi-eu.amazon.com",
+      "region": "eu-west-1",
+      "domain": "amazon.pl",
+      "currency": "PLN",
+      "timezone": "Europe/Warsaw",
+      "primary_language": "pl-PL",
+      "supported_languages": [
+        {
+          "code": "pl-PL",
+          "name": "Polish",
+          "native_name": "Polski",
+          "is_primary": true,
+          "active_by_default": true
+        },
+        {
+          "code": "en-GB",
+          "name": "English",
+          "native_name": "English",
+          "is_primary": false,
+          "active_by_default": true
+        },
+        {
+          "code": "de-DE",
+          "name": "German",
+          "native_name": "Deutsch",
+          "is_primary": false,
+          "active_by_default": false
+        }
+      ]
+    },
+    "SE": {
+      "name": "Sweden",
+      "marketplaceId": "A2NODRKZP88ZB9",
+      "endpoint": "https://sellingpartnerapi-eu.amazon.com",
+      "region": "eu-west-1",
+      "domain": "amazon.se",
+      "currency": "SEK",
+      "timezone": "Europe/Stockholm",
+      "primary_language": "sv-SE",
+      "supported_languages": [
+        {
+          "code": "sv-SE",
+          "name": "Swedish",
+          "native_name": "Svenska",
+          "is_primary": true,
+          "active_by_default": true
+        },
+        {
+          "code": "en-GB",
+          "name": "English",
+          "native_name": "English",
+          "is_primary": false,
+          "active_by_default": true
+        },
+        {
+          "code": "de-DE",
+          "name": "German",
+          "native_name": "Deutsch",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "fi-FI",
+          "name": "Finnish",
+          "native_name": "Suomi",
+          "is_primary": false,
+          "active_by_default": false
+        },
+        {
+          "code": "da-DK",
+          "name": "Danish",
+          "native_name": "Dansk",
+          "is_primary": false,
+          "active_by_default": false
+        }
+      ]
+    },
+    "IE": {
+      "name": "Ireland",
+      "marketplaceId": "A1QA6N5NQHZ0EW",
+      "endpoint": "https://sellingpartnerapi-eu.amazon.com",
+      "region": "eu-west-1",
+      "domain": "amazon.ie",
+      "currency": "EUR",
+      "timezone": "Europe/Dublin",
+      "primary_language": "en-GB",
+      "supported_languages": [
+        {
+          "code": "en-GB",
+          "name": "English",
+          "native_name": "English",
+          "is_primary": true,
+          "active_by_default": true
+        },
+        {
+          "code": "ga-IE",
+          "name": "Irish",
+          "native_name": "Gaeilge",
+          "is_primary": false,
+          "active_by_default": false
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_marketplaces": 10,
+    "total_unique_languages": 20,
+    "total_marketplace_language_combinations": 46,
+    "supported_currencies": ["EUR", "GBP", "PLN", "SEK"]
+  },
+  "language_index": {
+    "de-DE": {
+      "name": "German (Germany)",
+      "native_name": "Deutsch",
+      "marketplaces": ["DE", "FR", "IT", "UK", "NL", "BE", "PL", "SE"]
+    },
+    "en-GB": {
+      "name": "English (United Kingdom)",
+      "native_name": "English",
+      "marketplaces": ["DE", "FR", "IT", "ES", "UK", "NL", "BE", "PL", "SE", "IE"]
+    },
+    "fr-FR": {
+      "name": "French (France)",
+      "native_name": "Français",
+      "marketplaces": ["FR", "IT", "UK", "NL", "BE"]
+    },
+    "it-IT": {
+      "name": "Italian (Italy)",
+      "native_name": "Italiano",
+      "marketplaces": ["IT", "FR", "UK"]
+    },
+    "es-ES": {
+      "name": "Spanish (Spain)",
+      "native_name": "Español",
+      "marketplaces": ["ES", "FR", "UK"]
+    },
+    "nl-NL": {
+      "name": "Dutch (Netherlands)",
+      "native_name": "Nederlands",
+      "marketplaces": ["NL", "BE"]
+    },
+    "pl-PL": {
+      "name": "Polish (Poland)",
+      "native_name": "Polski",
+      "marketplaces": ["PL", "DE", "UK"]
+    },
+    "sv-SE": {
+      "name": "Swedish (Sweden)",
+      "native_name": "Svenska",
+      "marketplaces": ["SE"]
+    },
+    "ca-ES": {
+      "name": "Catalan (Spain)",
+      "native_name": "Català",
+      "marketplaces": ["ES"]
+    },
+    "eu-ES": {
+      "name": "Basque (Spain)",
+      "native_name": "Euskara",
+      "marketplaces": ["ES"]
+    },
+    "ga-IE": {
+      "name": "Irish (Ireland)",
+      "native_name": "Gaeilge",
+      "marketplaces": ["IE"]
+    },
+    "tr-TR": {
+      "name": "Turkish (Turkey)",
+      "native_name": "Türkçe",
+      "marketplaces": ["DE"]
+    },
+    "cs-CZ": {
+      "name": "Czech (Czech Republic)",
+      "native_name": "Čeština",
+      "marketplaces": ["DE"]
+    },
+    "da-DK": {
+      "name": "Danish (Denmark)",
+      "native_name": "Dansk",
+      "marketplaces": ["DE", "SE"]
+    },
+    "fi-FI": {
+      "name": "Finnish (Finland)",
+      "native_name": "Suomi",
+      "marketplaces": ["SE"]
+    }
+  }
+}

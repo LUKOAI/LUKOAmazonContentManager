@@ -1,0 +1,292 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Amazon Reverse Feed Column Mapping",
+  "description": "Mapping between Amazon reverse feed columns (row 2) and our spreadsheet columns",
+  "version": "1.0.0",
+
+  "mappingRules": {
+    "description": "How to map Amazon reverse feed columns to LUKO-ACM spreadsheet",
+    "rowStructure": {
+      "row1": "German column names (Produkttyp, Artikelname, etc.)",
+      "row2": "Technical field names (product_type#1.value, item_name[...]#1.value, etc.)",
+      "row3+": "Product data"
+    },
+    "useRow": 2,
+    "note": "Always use row 2 (English technical names) for mapping"
+  },
+
+  "coreFields": {
+    "sku": {
+      "reverseFeedColumn": "contribution_sku#1.value",
+      "ourColumn": "SKU",
+      "required": true,
+      "type": "string",
+      "maxLength": 40
+    },
+    "productType": {
+      "reverseFeedColumn": "product_type#1.value",
+      "ourColumn": "Product Type",
+      "required": true,
+      "type": "string"
+    },
+    "recordAction": {
+      "reverseFeedColumn": "::record_action",
+      "ourColumn": "_internal_action",
+      "required": false,
+      "note": "Used for updates/deletes, not needed for import"
+    }
+  },
+
+  "languageFields": {
+    "description": "Fields that repeat per language with pattern [marketplace_id=...][language_tag=...]",
+    "marketplacePattern": "marketplace_id=A1PA6795UKMFR9",
+    "languagePattern": "language_tag={LANG_CODE}",
+    "supportedLanguages": ["de_DE", "en_GB", "fr_FR", "it_IT", "es_ES", "nl_NL", "pl_PL", "sv_SE"],
+
+    "fields": {
+      "title": {
+        "reverseFeedPattern": "item_name[marketplace_id=A1PA6795UKMFR9][language_tag={LANG}]#1.value",
+        "ourColumnPattern": "productTitle_{LANG_SHORT}",
+        "examples": {
+          "de_DE": {
+            "reverseFeed": "item_name[marketplace_id=A1PA6795UKMFR9][language_tag=de_DE]#1.value",
+            "ourColumn": "productTitle_DE"
+          },
+          "en_GB": {
+            "reverseFeed": "item_name[marketplace_id=A1PA6795UKMFR9][language_tag=en_GB]#1.value",
+            "ourColumn": "productTitle_EN"
+          }
+        },
+        "maxLength": 200
+      },
+
+      "brand": {
+        "reverseFeedPattern": "brand[marketplace_id=A1PA6795UKMFR9][language_tag={LANG}]#1.value",
+        "ourColumnPattern": "brand_{LANG_SHORT}",
+        "examples": {
+          "de_DE": {
+            "reverseFeed": "brand[marketplace_id=A1PA6795UKMFR9][language_tag=de_DE]#1.value",
+            "ourColumn": "brand_DE"
+          }
+        },
+        "maxLength": 50
+      },
+
+      "bulletPoints": {
+        "description": "Up to 5 bullet points per language",
+        "count": 5,
+        "reverseFeedPattern": "bullet_point[marketplace_id=A1PA6795UKMFR9][language_tag={LANG}]#{NUM}.value",
+        "ourColumnPattern": "bulletPoint{NUM}_{LANG_SHORT}",
+        "examples": {
+          "de_DE": [
+            {
+              "reverseFeed": "bullet_point[marketplace_id=A1PA6795UKMFR9][language_tag=de_DE]#1.value",
+              "ourColumn": "bulletPoint1_DE"
+            },
+            {
+              "reverseFeed": "bullet_point[marketplace_id=A1PA6795UKMFR9][language_tag=de_DE]#2.value",
+              "ourColumn": "bulletPoint2_DE"
+            },
+            {
+              "reverseFeed": "bullet_point[marketplace_id=A1PA6795UKMFR9][language_tag=de_DE]#3.value",
+              "ourColumn": "bulletPoint3_DE"
+            },
+            {
+              "reverseFeed": "bullet_point[marketplace_id=A1PA6795UKMFR9][language_tag=de_DE]#4.value",
+              "ourColumn": "bulletPoint4_DE"
+            },
+            {
+              "reverseFeed": "bullet_point[marketplace_id=A1PA6795UKMFR9][language_tag=de_DE]#5.value",
+              "ourColumn": "bulletPoint5_DE"
+            }
+          ]
+        },
+        "maxLength": 500
+      },
+
+      "description": {
+        "reverseFeedPattern": "product_description[marketplace_id=A1PA6795UKMFR9][language_tag={LANG}]#1.value",
+        "ourColumnPattern": "productDescription_{LANG_SHORT}",
+        "examples": {
+          "de_DE": {
+            "reverseFeed": "product_description[marketplace_id=A1PA6795UKMFR9][language_tag=de_DE]#1.value",
+            "ourColumn": "productDescription_DE"
+          }
+        },
+        "maxLength": 2000
+      },
+
+      "genericKeywords": {
+        "reverseFeedPattern": "generic_keyword[marketplace_id=A1PA6795UKMFR9][language_tag={LANG}]#1.value",
+        "ourColumnPattern": "genericKeywords_{LANG_SHORT}",
+        "examples": {
+          "de_DE": {
+            "reverseFeed": "generic_keyword[marketplace_id=A1PA6795UKMFR9][language_tag=de_DE]#1.value",
+            "ourColumn": "genericKeywords_DE"
+          }
+        },
+        "maxLength": 250
+      },
+
+      "manufacturer": {
+        "reverseFeedPattern": "manufacturer[marketplace_id=A1PA6795UKMFR9][language_tag={LANG}]#1.value",
+        "ourColumnPattern": "manufacturer_{LANG_SHORT}",
+        "maxLength": 50
+      },
+
+      "specialFeatures": {
+        "description": "Up to 5 special features per language",
+        "count": 5,
+        "reverseFeedPattern": "special_feature[marketplace_id=A1PA6795UKMFR9][language_tag={LANG}]#{NUM}.value",
+        "ourColumnPattern": "specialFeature{NUM}_{LANG_SHORT}"
+      },
+
+      "material": {
+        "description": "Up to 5 materials per language",
+        "count": 5,
+        "reverseFeedPattern": "material[marketplace_id=A1PA6795UKMFR9][language_tag={LANG}]#{NUM}.value",
+        "ourColumnPattern": "material{NUM}_{LANG_SHORT}"
+      },
+
+      "color": {
+        "reverseFeedPattern": "color[marketplace_id=A1PA6795UKMFR9][language_tag={LANG}]#1.value",
+        "ourColumnPattern": "colorName_{LANG_SHORT}"
+      },
+
+      "size": {
+        "reverseFeedPattern": "size[marketplace_id=A1PA6795UKMFR9][language_tag={LANG}]#1.value",
+        "ourColumnPattern": "sizeName_{LANG_SHORT}"
+      },
+
+      "style": {
+        "reverseFeedPattern": "style[marketplace_id=A1PA6795UKMFR9][language_tag={LANG}]#1.value",
+        "ourColumnPattern": "styleName_{LANG_SHORT}"
+      },
+
+      "theme": {
+        "description": "Up to 5 themes per language",
+        "count": 5,
+        "reverseFeedPattern": "theme[marketplace_id=A1PA6795UKMFR9][language_tag={LANG}]#{NUM}.value",
+        "ourColumnPattern": "theme{NUM}_{LANG_SHORT}"
+      }
+    }
+  },
+
+  "imageFields": {
+    "mainImage": {
+      "reverseFeedColumn": "main_offer_image_locator[marketplace_id=A1PA6795UKMFR9]#1.media_location",
+      "ourColumn": "mainImageURL",
+      "required": true,
+      "type": "url"
+    },
+    "additionalImages": [
+      {
+        "reverseFeedColumn": "other_offer_image_locator_1[marketplace_id=A1PA6795UKMFR9]#1.media_location",
+        "ourColumn": "additionalImage1_URL"
+      },
+      {
+        "reverseFeedColumn": "other_offer_image_locator_2[marketplace_id=A1PA6795UKMFR9]#1.media_location",
+        "ourColumn": "additionalImage2_URL"
+      },
+      {
+        "reverseFeedColumn": "other_offer_image_locator_3[marketplace_id=A1PA6795UKMFR9]#1.media_location",
+        "ourColumn": "additionalImage3_URL"
+      },
+      {
+        "reverseFeedColumn": "other_offer_image_locator_4[marketplace_id=A1PA6795UKMFR9]#1.media_location",
+        "ourColumn": "additionalImage4_URL"
+      },
+      {
+        "reverseFeedColumn": "other_offer_image_locator_5[marketplace_id=A1PA6795UKMFR9]#1.media_location",
+        "ourColumn": "additionalImage5_URL"
+      }
+    ]
+  },
+
+  "dimensionFields": {
+    "itemLength": {
+      "reverseFeedColumn": "external_product_id_type[marketplace_id=A1PA6795UKMFR9]#1.value",
+      "note": "Need to find correct column for item dimensions"
+    },
+    "packageLength": {
+      "reverseFeedColumn": "package_dimensions[marketplace_id=A1PA6795UKMFR9]#1.length.value",
+      "ourColumn": "packageLength_cm",
+      "unit": "centimeters"
+    },
+    "packageWidth": {
+      "reverseFeedColumn": "package_dimensions[marketplace_id=A1PA6795UKMFR9]#1.width.value",
+      "ourColumn": "packageWidth_cm",
+      "unit": "centimeters"
+    },
+    "packageHeight": {
+      "reverseFeedColumn": "package_dimensions[marketplace_id=A1PA6795UKMFR9]#1.height.value",
+      "ourColumn": "packageHeight_cm",
+      "unit": "centimeters"
+    },
+    "packageWeight": {
+      "reverseFeedColumn": "package_weight[marketplace_id=A1PA6795UKMFR9]#1.value",
+      "ourColumn": "packageWeight_kg",
+      "unit": "kilograms"
+    },
+    "itemWeight": {
+      "reverseFeedColumn": "item_weight[marketplace_id=A1PA6795UKMFR9]#1.value",
+      "ourColumn": "itemWeight_kg",
+      "unit": "kilograms"
+    }
+  },
+
+  "variationFields": {
+    "parentSKU": {
+      "reverseFeedColumn": "parent_sku[marketplace_id=A1PA6795UKMFR9]#1.value",
+      "ourColumn": "Parent SKU"
+    },
+    "variationTheme": {
+      "reverseFeedColumn": "variation_theme[marketplace_id=A1PA6795UKMFR9]#1.value",
+      "ourColumn": "variationTheme"
+    },
+    "relationshipType": {
+      "reverseFeedColumn": "child_relationship_type[marketplace_id=A1PA6795UKMFR9]#1.value",
+      "ourColumn": "_internal_relationType"
+    }
+  },
+
+  "pricingFields": {
+    "note": "Pricing fields exist but we don't import them for content management",
+    "fields": {
+      "listPrice": "list_price[marketplace_id=A1PA6795UKMFR9]#1.value_with_tax",
+      "ourPrice": "purchasable_offer[marketplace_id=A1PA6795UKMFR9][audience=ALL]#1.our_price#1.schedule#1.value_with_tax",
+      "quantity": "fulfillment_availability#1.quantity"
+    }
+  },
+
+  "languageCodeMapping": {
+    "description": "Convert Amazon language codes (de_DE) to our format (DE)",
+    "mapping": {
+      "de_DE": "DE",
+      "en_GB": "EN",
+      "fr_FR": "FR",
+      "it_IT": "IT",
+      "es_ES": "ES",
+      "nl_NL": "NL",
+      "pl_PL": "PL",
+      "sv_SE": "SE"
+    }
+  },
+
+  "importStrategy": {
+    "description": "How to handle import from reverse feed",
+    "steps": [
+      "1. Read CSV file (use row 2 for column names)",
+      "2. Find column indices for all mapped fields",
+      "3. For each data row (row 3+):",
+      "4.   Extract values using column mapping",
+      "5.   Convert language codes (de_DE → DE)",
+      "6.   Validate data (length limits, required fields)",
+      "7.   Insert into ProductsMain sheet",
+      "8. Report: X products imported, Y warnings, Z errors"
+    ],
+    "handleMissingColumns": "Skip if column not found, log warning",
+    "handleEmptyValues": "Insert empty string, don't skip",
+    "duplicateHandling": "Ask user: Skip, Overwrite, or Create New Row"
+  }
+}

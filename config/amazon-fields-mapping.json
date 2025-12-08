@@ -1,0 +1,781 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Amazon Complete Fields Mapping",
+  "description": "Complete mapping of ALL Amazon SP-API fields for product content management",
+  "version": "1.0.0",
+
+  "listings": {
+    "description": "Amazon Listings API fields - product content",
+    "fields": {
+      "identifiers": {
+        "asin": {
+          "field": "asin",
+          "type": "string",
+          "maxLength": 10,
+          "required": false,
+          "description": "Amazon Standard Identification Number",
+          "editable": false,
+          "columnName": "ASIN"
+        },
+        "sku": {
+          "field": "sku",
+          "type": "string",
+          "maxLength": 40,
+          "required": true,
+          "description": "Seller SKU",
+          "editable": true,
+          "columnName": "SKU"
+        },
+        "ean": {
+          "field": "externalProductId",
+          "type": "string",
+          "maxLength": 13,
+          "required": false,
+          "description": "European Article Number",
+          "editable": true,
+          "columnName": "EAN"
+        },
+        "upc": {
+          "field": "externalProductId",
+          "type": "string",
+          "maxLength": 12,
+          "required": false,
+          "description": "Universal Product Code",
+          "editable": true,
+          "columnName": "UPC"
+        }
+      },
+      "basicInfo": {
+        "productTitle": {
+          "field": "item_name",
+          "type": "languageString",
+          "maxLength": 200,
+          "required": true,
+          "description": "Product title",
+          "multilanguage": true,
+          "columnPattern": "productTitle_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "brand": {
+          "field": "brand",
+          "type": "languageString",
+          "maxLength": 50,
+          "required": true,
+          "description": "Brand name",
+          "multilanguage": true,
+          "columnPattern": "brand_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "manufacturer": {
+          "field": "manufacturer",
+          "type": "languageString",
+          "maxLength": 50,
+          "required": false,
+          "description": "Manufacturer name",
+          "multilanguage": true,
+          "columnPattern": "manufacturer_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "productType": {
+          "field": "product_type",
+          "type": "string",
+          "maxLength": 100,
+          "required": true,
+          "description": "Amazon product type",
+          "editable": true,
+          "columnName": "productType"
+        },
+        "modelNumber": {
+          "field": "model_number",
+          "type": "string",
+          "maxLength": 80,
+          "required": false,
+          "description": "Model number",
+          "editable": true,
+          "columnName": "modelNumber"
+        },
+        "releaseDate": {
+          "field": "release_date",
+          "type": "date",
+          "format": "YYYY-MM-DD",
+          "required": false,
+          "description": "Product release date",
+          "editable": true,
+          "columnName": "releaseDate"
+        },
+        "packageQuantity": {
+          "field": "package_quantity",
+          "type": "integer",
+          "required": false,
+          "description": "Units per package",
+          "editable": true,
+          "columnName": "packageQuantity"
+        }
+      },
+      "bulletPoints": {
+        "description": "Bullet points (max 5 for most categories, up to 9 for some)",
+        "maxCount": 9,
+        "fields": {
+          "bulletPoint1": {
+            "field": "bullet_point",
+            "index": 0,
+            "type": "languageString",
+            "maxLength": 500,
+            "required": false,
+            "description": "First bullet point",
+            "multilanguage": true,
+            "columnPattern": "bulletPoint1_{LANG}",
+            "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+          },
+          "bulletPoint2": {
+            "field": "bullet_point",
+            "index": 1,
+            "type": "languageString",
+            "maxLength": 500,
+            "required": false,
+            "multilanguage": true,
+            "columnPattern": "bulletPoint2_{LANG}",
+            "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+          },
+          "bulletPoint3": {
+            "field": "bullet_point",
+            "index": 2,
+            "type": "languageString",
+            "maxLength": 500,
+            "required": false,
+            "multilanguage": true,
+            "columnPattern": "bulletPoint3_{LANG}",
+            "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+          },
+          "bulletPoint4": {
+            "field": "bullet_point",
+            "index": 3,
+            "type": "languageString",
+            "maxLength": 500,
+            "required": false,
+            "multilanguage": true,
+            "columnPattern": "bulletPoint4_{LANG}",
+            "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+          },
+          "bulletPoint5": {
+            "field": "bullet_point",
+            "index": 4,
+            "type": "languageString",
+            "maxLength": 500,
+            "required": false,
+            "multilanguage": true,
+            "columnPattern": "bulletPoint5_{LANG}",
+            "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+          },
+          "bulletPoint6": {
+            "field": "bullet_point",
+            "index": 5,
+            "type": "languageString",
+            "maxLength": 500,
+            "required": false,
+            "multilanguage": true,
+            "columnPattern": "bulletPoint6_{LANG}",
+            "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+          },
+          "bulletPoint7": {
+            "field": "bullet_point",
+            "index": 6,
+            "type": "languageString",
+            "maxLength": 500,
+            "required": false,
+            "multilanguage": true,
+            "columnPattern": "bulletPoint7_{LANG}",
+            "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+          },
+          "bulletPoint8": {
+            "field": "bullet_point",
+            "index": 7,
+            "type": "languageString",
+            "maxLength": 500,
+            "required": false,
+            "multilanguage": true,
+            "columnPattern": "bulletPoint8_{LANG}",
+            "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+          },
+          "bulletPoint9": {
+            "field": "bullet_point",
+            "index": 8,
+            "type": "languageString",
+            "maxLength": 500,
+            "required": false,
+            "multilanguage": true,
+            "columnPattern": "bulletPoint9_{LANG}",
+            "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+          }
+        }
+      },
+      "description": {
+        "productDescription": {
+          "field": "product_description",
+          "type": "languageString",
+          "maxLength": 2000,
+          "required": false,
+          "description": "Product description (HTML allowed)",
+          "multilanguage": true,
+          "columnPattern": "productDescription_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "searchTerms": {
+        "description": "Backend search terms (not visible to customers)",
+        "genericKeywords": {
+          "field": "generic_keyword",
+          "type": "languageString",
+          "maxLength": 250,
+          "maxBytes": 249,
+          "required": false,
+          "description": "Generic search terms (backend)",
+          "multilanguage": true,
+          "columnPattern": "genericKeywords_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "platinumKeywords1": {
+          "field": "platinum_keywords_1",
+          "type": "languageString",
+          "maxLength": 250,
+          "required": false,
+          "multilanguage": true,
+          "columnPattern": "platinumKeywords1_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "platinumKeywords2": {
+          "field": "platinum_keywords_2",
+          "type": "languageString",
+          "maxLength": 250,
+          "required": false,
+          "multilanguage": true,
+          "columnPattern": "platinumKeywords2_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "platinumKeywords3": {
+          "field": "platinum_keywords_3",
+          "type": "languageString",
+          "maxLength": 250,
+          "required": false,
+          "multilanguage": true,
+          "columnPattern": "platinumKeywords3_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "platinumKeywords4": {
+          "field": "platinum_keywords_4",
+          "type": "languageString",
+          "maxLength": 250,
+          "required": false,
+          "multilanguage": true,
+          "columnPattern": "platinumKeywords4_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "platinumKeywords5": {
+          "field": "platinum_keywords_5",
+          "type": "languageString",
+          "maxLength": 250,
+          "required": false,
+          "multilanguage": true,
+          "columnPattern": "platinumKeywords5_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "targetAudienceKeywords": {
+          "field": "target_audience_keywords",
+          "type": "languageString",
+          "maxLength": 250,
+          "required": false,
+          "multilanguage": true,
+          "columnPattern": "targetAudienceKeywords_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "productDetails": {
+        "aboutBrand": {
+          "field": "supplier_declared_dg_hz_regulation",
+          "type": "languageString",
+          "maxLength": 500,
+          "required": false,
+          "multilanguage": true,
+          "columnPattern": "aboutBrand_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "legalDisclaimer": {
+          "field": "legal_disclaimer_description",
+          "type": "languageString",
+          "maxLength": 1000,
+          "required": false,
+          "multilanguage": true,
+          "columnPattern": "legalDisclaimer_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "safetyWarning": {
+          "field": "safety_warning",
+          "type": "languageString",
+          "maxLength": 1000,
+          "required": false,
+          "multilanguage": true,
+          "columnPattern": "safetyWarning_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "euCompliance": {
+        "description": "EU-specific compliance fields",
+        "countryOfOrigin": {
+          "field": "country_of_origin",
+          "type": "string",
+          "maxLength": 2,
+          "pattern": "^[A-Z]{2}$",
+          "required": false,
+          "description": "ISO 3166-1 alpha-2 country code (e.g., DE, CN, US)",
+          "columnName": "countryOfOrigin"
+        },
+        "batteriesRequired": {
+          "field": "batteries_required",
+          "type": "boolean",
+          "required": false,
+          "description": "Battery indicator",
+          "columnName": "batteriesRequired"
+        },
+        "isLithiumBattery": {
+          "field": "is_lithium_battery",
+          "type": "boolean",
+          "required": false,
+          "description": "Lithium battery flag",
+          "columnName": "isLithiumBattery"
+        },
+        "supplierDeclaredDgHzRegulation": {
+          "field": "supplier_declared_dg_hz_regulation",
+          "type": "string",
+          "maxLength": 500,
+          "required": false,
+          "description": "Dangerous goods declaration",
+          "columnName": "supplierDeclaredDgHzRegulation"
+        },
+        "adultProduct": {
+          "field": "adult_product",
+          "type": "boolean",
+          "required": false,
+          "description": "Adult content flag",
+          "columnName": "adultProduct"
+        }
+      },
+      "dimensions": {
+        "itemLength": {
+          "field": "item_length",
+          "type": "number",
+          "unit": "centimeters",
+          "required": false,
+          "columnName": "itemLength_cm"
+        },
+        "itemWidth": {
+          "field": "item_width",
+          "type": "number",
+          "unit": "centimeters",
+          "required": false,
+          "columnName": "itemWidth_cm"
+        },
+        "itemHeight": {
+          "field": "item_height",
+          "type": "number",
+          "unit": "centimeters",
+          "required": false,
+          "columnName": "itemHeight_cm"
+        },
+        "itemWeight": {
+          "field": "item_weight",
+          "type": "number",
+          "unit": "kilograms",
+          "required": false,
+          "columnName": "itemWeight_kg"
+        },
+        "packageLength": {
+          "field": "package_length",
+          "type": "number",
+          "unit": "centimeters",
+          "required": false,
+          "columnName": "packageLength_cm"
+        },
+        "packageWidth": {
+          "field": "package_width",
+          "type": "number",
+          "unit": "centimeters",
+          "required": false,
+          "columnName": "packageWidth_cm"
+        },
+        "packageHeight": {
+          "field": "package_height",
+          "type": "number",
+          "unit": "centimeters",
+          "required": false,
+          "columnName": "packageHeight_cm"
+        },
+        "packageWeight": {
+          "field": "package_weight",
+          "type": "number",
+          "unit": "kilograms",
+          "required": false,
+          "columnName": "packageWeight_kg"
+        }
+      }
+    }
+  },
+
+  "pricing": {
+    "description": "Pricing and offer fields (Listings Items API)",
+    "fields": {
+      "ourPrice": {
+        "field": "our_price",
+        "type": "number",
+        "required": false,
+        "description": "Regular price with tax",
+        "columnName": "ourPrice"
+      },
+      "discountedPrice": {
+        "field": "discounted_price",
+        "type": "number",
+        "required": false,
+        "description": "Discounted price with tax",
+        "columnName": "discountedPrice"
+      },
+      "discountStartDate": {
+        "field": "discounted_price_start",
+        "type": "datetime",
+        "format": "YYYY-MM-DDTHH:mm:ss",
+        "required": false,
+        "description": "Discount start date (ISO 8601)",
+        "columnName": "discountStartDate"
+      },
+      "discountEndDate": {
+        "field": "discounted_price_end",
+        "type": "datetime",
+        "format": "YYYY-MM-DDTHH:mm:ss",
+        "required": false,
+        "description": "Discount end date (ISO 8601)",
+        "columnName": "discountEndDate"
+      },
+      "currency": {
+        "field": "currency",
+        "type": "string",
+        "enum": ["EUR", "GBP", "USD", "PLN", "SEK"],
+        "required": false,
+        "description": "ISO 4217 currency code",
+        "columnName": "currency"
+      },
+      "minimumPrice": {
+        "field": "minimum_seller_allowed_price",
+        "type": "number",
+        "required": false,
+        "description": "Minimum allowed price",
+        "columnName": "minimumPrice"
+      },
+      "maximumPrice": {
+        "field": "maximum_seller_allowed_price",
+        "type": "number",
+        "required": false,
+        "description": "Maximum allowed price",
+        "columnName": "maximumPrice"
+      }
+    }
+  },
+
+  "inventory": {
+    "description": "Inventory and fulfillment fields (Listings Items API)",
+    "fields": {
+      "quantity": {
+        "field": "quantity",
+        "type": "integer",
+        "required": false,
+        "description": "Available quantity",
+        "columnName": "quantity"
+      },
+      "fulfillmentChannelCode": {
+        "field": "fulfillment_channel_code",
+        "type": "string",
+        "enum": ["DEFAULT", "AMAZON_EU", "AMAZON_NA", "AMAZON_JP"],
+        "default": "DEFAULT",
+        "required": false,
+        "description": "Fulfillment method: DEFAULT (MFN), AMAZON_EU (FBA)",
+        "columnName": "fulfillmentChannelCode"
+      },
+      "leadTimeToShipMaxDays": {
+        "field": "lead_time_to_ship_max_days",
+        "type": "integer",
+        "min": 1,
+        "max": 30,
+        "required": false,
+        "description": "Maximum days to ship (1-30)",
+        "columnName": "leadTimeToShipMaxDays"
+      },
+      "restockDate": {
+        "field": "restock_date",
+        "type": "date",
+        "format": "YYYY-MM-DD",
+        "required": false,
+        "description": "Expected restock date",
+        "columnName": "restockDate"
+      }
+    }
+  },
+
+  "images": {
+    "description": "Product images (main + additional)",
+    "maxAdditionalImages": 8,
+    "fields": {
+      "mainImage": {
+        "field": "main_product_image_locator",
+        "type": "url",
+        "required": true,
+        "description": "Main product image (min 1000px)",
+        "columnName": "mainImageURL",
+        "altText": {
+          "multilanguage": true,
+          "columnPattern": "mainImageAlt_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "additionalImage1": {
+        "field": "other_product_image_locator",
+        "index": 0,
+        "type": "url",
+        "required": false,
+        "columnName": "additionalImage1_URL",
+        "altText": {
+          "multilanguage": true,
+          "columnPattern": "additionalImage1_Alt_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "additionalImage2": {
+        "field": "other_product_image_locator",
+        "index": 1,
+        "type": "url",
+        "required": false,
+        "columnName": "additionalImage2_URL",
+        "altText": {
+          "multilanguage": true,
+          "columnPattern": "additionalImage2_Alt_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "additionalImage3": {
+        "field": "other_product_image_locator",
+        "index": 2,
+        "type": "url",
+        "required": false,
+        "columnName": "additionalImage3_URL",
+        "altText": {
+          "multilanguage": true,
+          "columnPattern": "additionalImage3_Alt_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "additionalImage4": {
+        "field": "other_product_image_locator",
+        "index": 3,
+        "type": "url",
+        "required": false,
+        "columnName": "additionalImage4_URL",
+        "altText": {
+          "multilanguage": true,
+          "columnPattern": "additionalImage4_Alt_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "additionalImage5": {
+        "field": "other_product_image_locator",
+        "index": 4,
+        "type": "url",
+        "required": false,
+        "columnName": "additionalImage5_URL",
+        "altText": {
+          "multilanguage": true,
+          "columnPattern": "additionalImage5_Alt_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "additionalImage6": {
+        "field": "other_product_image_locator",
+        "index": 5,
+        "type": "url",
+        "required": false,
+        "columnName": "additionalImage6_URL",
+        "altText": {
+          "multilanguage": true,
+          "columnPattern": "additionalImage6_Alt_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "additionalImage7": {
+        "field": "other_product_image_locator",
+        "index": 6,
+        "type": "url",
+        "required": false,
+        "columnName": "additionalImage7_URL",
+        "altText": {
+          "multilanguage": true,
+          "columnPattern": "additionalImage7_Alt_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      },
+      "additionalImage8": {
+        "field": "other_product_image_locator",
+        "index": 7,
+        "type": "url",
+        "required": false,
+        "columnName": "additionalImage8_URL",
+        "altText": {
+          "multilanguage": true,
+          "columnPattern": "additionalImage8_Alt_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        }
+      }
+    }
+  },
+
+  "videos": {
+    "description": "Product videos",
+    "maxVideos": 1,
+    "fields": {
+      "productVideo": {
+        "field": "product_video",
+        "type": "url",
+        "required": false,
+        "description": "Product video URL (YouTube or Amazon hosted)",
+        "columnName": "productVideoURL",
+        "title": {
+          "multilanguage": true,
+          "columnPattern": "productVideoTitle_{LANG}",
+          "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
+        },
+        "thumbnail": {
+          "field": "video_thumbnail",
+          "type": "url",
+          "columnName": "productVideoThumbnailURL"
+        }
+      }
+    }
+  },
+
+  "variations": {
+    "description": "Product variations (parent-child relationships)",
+    "fields": {
+      "parentSKU": {
+        "field": "parent_sku",
+        "type": "string",
+        "required": false,
+        "columnName": "parentSKU"
+      },
+      "parentASIN": {
+        "field": "parent_asin",
+        "type": "string",
+        "required": false,
+        "columnName": "parentASIN"
+      },
+      "variationTheme": {
+        "field": "variation_theme",
+        "type": "string",
+        "enum": ["Size", "Color", "SizeColor", "StyleName", "SizeStyleName", "ColorStyleName"],
+        "required": false,
+        "columnName": "variationTheme"
+      },
+      "colorName": {
+        "field": "color_name",
+        "type": "string",
+        "required": false,
+        "columnName": "colorName"
+      },
+      "colorMap": {
+        "field": "color_map",
+        "type": "string",
+        "required": false,
+        "description": "Color standardization",
+        "columnName": "colorMap"
+      },
+      "sizeName": {
+        "field": "size_name",
+        "type": "string",
+        "required": false,
+        "columnName": "sizeName"
+      },
+      "sizeMap": {
+        "field": "size_map",
+        "type": "string",
+        "required": false,
+        "description": "Size standardization",
+        "columnName": "sizeMap"
+      },
+      "styleName": {
+        "field": "style_name",
+        "type": "string",
+        "required": false,
+        "columnName": "styleName"
+      },
+      "materialType": {
+        "field": "material_type",
+        "type": "string",
+        "required": false,
+        "columnName": "materialType"
+      },
+      "patternName": {
+        "field": "pattern_name",
+        "type": "string",
+        "required": false,
+        "columnName": "patternName"
+      }
+    }
+  },
+
+  "control": {
+    "description": "Control columns for export and status tracking",
+    "fields": {
+      "exportCheckbox": {
+        "type": "checkbox",
+        "required": false,
+        "description": "Check to include in export",
+        "columnName": "☑️ Export"
+      },
+      "status": {
+        "type": "dropdown",
+        "enum": ["PENDING", "DONE", "FAILED", "SKIPPED"],
+        "default": "PENDING",
+        "description": "Export status",
+        "columnName": "Status"
+      },
+      "exportDateTime": {
+        "type": "datetime",
+        "format": "dd.MM.yyyy HH:mm:ss",
+        "timezone": "Europe/Berlin",
+        "description": "Last export date and time",
+        "columnName": "ExportDateTime"
+      },
+      "productLink": {
+        "type": "url",
+        "description": "Link to product on Amazon",
+        "formula": "=IF(B2<>\"\",CONCATENATE(\"https://www.amazon.\",MARKETPLACE,\"/dp/\",B2),\"\")",
+        "columnName": "ProductLink"
+      },
+      "lastModified": {
+        "type": "datetime",
+        "format": "dd.MM.yyyy HH:mm:ss",
+        "description": "Last modification timestamp",
+        "columnName": "LastModified"
+      },
+      "modifiedBy": {
+        "type": "string",
+        "description": "User who last modified",
+        "columnName": "ModifiedBy"
+      },
+      "errorMessage": {
+        "type": "string",
+        "description": "Error message if export failed",
+        "columnName": "ErrorMessage"
+      },
+      "aiPrompt": {
+        "type": "text",
+        "maxLength": 2000,
+        "description": "Custom AI prompt for content generation",
+        "columnName": "AI_Prompt"
+      }
+    }
+  }
+}

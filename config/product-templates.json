@@ -1,0 +1,468 @@
+{
+  "version": "1.0",
+  "description": "Product listing templates - predefined layouts with required fields",
+  "templates": [
+    {
+      "id": "T01",
+      "name": "Basic Essentials",
+      "symbol": "⭐",
+      "category": "all",
+      "difficulty": "beginner",
+      "description": "Minimum required fields - quick listing for standard products",
+      "whyItWorks": "Fast setup, Amazon-compliant, perfect for simple products without complex features",
+      "estimatedTime": "5-10 minutes",
+      "requiredFields": {
+        "core": ["SKU", "ASIN", "Product Type", "brand_DE", "brand_EN"],
+        "content": [
+          "productTitle_DE", "productTitle_EN",
+          "bulletPoint1_DE", "bulletPoint2_DE", "bulletPoint3_DE",
+          "bulletPoint1_EN", "bulletPoint2_EN", "bulletPoint3_EN",
+          "productDescription_DE", "productDescription_EN"
+        ],
+        "images": ["mainImageURL"],
+        "optional": []
+      },
+      "aplusModules": 0,
+      "colorCode": "#E8F5E9"
+    },
+    {
+      "id": "T02",
+      "name": "Multi-Language Premium",
+      "symbol": "🌍",
+      "category": "all",
+      "difficulty": "intermediate",
+      "description": "Full translations for all 8 EU languages - maximum market reach",
+      "whyItWorks": "Reaches ALL European customers in their native language, increases conversion 30-40%",
+      "estimatedTime": "20-30 minutes",
+      "requiredFields": {
+        "core": ["SKU", "ASIN", "Product Type"],
+        "content": [
+          "productTitle_DE", "productTitle_EN", "productTitle_FR", "productTitle_IT",
+          "productTitle_ES", "productTitle_NL", "productTitle_PL", "productTitle_SE",
+          "brand_DE", "brand_EN", "brand_FR", "brand_IT", "brand_ES", "brand_NL", "brand_PL", "brand_SE",
+          "bulletPoint1_DE", "bulletPoint2_DE", "bulletPoint3_DE", "bulletPoint4_DE", "bulletPoint5_DE",
+          "bulletPoint1_EN", "bulletPoint2_EN", "bulletPoint3_EN", "bulletPoint4_EN", "bulletPoint5_EN",
+          "bulletPoint1_FR", "bulletPoint2_FR", "bulletPoint3_FR", "bulletPoint4_FR", "bulletPoint5_FR",
+          "bulletPoint1_IT", "bulletPoint2_IT", "bulletPoint3_IT", "bulletPoint4_IT", "bulletPoint5_IT",
+          "bulletPoint1_ES", "bulletPoint2_ES", "bulletPoint3_ES", "bulletPoint4_ES", "bulletPoint5_ES",
+          "bulletPoint1_NL", "bulletPoint2_NL", "bulletPoint3_NL", "bulletPoint4_NL", "bulletPoint5_NL",
+          "bulletPoint1_PL", "bulletPoint2_PL", "bulletPoint3_PL", "bulletPoint4_PL", "bulletPoint5_PL",
+          "bulletPoint1_SE", "bulletPoint2_SE", "bulletPoint3_SE", "bulletPoint4_SE", "bulletPoint5_SE",
+          "productDescription_DE", "productDescription_EN", "productDescription_FR", "productDescription_IT",
+          "productDescription_ES", "productDescription_NL", "productDescription_PL", "productDescription_SE",
+          "genericKeywords_DE", "genericKeywords_EN", "genericKeywords_FR", "genericKeywords_IT",
+          "genericKeywords_ES", "genericKeywords_NL", "genericKeywords_PL", "genericKeywords_SE"
+        ],
+        "images": ["mainImageURL", "additionalImage1_URL", "additionalImage2_URL", "additionalImage3_URL"],
+        "optional": ["additionalImage4_URL", "additionalImage5_URL"]
+      },
+      "aplusModules": 0,
+      "colorCode": "#E3F2FD"
+    },
+    {
+      "id": "T03",
+      "name": "Visual Storyteller",
+      "symbol": "📸",
+      "category": "all",
+      "difficulty": "intermediate",
+      "description": "Focus on images - lifestyle photos + infographics",
+      "whyItWorks": "Images sell! 7+ quality images increase conversion by 60%, lifestyle shots build trust",
+      "estimatedTime": "15-20 minutes",
+      "requiredFields": {
+        "core": ["SKU", "ASIN", "Product Type", "brand_DE", "brand_EN"],
+        "content": [
+          "productTitle_DE", "productTitle_EN",
+          "bulletPoint1_DE", "bulletPoint2_DE", "bulletPoint3_DE",
+          "bulletPoint1_EN", "bulletPoint2_EN", "bulletPoint3_EN",
+          "productDescription_DE", "productDescription_EN"
+        ],
+        "images": [
+          "mainImageURL",
+          "additionalImage1_URL",
+          "additionalImage2_URL",
+          "additionalImage3_URL",
+          "additionalImage4_URL",
+          "additionalImage5_URL"
+        ],
+        "optional": ["additionalImage6_URL", "additionalImage7_URL", "additionalImage8_URL"]
+      },
+      "aplusModules": 0,
+      "colorCode": "#FFF3E0",
+      "imageGuidelines": {
+        "main": "Product on white background, 2000x2000px",
+        "additional1": "Lifestyle image - product in use",
+        "additional2": "Size/dimension infographic",
+        "additional3": "Feature highlights infographic",
+        "additional4": "Lifestyle image - different angle",
+        "additional5": "Detail shot - quality/material"
+      }
+    },
+    {
+      "id": "T04",
+      "name": "A+ Content Basic",
+      "symbol": "✨",
+      "category": "all",
+      "difficulty": "advanced",
+      "description": "Enhanced Brand Content with A+ Basic modules (5 modules)",
+      "whyItWorks": "A+ Content increases conversion 5-10%, reduces returns, builds brand trust",
+      "estimatedTime": "30-45 minutes",
+      "requiredFields": {
+        "core": ["SKU", "ASIN", "Product Type"],
+        "content": [
+          "productTitle_DE", "productTitle_EN",
+          "brand_DE", "brand_EN",
+          "bulletPoint1_DE", "bulletPoint2_DE", "bulletPoint3_DE", "bulletPoint4_DE", "bulletPoint5_DE",
+          "bulletPoint1_EN", "bulletPoint2_EN", "bulletPoint3_EN", "bulletPoint4_EN", "bulletPoint5_EN",
+          "productDescription_DE", "productDescription_EN"
+        ],
+        "images": ["mainImageURL", "additionalImage1_URL", "additionalImage2_URL", "additionalImage3_URL"],
+        "aplus": [
+          "aplus_basic_m1_companyLogoImage_URL",
+          "aplus_basic_m1_companyDescription_DE",
+          "aplus_basic_m1_companyDescription_EN",
+          "aplus_basic_m2_headline_DE",
+          "aplus_basic_m2_headline_EN",
+          "aplus_basic_m2_image_URL",
+          "aplus_basic_m2_description_DE",
+          "aplus_basic_m2_description_EN",
+          "aplus_basic_m3_headline_DE",
+          "aplus_basic_m3_headline_EN",
+          "aplus_basic_m3_image1_URL",
+          "aplus_basic_m3_image2_URL",
+          "aplus_basic_m3_image3_URL",
+          "aplus_basic_m3_text1_DE",
+          "aplus_basic_m3_text1_EN",
+          "aplus_basic_m3_text2_DE",
+          "aplus_basic_m3_text2_EN",
+          "aplus_basic_m3_text3_DE",
+          "aplus_basic_m3_text3_EN"
+        ],
+        "optional": []
+      },
+      "aplusModules": 5,
+      "aplusModuleTypes": [
+        "StandardCompanyLogo",
+        "StandardSingleImageSpecsDetail",
+        "StandardThreeImageText"
+      ],
+      "colorCode": "#F3E5F5"
+    },
+    {
+      "id": "T05",
+      "name": "Fashion Complete",
+      "symbol": "👕",
+      "category": "fashion",
+      "difficulty": "intermediate",
+      "description": "Complete fashion listing - size charts, materials, care instructions",
+      "whyItWorks": "Detailed size/material info reduces returns by 40%, builds buyer confidence",
+      "estimatedTime": "25-35 minutes",
+      "requiredFields": {
+        "core": ["SKU", "ASIN", "Product Type"],
+        "content": [
+          "productTitle_DE", "productTitle_EN",
+          "brand_DE", "brand_EN",
+          "bulletPoint1_DE", "bulletPoint2_DE", "bulletPoint3_DE", "bulletPoint4_DE", "bulletPoint5_DE",
+          "bulletPoint1_EN", "bulletPoint2_EN", "bulletPoint3_EN", "bulletPoint4_EN", "bulletPoint5_EN",
+          "productDescription_DE", "productDescription_EN"
+        ],
+        "fashionSpecific": [
+          "color_DE", "color_EN",
+          "size", "material_DE", "material_EN",
+          "careInstructions_DE", "careInstructions_EN",
+          "closure_DE", "closure_EN"
+        ],
+        "images": [
+          "mainImageURL",
+          "additionalImage1_URL",
+          "additionalImage2_URL",
+          "additionalImage3_URL",
+          "additionalImage4_URL"
+        ],
+        "optional": ["sizeChart_URL", "additionalImage5_URL"]
+      },
+      "aplusModules": 0,
+      "colorCode": "#FCE4EC",
+      "imageGuidelines": {
+        "main": "Product on white background or flat lay",
+        "additional1": "Model wearing product - front view",
+        "additional2": "Model wearing product - back view",
+        "additional3": "Detail shot - fabric/material",
+        "additional4": "Size chart or fit guide"
+      }
+    },
+    {
+      "id": "T06",
+      "name": "Home & Furniture Pro",
+      "symbol": "🛋️",
+      "category": "home_garden",
+      "difficulty": "intermediate",
+      "description": "Furniture/home decor with dimensions, assembly, materials",
+      "whyItWorks": "Clear dimensions/assembly info = fewer returns, detailed materials build quality perception",
+      "estimatedTime": "20-30 minutes",
+      "requiredFields": {
+        "core": ["SKU", "ASIN", "Product Type"],
+        "content": [
+          "productTitle_DE", "productTitle_EN",
+          "brand_DE", "brand_EN",
+          "bulletPoint1_DE", "bulletPoint2_DE", "bulletPoint3_DE", "bulletPoint4_DE", "bulletPoint5_DE",
+          "bulletPoint1_EN", "bulletPoint2_EN", "bulletPoint3_EN", "bulletPoint4_EN", "bulletPoint5_EN",
+          "productDescription_DE", "productDescription_EN"
+        ],
+        "homeSpecific": [
+          "itemLength_cm", "itemWidth_cm", "itemHeight_cm",
+          "itemWeight_kg",
+          "material_DE", "material_EN",
+          "color_DE", "color_EN",
+          "assemblyRequired", "assemblyInstructions_URL"
+        ],
+        "images": [
+          "mainImageURL",
+          "additionalImage1_URL",
+          "additionalImage2_URL",
+          "additionalImage3_URL",
+          "additionalImage4_URL"
+        ],
+        "optional": ["additionalImage5_URL", "userManual_URL"]
+      },
+      "aplusModules": 0,
+      "colorCode": "#E0F2F1",
+      "bulletPointGuidelines": {
+        "bp1": "Dimensions (L x W x H)",
+        "bp2": "Material and construction quality",
+        "bp3": "Assembly requirements",
+        "bp4": "Care/cleaning instructions",
+        "bp5": "Weight capacity or special features"
+      }
+    },
+    {
+      "id": "T07",
+      "name": "Electronics Tech Specs",
+      "symbol": "🔌",
+      "category": "electronics",
+      "difficulty": "advanced",
+      "description": "Electronics with full technical specifications",
+      "whyItWorks": "Detailed specs attract tech-savvy buyers, reduce support questions",
+      "estimatedTime": "30-40 minutes",
+      "requiredFields": {
+        "core": ["SKU", "ASIN", "Product Type"],
+        "content": [
+          "productTitle_DE", "productTitle_EN",
+          "brand_DE", "brand_EN",
+          "bulletPoint1_DE", "bulletPoint2_DE", "bulletPoint3_DE", "bulletPoint4_DE", "bulletPoint5_DE",
+          "bulletPoint1_EN", "bulletPoint2_EN", "bulletPoint3_EN", "bulletPoint4_EN", "bulletPoint5_EN",
+          "productDescription_DE", "productDescription_EN"
+        ],
+        "techSpecific": [
+          "model", "powerSource", "wattage",
+          "voltage", "connector_DE", "connector_EN",
+          "compatibility_DE", "compatibility_EN",
+          "warranty_DE", "warranty_EN"
+        ],
+        "images": [
+          "mainImageURL",
+          "additionalImage1_URL",
+          "additionalImage2_URL",
+          "additionalImage3_URL"
+        ],
+        "documents": ["userManual_URL"],
+        "optional": ["complianceCertificate_URL"]
+      },
+      "aplusModules": 0,
+      "colorCode": "#E1F5FE",
+      "bulletPointGuidelines": {
+        "bp1": "Key technical specifications",
+        "bp2": "Compatibility information",
+        "bp3": "What's included in the box",
+        "bp4": "Warranty and support",
+        "bp5": "Safety certifications"
+      }
+    },
+    {
+      "id": "T08",
+      "name": "GPSR Compliant EU",
+      "symbol": "🇪🇺",
+      "category": "all",
+      "difficulty": "advanced",
+      "description": "Full GPSR compliance for EU markets (required from Dec 2024)",
+      "whyItWorks": "MANDATORY for EU sales, prevents account suspension, builds legal compliance",
+      "estimatedTime": "40-60 minutes",
+      "requiredFields": {
+        "core": ["SKU", "ASIN", "Product Type"],
+        "content": [
+          "productTitle_DE", "productTitle_EN",
+          "brand_DE", "brand_EN",
+          "bulletPoint1_DE", "bulletPoint2_DE", "bulletPoint3_DE",
+          "bulletPoint1_EN", "bulletPoint2_EN", "bulletPoint3_EN",
+          "productDescription_DE", "productDescription_EN"
+        ],
+        "gpsr": [
+          "manufacturer_name", "manufacturer_address", "manufacturer_email",
+          "responsiblePerson_name", "responsiblePerson_address", "responsiblePerson_email",
+          "safetyInformation_URL",
+          "complianceDocument_URL"
+        ],
+        "images": ["mainImageURL", "additionalImage1_URL", "warningLabel_URL"],
+        "documents": ["safetyInformation_URL", "userManual_URL"],
+        "optional": ["complianceCertificate_URL", "testReport_URL"]
+      },
+      "aplusModules": 0,
+      "colorCode": "#FFF9C4",
+      "criticalNotes": [
+        "GPSR effective Dec 13, 2024 - MANDATORY for EU",
+        "Responsible person must be in EU",
+        "Safety docs must be in marketplace language",
+        "Missing GPSR data = listing suppressed"
+      ]
+    },
+    {
+      "id": "T09",
+      "name": "Premium A+ with Video",
+      "symbol": "🎬",
+      "category": "all",
+      difficulty": "expert",
+      "description": "Premium A+ Content with video, comparison table, FAQ (7 modules)",
+      "whyItWorks": "Video increases conversion 80%, comparison tables help decision-making, FAQ reduces support",
+      "estimatedTime": "60-90 minutes",
+      "requiredFields": {
+        "core": ["SKU", "ASIN", "Product Type"],
+        "content": [
+          "productTitle_DE", "productTitle_EN",
+          "brand_DE", "brand_EN",
+          "bulletPoint1_DE", "bulletPoint2_DE", "bulletPoint3_DE", "bulletPoint4_DE", "bulletPoint5_DE",
+          "bulletPoint1_EN", "bulletPoint2_EN", "bulletPoint3_EN", "bulletPoint4_EN", "bulletPoint5_EN",
+          "productDescription_DE", "productDescription_EN"
+        ],
+        "images": [
+          "mainImageURL",
+          "additionalImage1_URL",
+          "additionalImage2_URL",
+          "additionalImage3_URL",
+          "additionalImage4_URL",
+          "additionalImage5_URL"
+        ],
+        "aplusPremium": [
+          "aplus_premium_hero_headline_DE",
+          "aplus_premium_hero_headline_EN",
+          "aplus_premium_hero_image_URL",
+          "aplus_premium_video_URL",
+          "aplus_premium_video_thumbnail_URL",
+          "aplus_premium_comparison_product1_ASIN",
+          "aplus_premium_comparison_product2_ASIN",
+          "aplus_premium_comparison_product3_ASIN",
+          "aplus_premium_faq_q1_DE",
+          "aplus_premium_faq_a1_DE",
+          "aplus_premium_faq_q1_EN",
+          "aplus_premium_faq_a1_EN"
+        ],
+        "optional": []
+      },
+      "aplusModules": 7,
+      "aplusModuleTypes": [
+        "StandardHeroImageTextBlock",
+        "StandardVideoBlock",
+        "StandardProductComparisonTable",
+        "StandardFAQModule"
+      ],
+      "colorCode": "#E8EAF6",
+      "videoRequirements": {
+        "duration": "15-60 seconds recommended",
+        "format": "MP4, MOV",
+        "resolution": "1920x1080 minimum",
+        "fileSize": "500MB max"
+      }
+    },
+    {
+      "id": "T10",
+      "name": "Quick Launch Variations",
+      "symbol": "🎨",
+      "category": "variations",
+      "difficulty": "intermediate",
+      "description": "Parent-child variations (color, size) - family setup",
+      "whyItWorks": "Variation families consolidate reviews, increase visibility, offer choice",
+      "estimatedTime": "15-25 minutes per child",
+      "requiredFields": {
+        "core": ["SKU", "ASIN", "Product Type", "Parent SKU", "Parent ASIN"],
+        "content": [
+          "productTitle_DE", "productTitle_EN",
+          "brand_DE", "brand_EN",
+          "bulletPoint1_DE", "bulletPoint2_DE", "bulletPoint3_DE",
+          "bulletPoint1_EN", "bulletPoint2_EN", "bulletPoint3_EN",
+          "productDescription_DE", "productDescription_EN"
+        ],
+        "variations": [
+          "variationTheme",
+          "color_DE", "color_EN",
+          "size"
+        ],
+        "images": ["mainImageURL", "additionalImage1_URL"],
+        "optional": []
+      },
+      "aplusModules": 0,
+      "colorCode": "#F8BBD0",
+      "variationThemes": [
+        "Color", "Size", "SizeColor", "Style", "Flavor"
+      ],
+      "notes": [
+        "Parent product has no price/inventory",
+        "Each child MUST have unique variation value",
+        "Shared content at parent level",
+        "Individual images per child"
+      ]
+    }
+  ],
+
+  "templateCategories": {
+    "all": {
+      "name": "Universal Templates",
+      "description": "Works for any product type",
+      "templates": ["T01", "T02", "T03", "T04", "T08", "T09"]
+    },
+    "fashion": {
+      "name": "Fashion & Apparel",
+      "description": "Clothing, shoes, accessories",
+      "templates": ["T05"],
+      "recommended": "T05"
+    },
+    "home_garden": {
+      "name": "Home, Garden & Furniture",
+      "description": "Furniture, decor, kitchen, garden",
+      "templates": ["T06"],
+      "recommended": "T06"
+    },
+    "electronics": {
+      "name": "Electronics & Tech",
+      "description": "Consumer electronics, computers, accessories",
+      "templates": ["T07"],
+      "recommended": "T07"
+    },
+    "variations": {
+      "name": "Variation Products",
+      "description": "Products with color/size variations",
+      "templates": ["T10"],
+      "recommended": "T10"
+    }
+  },
+
+  "difficultyLevels": {
+    "beginner": {
+      "estimatedTime": "5-15 minutes",
+      "requiredSkills": ["Basic product knowledge"],
+      "templates": ["T01"]
+    },
+    "intermediate": {
+      "estimatedTime": "15-35 minutes",
+      "requiredSkills": ["Product knowledge", "Basic photography"],
+      "templates": ["T02", "T03", "T05", "T06", "T10"]
+    },
+    "advanced": {
+      "estimatedTime": "30-50 minutes",
+      "requiredSkills": ["Product knowledge", "Content creation", "Technical specs"],
+      "templates": ["T04", "T07", "T08"]
+    },
+    "expert": {
+      "estimatedTime": "60-90 minutes",
+      "requiredSkills": ["Advanced content", "Video production", "Brand strategy"],
+      "templates": ["T09"]
+    }
+  }
+}
