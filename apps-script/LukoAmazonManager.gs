@@ -567,7 +567,6 @@ function detectPrimaryMarketplace(productData) {
 // ========================================
 // DATA EXTRACTION FUNCTIONS
 // ========================================
-
 function extractProductData(sheet, rowNumber, activeLanguages) {
   const range = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn());
   const values = range.getValues()[0];
@@ -578,7 +577,12 @@ function extractProductData(sheet, rowNumber, activeLanguages) {
     sku: getColumnValue(values, headers, 'SKU'),
     productType: getColumnValue(values, headers, 'Product Type'),
     action: getColumnValue(values, headers, 'Action') || 'UPDATE',
-    content: {}
+    content: {},
+
+    // Non-language-specific fields
+    modelNumber: getColumnValue(values, headers, 'modelNumber') || getColumnValue(values, headers, 'Model Number'),
+    releaseDate: getColumnValue(values, headers, 'releaseDate') || getColumnValue(values, headers, 'Release Date'),
+    packageQuantity: getColumnValue(values, headers, 'packageQuantity') || getColumnValue(values, headers, 'Package Quantity')
   };
 
   // Extract multi-language content
@@ -586,17 +590,85 @@ function extractProductData(sheet, rowNumber, activeLanguages) {
     product.content[lang] = {
       title: getColumnValue(values, headers, `Title [${lang}]`),
       brand: getColumnValue(values, headers, `Brand [${lang}]`),
+      manufacturer: getColumnValue(values, headers, `Manufacturer [${lang}]`),
       bulletPoints: [
         getColumnValue(values, headers, `Bullet1 [${lang}]`),
         getColumnValue(values, headers, `Bullet2 [${lang}]`),
         getColumnValue(values, headers, `Bullet3 [${lang}]`),
         getColumnValue(values, headers, `Bullet4 [${lang}]`),
-        getColumnValue(values, headers, `Bullet5 [${lang}]`)
+        getColumnValue(values, headers, `Bullet5 [${lang}]`),
+        getColumnValue(values, headers, `Bullet6 [${lang}]`),
+        getColumnValue(values, headers, `Bullet7 [${lang}]`),
+        getColumnValue(values, headers, `Bullet8 [${lang}]`),
+        getColumnValue(values, headers, `Bullet9 [${lang}]`)
       ].filter(b => b),
       description: getColumnValue(values, headers, `Description [${lang}]`),
       keywords: getColumnValue(values, headers, `Keywords [${lang}]`),
+
+      // Additional keyword fields
+      platinumKeywords1: getColumnValue(values, headers, `PlatinumKeywords1 [${lang}]`),
+      platinumKeywords2: getColumnValue(values, headers, `PlatinumKeywords2 [${lang}]`),
+      platinumKeywords3: getColumnValue(values, headers, `PlatinumKeywords3 [${lang}]`),
+      platinumKeywords4: getColumnValue(values, headers, `PlatinumKeywords4 [${lang}]`),
+      platinumKeywords5: getColumnValue(values, headers, `PlatinumKeywords5 [${lang}]`),
+      targetAudienceKeywords: getColumnValue(values, headers, `TargetAudienceKeywords [${lang}]`),
+
+      // EU compliance text fields
+      legalDisclaimer: getColumnValue(values, headers, `LegalDisclaimer [${lang}]`),
+      safetyWarning: getColumnValue(values, headers, `SafetyWarning [${lang}]`),
+
       aboutBrand: getColumnValue(values, headers, `About Brand [${lang}]`),
       targetAudience: getColumnValue(values, headers, `Target Audience [${lang}]`)
+    };
+  }
+
+  // Extract pricing data
+  const ourPrice = getColumnValue(values, headers, 'ourPrice') || getColumnValue(values, headers, 'Price');
+  const discountedPrice = getColumnValue(values, headers, 'discountedPrice') || getColumnValue(values, headers, 'Discounted Price');
+  if (ourPrice || discountedPrice) {
+    product.pricing = {
+      ourPrice: ourPrice,
+      discountedPrice: discountedPrice,
+      discountStartDate: getColumnValue(values, headers, 'discountStartDate'),
+      discountEndDate: getColumnValue(values, headers, 'discountEndDate'),
+      currency: getColumnValue(values, headers, 'currency') || 'EUR'
+    };
+  }
+
+  // Extract inventory data
+  const quantity = getColumnValue(values, headers, 'quantity') || getColumnValue(values, headers, 'Quantity');
+  if (quantity !== undefined && quantity !== '') {
+    product.inventory = {
+      quantity: quantity,
+      fulfillmentChannelCode: getColumnValue(values, headers, 'fulfillmentChannelCode') || 'DEFAULT',
+      leadTimeToShipMaxDays: getColumnValue(values, headers, 'leadTimeToShipMaxDays') || 3
+    };
+  }
+
+  // Extract EU compliance data
+  const countryOfOrigin = getColumnValue(values, headers, 'countryOfOrigin') || getColumnValue(values, headers, 'Country of Origin');
+  if (countryOfOrigin) {
+    product.compliance = {
+      countryOfOrigin: countryOfOrigin,
+      batteriesRequired: getColumnValue(values, headers, 'batteriesRequired') === true || getColumnValue(values, headers, 'Batteries Required') === 'Yes',
+      isLithiumBattery: getColumnValue(values, headers, 'isLithiumBattery') === true || getColumnValue(values, headers, 'Lithium Battery') === 'Yes',
+      supplierDeclaredDgHzRegulation: getColumnValue(values, headers, 'supplierDeclaredDgHzRegulation'),
+      adultProduct: getColumnValue(values, headers, 'adultProduct') === true || getColumnValue(values, headers, 'Adult Product') === 'Yes'
+    };
+  }
+
+  // Extract dimensions
+  const itemLength = getColumnValue(values, headers, 'itemLength_cm') || getColumnValue(values, headers, 'Item Length (cm)');
+  if (itemLength) {
+    product.dimensions = {
+      itemLength: itemLength,
+      itemWidth: getColumnValue(values, headers, 'itemWidth_cm') || getColumnValue(values, headers, 'Item Width (cm)'),
+      itemHeight: getColumnValue(values, headers, 'itemHeight_cm') || getColumnValue(values, headers, 'Item Height (cm)'),
+      itemWeight: getColumnValue(values, headers, 'itemWeight_kg') || getColumnValue(values, headers, 'Item Weight (kg)'),
+      packageLength: getColumnValue(values, headers, 'packageLength_cm') || getColumnValue(values, headers, 'Package Length (cm)'),
+      packageWidth: getColumnValue(values, headers, 'packageWidth_cm') || getColumnValue(values, headers, 'Package Width (cm)'),
+      packageHeight: getColumnValue(values, headers, 'packageHeight_cm') || getColumnValue(values, headers, 'Package Height (cm)'),
+      packageWeight: getColumnValue(values, headers, 'packageWeight_kg') || getColumnValue(values, headers, 'Package Weight (kg)')
     };
   }
 
@@ -616,6 +688,15 @@ function syncProductToAmazon(productData, marketplace, marketplaceConfig) {
       content: productData.content,
       credentials: getCredentials()
     };
+
+    // Add optional fields if present
+    if (productData.modelNumber) payload.modelNumber = productData.modelNumber;
+    if (productData.releaseDate) payload.releaseDate = productData.releaseDate;
+    if (productData.packageQuantity) payload.packageQuantity = productData.packageQuantity;
+    if (productData.pricing) payload.pricing = productData.pricing;
+    if (productData.inventory) payload.inventory = productData.inventory;
+    if (productData.compliance) payload.compliance = productData.compliance;
+    if (productData.dimensions) payload.dimensions = productData.dimensions;
 
     // Call Cloud Function
     const response = callCloudFunction(payload);
@@ -638,6 +719,7 @@ function syncProductToAmazon(productData, marketplace, marketplaceConfig) {
     };
   }
 }
+
 
 // ========================================
 // IMAGES & MEDIA MANAGEMENT
