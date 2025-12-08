@@ -84,6 +84,32 @@
           "description": "Amazon product type",
           "editable": true,
           "columnName": "productType"
+        },
+        "modelNumber": {
+          "field": "model_number",
+          "type": "string",
+          "maxLength": 80,
+          "required": false,
+          "description": "Model number",
+          "editable": true,
+          "columnName": "modelNumber"
+        },
+        "releaseDate": {
+          "field": "release_date",
+          "type": "date",
+          "format": "YYYY-MM-DD",
+          "required": false,
+          "description": "Product release date",
+          "editable": true,
+          "columnName": "releaseDate"
+        },
+        "packageQuantity": {
+          "field": "package_quantity",
+          "type": "integer",
+          "required": false,
+          "description": "Units per package",
+          "editable": true,
+          "columnName": "packageQuantity"
         }
       },
       "bulletPoints": {
@@ -292,6 +318,47 @@
           "languages": ["DE", "EN", "FR", "IT", "ES", "NL", "PL", "SE"]
         }
       },
+      "euCompliance": {
+        "description": "EU-specific compliance fields",
+        "countryOfOrigin": {
+          "field": "country_of_origin",
+          "type": "string",
+          "maxLength": 2,
+          "pattern": "^[A-Z]{2}$",
+          "required": false,
+          "description": "ISO 3166-1 alpha-2 country code (e.g., DE, CN, US)",
+          "columnName": "countryOfOrigin"
+        },
+        "batteriesRequired": {
+          "field": "batteries_required",
+          "type": "boolean",
+          "required": false,
+          "description": "Battery indicator",
+          "columnName": "batteriesRequired"
+        },
+        "isLithiumBattery": {
+          "field": "is_lithium_battery",
+          "type": "boolean",
+          "required": false,
+          "description": "Lithium battery flag",
+          "columnName": "isLithiumBattery"
+        },
+        "supplierDeclaredDgHzRegulation": {
+          "field": "supplier_declared_dg_hz_regulation",
+          "type": "string",
+          "maxLength": 500,
+          "required": false,
+          "description": "Dangerous goods declaration",
+          "columnName": "supplierDeclaredDgHzRegulation"
+        },
+        "adultProduct": {
+          "field": "adult_product",
+          "type": "boolean",
+          "required": false,
+          "description": "Adult content flag",
+          "columnName": "adultProduct"
+        }
+      },
       "dimensions": {
         "itemLength": {
           "field": "item_length",
@@ -349,6 +416,103 @@
           "required": false,
           "columnName": "packageWeight_kg"
         }
+      }
+    }
+  },
+
+  "pricing": {
+    "description": "Pricing and offer fields (Listings Items API)",
+    "fields": {
+      "ourPrice": {
+        "field": "our_price",
+        "type": "number",
+        "required": false,
+        "description": "Regular price with tax",
+        "columnName": "ourPrice"
+      },
+      "discountedPrice": {
+        "field": "discounted_price",
+        "type": "number",
+        "required": false,
+        "description": "Discounted price with tax",
+        "columnName": "discountedPrice"
+      },
+      "discountStartDate": {
+        "field": "discounted_price_start",
+        "type": "datetime",
+        "format": "YYYY-MM-DDTHH:mm:ss",
+        "required": false,
+        "description": "Discount start date (ISO 8601)",
+        "columnName": "discountStartDate"
+      },
+      "discountEndDate": {
+        "field": "discounted_price_end",
+        "type": "datetime",
+        "format": "YYYY-MM-DDTHH:mm:ss",
+        "required": false,
+        "description": "Discount end date (ISO 8601)",
+        "columnName": "discountEndDate"
+      },
+      "currency": {
+        "field": "currency",
+        "type": "string",
+        "enum": ["EUR", "GBP", "USD", "PLN", "SEK"],
+        "required": false,
+        "description": "ISO 4217 currency code",
+        "columnName": "currency"
+      },
+      "minimumPrice": {
+        "field": "minimum_seller_allowed_price",
+        "type": "number",
+        "required": false,
+        "description": "Minimum allowed price",
+        "columnName": "minimumPrice"
+      },
+      "maximumPrice": {
+        "field": "maximum_seller_allowed_price",
+        "type": "number",
+        "required": false,
+        "description": "Maximum allowed price",
+        "columnName": "maximumPrice"
+      }
+    }
+  },
+
+  "inventory": {
+    "description": "Inventory and fulfillment fields (Listings Items API)",
+    "fields": {
+      "quantity": {
+        "field": "quantity",
+        "type": "integer",
+        "required": false,
+        "description": "Available quantity",
+        "columnName": "quantity"
+      },
+      "fulfillmentChannelCode": {
+        "field": "fulfillment_channel_code",
+        "type": "string",
+        "enum": ["DEFAULT", "AMAZON_EU", "AMAZON_NA", "AMAZON_JP"],
+        "default": "DEFAULT",
+        "required": false,
+        "description": "Fulfillment method: DEFAULT (MFN), AMAZON_EU (FBA)",
+        "columnName": "fulfillmentChannelCode"
+      },
+      "leadTimeToShipMaxDays": {
+        "field": "lead_time_to_ship_max_days",
+        "type": "integer",
+        "min": 1,
+        "max": 30,
+        "required": false,
+        "description": "Maximum days to ship (1-30)",
+        "columnName": "leadTimeToShipMaxDays"
+      },
+      "restockDate": {
+        "field": "restock_date",
+        "type": "date",
+        "format": "YYYY-MM-DD",
+        "required": false,
+        "description": "Expected restock date",
+        "columnName": "restockDate"
       }
     }
   },

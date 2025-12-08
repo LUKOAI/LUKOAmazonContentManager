@@ -159,7 +159,7 @@ async function getAccessToken(clientId, clientSecret, refreshToken) {
 // ========================================
 
 async function updateListing(data, marketplace, marketplaceId, accessToken, sellerId) {
-  const { asin, sku, productType, content, action } = data;
+  const { asin, sku, productType, content, action, pricing, inventory, compliance, dimensions, modelNumber, releaseDate, packageQuantity } = data;
 
   const endpoint = `https://sellingpartnerapi-eu.amazon.com/listings/2021-08-01/items/${sellerId}/${sku}`;
 
@@ -196,6 +196,21 @@ async function updateListing(data, marketplace, marketplaceId, accessToken, sell
         }
       ]
     };
+
+    // Add manufacturer (multilanguage)
+    if (langContent.manufacturer) {
+      languagePayloads[lang].patches.push({
+        op: 'replace',
+        path: '/attributes/manufacturer',
+        value: [
+          {
+            value: langContent.manufacturer,
+            language_tag: lang,
+            marketplace_id: marketplaceId
+          }
+        ]
+      });
+    }
 
     // Add bullet points
     if (langContent.bulletPoints && langContent.bulletPoints.length > 0) {
@@ -238,6 +253,217 @@ async function updateListing(data, marketplace, marketplaceId, accessToken, sell
           }
         ]
       });
+    }
+
+    // Add platinum keywords (1-5)
+    ['platinum_keywords_1', 'platinum_keywords_2', 'platinum_keywords_3', 'platinum_keywords_4', 'platinum_keywords_5'].forEach((pkField, index) => {
+      if (langContent[`platinumKeywords${index + 1}`]) {
+        languagePayloads[lang].patches.push({
+          op: 'replace',
+          path: `/attributes/${pkField}`,
+          value: [
+            {
+              value: langContent[`platinumKeywords${index + 1}`],
+              language_tag: lang,
+              marketplace_id: marketplaceId
+            }
+          ]
+        });
+      }
+    });
+
+    // Add target audience keywords
+    if (langContent.targetAudienceKeywords) {
+      languagePayloads[lang].patches.push({
+        op: 'replace',
+        path: '/attributes/target_audience_keywords',
+        value: [
+          {
+            value: langContent.targetAudienceKeywords,
+            language_tag: lang,
+            marketplace_id: marketplaceId
+          }
+        ]
+      });
+    }
+
+    // Add legal disclaimer
+    if (langContent.legalDisclaimer) {
+      languagePayloads[lang].patches.push({
+        op: 'replace',
+        path: '/attributes/legal_disclaimer_description',
+        value: [
+          {
+            value: langContent.legalDisclaimer,
+            language_tag: lang,
+            marketplace_id: marketplaceId
+          }
+        ]
+      });
+    }
+
+    // Add safety warning
+    if (langContent.safetyWarning) {
+      languagePayloads[lang].patches.push({
+        op: 'replace',
+        path: '/attributes/safety_warning',
+        value: [
+          {
+            value: langContent.safetyWarning,
+            language_tag: lang,
+            marketplace_id: marketplaceId
+          }
+        ]
+      });
+    }
+  }
+
+  // Add non-language-specific fields (modelNumber, dimensions, compliance, etc.)
+  const firstPayload = Object.values(languagePayloads)[0];
+  if (firstPayload) {
+    // Model number
+    if (modelNumber) {
+      firstPayload.patches.push({
+        op: 'replace',
+        path: '/attributes/model_number',
+        value: [{ value: modelNumber }]
+      });
+    }
+
+    // Release date
+    if (releaseDate) {
+      firstPayload.patches.push({
+        op: 'replace',
+        path: '/attributes/release_date',
+        value: [{ value: releaseDate }]
+      });
+    }
+
+    // Package quantity
+    if (packageQuantity) {
+      firstPayload.patches.push({
+        op: 'replace',
+        path: '/attributes/package_quantity',
+        value: [{ value: parseInt(packageQuantity) }]
+      });
+    }
+
+    // EU Compliance fields
+    if (compliance) {
+      if (compliance.countryOfOrigin) {
+        firstPayload.patches.push({
+          op: 'replace',
+          path: '/attributes/country_of_origin',
+          value: [{ value: compliance.countryOfOrigin }]
+        });
+      }
+
+      if (compliance.batteriesRequired !== undefined) {
+        firstPayload.patches.push({
+          op: 'replace',
+          path: '/attributes/batteries_required',
+          value: [{ value: compliance.batteriesRequired }]
+        });
+      }
+
+      if (compliance.isLithiumBattery !== undefined) {
+        firstPayload.patches.push({
+          op: 'replace',
+          path: '/attributes/is_lithium_battery',
+          value: [{ value: compliance.isLithiumBattery }]
+        });
+      }
+
+      if (compliance.supplierDeclaredDgHzRegulation) {
+        firstPayload.patches.push({
+          op: 'replace',
+          path: '/attributes/supplier_declared_dg_hz_regulation',
+          value: [{ value: compliance.supplierDeclaredDgHzRegulation }]
+        });
+      }
+
+      if (compliance.adultProduct !== undefined) {
+        firstPayload.patches.push({
+          op: 'replace',
+          path: '/attributes/adult_product',
+          value: [{ value: compliance.adultProduct }]
+        });
+      }
+    }
+
+    // Dimensions
+    if (dimensions) {
+      const dimensionFields = [
+        { key: 'itemLength', path: 'item_length', unit: 'centimeters' },
+        { key: 'itemWidth', path: 'item_width', unit: 'centimeters' },
+        { key: 'itemHeight', path: 'item_height', unit: 'centimeters' },
+        { key: 'itemWeight', path: 'item_weight', unit: 'kilograms' },
+        { key: 'packageLength', path: 'package_length', unit: 'centimeters' },
+        { key: 'packageWidth', path: 'package_width', unit: 'centimeters' },
+        { key: 'packageHeight', path: 'package_height', unit: 'centimeters' },
+        { key: 'packageWeight', path: 'package_weight', unit: 'kilograms' }
+      ];
+
+      dimensionFields.forEach(field => {
+        if (dimensions[field.key]) {
+          firstPayload.patches.push({
+            op: 'replace',
+            path: `/attributes/${field.path}`,
+            value: [{
+              value: parseFloat(dimensions[field.key]),
+              unit: field.unit
+            }]
+          });
+        }
+      });
+    }
+
+    // Pricing
+    if (pricing) {
+      if (pricing.ourPrice) {
+        firstPayload.patches.push({
+          op: 'replace',
+          path: '/attributes/purchasable_offer',
+          value: [{
+            currency: pricing.currency || 'EUR',
+            marketplace_id: marketplaceId,
+            our_price: [{
+              schedule: [{
+                value_with_tax: parseFloat(pricing.ourPrice)
+              }]
+            }]
+          }]
+        });
+      }
+
+      if (pricing.discountedPrice && pricing.discountStartDate && pricing.discountEndDate) {
+        firstPayload.patches.push({
+          op: 'replace',
+          path: '/attributes/purchasable_offer/discounted_price',
+          value: [{
+            schedule: [{
+              value_with_tax: parseFloat(pricing.discountedPrice),
+              start_at: pricing.discountStartDate,
+              end_at: pricing.discountEndDate
+            }]
+          }]
+        });
+      }
+    }
+
+    // Inventory
+    if (inventory) {
+      if (inventory.quantity !== undefined) {
+        firstPayload.patches.push({
+          op: 'replace',
+          path: '/attributes/fulfillment_availability',
+          value: [{
+            fulfillment_channel_code: inventory.fulfillmentChannelCode || 'DEFAULT',
+            quantity: parseInt(inventory.quantity),
+            lead_time_to_ship_max_days: inventory.leadTimeToShipMaxDays || 3
+          }]
+        });
+      }
     }
   }
 
