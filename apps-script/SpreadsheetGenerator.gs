@@ -91,9 +91,8 @@ function generateProductsMainSheet(ss) {
 
   sheet.getRange('A2:Z2').merge().setValue(instructions['EN']).setFontStyle('italic').setBackground('#FFF3CD');
 
-  // Freeze first 3 rows and 4 columns (AFTER merging to avoid conflicts)
+  // Freeze first 3 rows only (NOT columns, to avoid merge conflicts with wide header merges)
   sheet.setFrozenRows(3);
-  sheet.setFrozenColumns(4);
 
   // === ROW 3: COLUMN HEADERS ===
   const headers = getProductsMainHeaders();
@@ -447,9 +446,8 @@ function generateAPlusBasicSheet(ss) {
     .setFontStyle('italic')
     .setBackground('#F3E5F5');
 
-  // Freeze rows and columns AFTER merging
+  // Freeze rows only (NOT columns, to avoid merge conflicts with wide header merges)
   sheet.setFrozenRows(3);
-  sheet.setFrozenColumns(3);
 
   // Headers
   const headers = getAPlusBasicHeaders();
@@ -528,9 +526,8 @@ function generateAPlusPremiumSheet(ss) {
     .setFontStyle('italic')
     .setBackground('#F8BBD0');
 
-  // Freeze AFTER merging
+  // Freeze rows only (NOT columns, to avoid merge conflicts)
   sheet.setFrozenRows(3);
-  sheet.setFrozenColumns(3);
 
   const headers = getAPlusPremiumHeaders();
   sheet.getRange(3, 1, 1, headers.length).setValues([headers]);
@@ -582,9 +579,8 @@ function generateImagesSheet(ss) {
     .setFontStyle('italic')
     .setBackground('#BBDEFB');
 
-  // Freeze AFTER merging
+  // Freeze rows only (NOT columns, to avoid merge conflicts)
   sheet.setFrozenRows(3);
-  sheet.setFrozenColumns(3);
 
   const headers = getImagesHeaders();
   sheet.getRange(3, 1, 1, headers.length).setValues([headers]);
@@ -634,9 +630,8 @@ function generateVariationsSheet(ss) {
     .setFontColor('#FFFFFF')
     .setHorizontalAlignment('center');
 
-  // Freeze AFTER merging
+  // Freeze rows only (NOT columns, to avoid merge conflicts)
   sheet.setFrozenRows(3);
-  sheet.setFrozenColumns(4);
 
   const headers = [
     '☑️ Export',
