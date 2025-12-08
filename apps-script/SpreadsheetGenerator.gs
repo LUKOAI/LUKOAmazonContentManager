@@ -73,10 +73,6 @@ function generateProductsMainSheet(ss) {
   const sheet = ss.getSheetByName('ProductsMain');
   sheet.clear();
 
-  // Freeze first 3 rows and 4 columns
-  sheet.setFrozenRows(3);
-  sheet.setFrozenColumns(4);
-
   // === ROW 1: LANGUAGE SELECTOR ===
   sheet.getRange('A1').setValue('Language:').setFontWeight('bold');
   sheet.getRange('B1').setValue('EN').setFontWeight('bold').setBackground('#4285F4').setFontColor('#FFFFFF');
@@ -94,6 +90,10 @@ function generateProductsMainSheet(ss) {
   };
 
   sheet.getRange('A2:Z2').merge().setValue(instructions['EN']).setFontStyle('italic').setBackground('#FFF3CD');
+
+  // Freeze first 3 rows and 4 columns (AFTER merging to avoid conflicts)
+  sheet.setFrozenRows(3);
+  sheet.setFrozenColumns(4);
 
   // === ROW 3: COLUMN HEADERS ===
   const headers = getProductsMainHeaders();
@@ -431,10 +431,8 @@ function addProductDataValidation(sheet) {
 
 function generateAPlusBasicSheet(ss) {
   const sheet = ss.insertSheet('APlusBasic');
-  sheet.setFrozenRows(3);
-  sheet.setFrozenColumns(3);
 
-  // Row 1: Title
+  // Row 1: Title (merge BEFORE freezing)
   sheet.getRange('A1:Z1').merge()
     .setValue('A+ Content Basic - All 9 Module Types')
     .setFontWeight('bold')
@@ -443,11 +441,15 @@ function generateAPlusBasicSheet(ss) {
     .setFontColor('#FFFFFF')
     .setHorizontalAlignment('center');
 
-  // Row 2: Instructions
+  // Row 2: Instructions (merge BEFORE freezing)
   sheet.getRange('A2:Z2').merge()
     .setValue('Fill in content for each module. Each module can have up to 7 modules per ASIN.')
     .setFontStyle('italic')
     .setBackground('#F3E5F5');
+
+  // Freeze rows and columns AFTER merging
+  sheet.setFrozenRows(3);
+  sheet.setFrozenColumns(3);
 
   // Headers
   const headers = getAPlusBasicHeaders();
@@ -511,9 +513,8 @@ function getAPlusBasicHeaders() {
 
 function generateAPlusPremiumSheet(ss) {
   const sheet = ss.insertSheet('APlusPremium');
-  sheet.setFrozenRows(3);
-  sheet.setFrozenColumns(3);
 
+  // Merge BEFORE freezing
   sheet.getRange('A1:Z1').merge()
     .setValue('A+ Content Premium (Brand Story)')
     .setFontWeight('bold')
@@ -526,6 +527,10 @@ function generateAPlusPremiumSheet(ss) {
     .setValue('Premium Brand Story with Hero section, video, and advanced modules.')
     .setFontStyle('italic')
     .setBackground('#F8BBD0');
+
+  // Freeze AFTER merging
+  sheet.setFrozenRows(3);
+  sheet.setFrozenColumns(3);
 
   const headers = getAPlusPremiumHeaders();
   sheet.getRange(3, 1, 1, headers.length).setValues([headers]);
@@ -562,9 +567,8 @@ function getAPlusPremiumHeaders() {
 
 function generateImagesSheet(ss) {
   const sheet = ss.insertSheet('Images');
-  sheet.setFrozenRows(3);
-  sheet.setFrozenColumns(3);
 
+  // Merge BEFORE freezing
   sheet.getRange('A1:Z1').merge()
     .setValue('Product Images (Main + 8 Additional)')
     .setFontWeight('bold')
@@ -577,6 +581,10 @@ function generateImagesSheet(ss) {
     .setValue('Main image required. Additional images optional. Min 1000px width/height.')
     .setFontStyle('italic')
     .setBackground('#BBDEFB');
+
+  // Freeze AFTER merging
+  sheet.setFrozenRows(3);
+  sheet.setFrozenColumns(3);
 
   const headers = getImagesHeaders();
   sheet.getRange(3, 1, 1, headers.length).setValues([headers]);
@@ -616,9 +624,8 @@ function getImagesHeaders() {
 
 function generateVariationsSheet(ss) {
   const sheet = ss.insertSheet('Variations');
-  sheet.setFrozenRows(3);
-  sheet.setFrozenColumns(4);
 
+  // Merge BEFORE freezing
   sheet.getRange('A1:Z1').merge()
     .setValue('Product Variations (Parent-Child Relationships)')
     .setFontWeight('bold')
@@ -626,6 +633,10 @@ function generateVariationsSheet(ss) {
     .setBackground('#F57C00')
     .setFontColor('#FFFFFF')
     .setHorizontalAlignment('center');
+
+  // Freeze AFTER merging
+  sheet.setFrozenRows(3);
+  sheet.setFrozenColumns(4);
 
   const headers = [
     '☑️ Export',
