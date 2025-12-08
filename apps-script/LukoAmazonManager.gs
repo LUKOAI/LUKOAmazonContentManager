@@ -139,6 +139,14 @@ function onOpen() {
   const ui = SpreadsheetApp.getUi();
 
   ui.createMenu('Amazon Manager')
+    .addSubMenu(ui.createMenu('🔑 SP-API Auth')
+      .addItem('📧 Setup Email Automation', 'setupEmailAutomationTrigger')
+      .addItem('🔄 Process Emails Now', 'processActivationEmails')
+      .addItem('✋ Stop Email Automation', 'removeEmailAutomationTrigger')
+      .addSeparator()
+      .addItem('📝 Manual: Exchange Auth Code', 'exchangeAuthorizationCode')
+      .addItem('🔄 Manual: Refresh Token', 'refreshAccessToken'))
+    .addSeparator()
     .addSubMenu(ui.createMenu('Export to Amazon')
       .addItem('📤 Export Products (ProductsMain)', 'lukoExportProducts')
       .addSeparator()
