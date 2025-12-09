@@ -87,6 +87,7 @@ Jeśli clasp nie działa, możesz skopiować kod ręcznie:
 
 ## 🔍 Co Zostało Naprawione?
 
+### Błąd 1: "You can't merge frozen and non-frozen columns"
 Dodano `sheet.setFrozenColumns(0);` do 11 funkcji generujących arkusze:
 
 - ✅ generateProductsMainSheet() - linia 77
@@ -102,6 +103,16 @@ Dodano `sheet.setFrozenColumns(0);` do 11 funkcji generujących arkusze:
 - ✅ generateErrorLogSheet() - linia 1193
 
 To usuwa wszystkie zamrożone kolumny przed wykonaniem operacji merge, zapobiegając błędowi.
+
+### Błąd 2: "setWrapText is not a function"
+Zamieniono `.setWrapText(true)` na `.setWrap(true)` w 7 miejscach:
+
+- ✅ generateCouponsSheet() - linia 704
+- ✅ generatePromoCodesSheet() - linie 818, 847, 927
+- ✅ generateTemplatesSheet() - linia 1088
+- ✅ generateErrorLogSheet() - linie 1180, 1209
+
+Google Apps Script używa metody `setWrap()`, nie `setWrapText()`.
 
 ---
 
