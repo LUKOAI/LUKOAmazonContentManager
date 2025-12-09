@@ -1,9 +1,9 @@
 /**
- * SP-API OAuth Token Exchange & Email Automation
- * Automatically processes authorization emails and exchanges codes for tokens
+ * SP-API OAuth Token Exchange - Manual Only
+ * Manual exchange of authorization codes for tokens
  *
- * @version 1.0
- * @author NetAnaliza / LUKO
+ * @version 3.0
+ * @author NetAnaliza
  */
 
 // ==================== CONFIGURATION ====================
@@ -34,125 +34,25 @@ function getConfig() {
   };
 }
 
-// ==================== EMAIL AUTOMATION ====================
-
-/**
- * Process activation emails from Gmail
- * Triggered by time-driven trigger (every 5 minutes)
- */
-function processActivationEmails() {
-  try {
-    const threads = GmailApp.search('from:no-reply@amazon.com subject:"Amazon Selling Partner API" is:unread newer_than:1d');
-
-    if (threads.length === 0) {
-      Logger.log('No new activation emails');
-      return;
-    }
-
-    Logger.log(`Found ${threads.length} activation email(s)`);
-
-    for (const thread of threads) {
-      const messages = thread.getMessages();
-
-      for (const message of messages) {
-        try {
-          const body = message.getPlainBody();
-          const subject = message.getSubject();
-
-          // Extract authorization code from email
-          const codeMatch = body.match(/authorization[_\s]code[:\s]+([A-Za-z0-9\-_]+)/i) ||
-                           body.match(/code[:\s]+([A-Za-z0-9\-_]{20,})/i) ||
-                           body.match(/([A-Za-z0-9\-_]{30,})/); // Fallback: long alphanumeric string
-
-          if (!codeMatch) {
-            Logger.log('No authorization code found in email');
-            continue;
-          }
-
-          const authCode = codeMatch[1];
-          Logger.log(`Found authorization code: ${authCode.substring(0, 10)}...`);
-
-          // Extract client email from email body or sender
-          const emailMatch = body.match(/client[:\s]+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i) ||
-                            body.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-
-          const clientEmail = emailMatch ? emailMatch[1] : message.getFrom();
-
-          // Auto-exchange code for token
-          const result = autoExchangeAuthCode(authCode, clientEmail);
-
-          if (result.success) {
-            // Mark email as read
-            message.markRead();
-            thread.markRead();
-
-            // Add label
-            const label = GmailApp.getUserLabelByName('SP-API Processed') ||
-                         GmailApp.createLabel('SP-API Processed');
-            thread.addLabel(label);
-
-            Logger.log(`✅ Successfully processed authorization for ${clientEmail}`);
-          } else {
-            Logger.log(`❌ Failed to process: ${result.error}`);
-          }
-
-        } catch (error) {
-          Logger.log(`Error processing message: ${error.toString()}`);
-        }
-      }
-    }
-
-  } catch (error) {
-    Logger.log(`Error in processActivationEmails: ${error.toString()}`);
-  }
-}
-
-/**
- * Auto-exchange authorization code for tokens
- */
-function autoExchangeAuthCode(authCode, clientEmail) {
-  try {
-    const config = getConfig();
-
-    if (!config.clientId || !config.clientSecret) {
-      return { success: false, error: 'Missing LWA credentials in Config sheet' };
-    }
-
-    // Exchange code for tokens
-    const tokens = exchangeCodeForToken(authCode, config);
-
-    // Save to SP-API Auth sheet
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let authSheet = ss.getSheetByName('SP-API Auth');
-
-    if (!authSheet) {
-      authSheet = ss.insertSheet('SP-API Auth');
-      authSheet.appendRow(['Client Email', 'Authorization Code', 'Status', 'Refresh Token', 'Access Token', 'Expires At', 'Processed Date']);
-    }
-
-    // Append new row
-    authSheet.appendRow([
-      clientEmail,
-      authCode,
-      '✅ Success',
-      tokens.refresh_token,
-      tokens.access_token,
-      new Date(Date.now() + (tokens.expires_in * 1000)),
-      new Date()
-    ]);
-
-    // Format tokens as protected
-    const lastRow = authSheet.getLastRow();
-    authSheet.getRange(lastRow, 4, 1, 2).setBackground('#f0f9ff').setFontColor('#1e3a8a');
-
-    return { success: true, tokens: tokens };
-
-  } catch (error) {
-    return { success: false, error: error.toString() };
-  }
-}
-
 // ==================== MANUAL FUNCTIONS ====================
+
+/**
+ * Get configuration from Client Settings (active client)
+ */
+function getConfigFromActiveClient() {
+  try {
+    const client = getActiveClient();
+    return {
+      clientId: client.lwaClientId,
+      clientSecret: client.lwaClientSecret,
+      redirectUri: 'https://ads.netanaliza.com/amazon-callback',
+      sellerId: client.sellerId
+    };
+  } catch (error) {
+    // Fallback to old getConfig if Client Settings not available
+    return getConfig();
+  }
+}
 
 /**
  * Manual: Exchange authorization code for refresh token
@@ -187,7 +87,7 @@ function exchangeAuthorizationCode() {
   SpreadsheetApp.flush();
 
   try {
-    const config = getConfig();
+    const config = getConfigFromActiveClient();
     const tokens = exchangeCodeForToken(authCode, config);
 
     authSheet.getRange(activeRow, 3).setValue('✅ Success');
@@ -235,7 +135,7 @@ function refreshAccessToken() {
   }
 
   try {
-    const config = getConfig();
+    const config = getConfigFromActiveClient();
     const tokens = getAccessTokenFromRefresh(refreshToken, config);
 
     authSheet.getRange(activeRow, 5).setValue(tokens.access_token);
@@ -313,46 +213,28 @@ function getAccessTokenFromRefresh(refreshToken, config) {
   return JSON.parse(responseBody);
 }
 
-// ==================== SETUP ====================
+// ==================== HELPER ====================
 
 /**
- * Setup time-driven trigger for email automation
+ * Show instructions for getting authorization code
  */
-function setupEmailAutomationTrigger() {
-  // Delete existing triggers
-  const triggers = ScriptApp.getProjectTriggers();
-  for (const trigger of triggers) {
-    if (trigger.getHandlerFunction() === 'processActivationEmails') {
-      ScriptApp.deleteTrigger(trigger);
-    }
+function showAuthorizationInstructions() {
+  const ui = SpreadsheetApp.getUi();
+
+  try {
+    const client = getActiveClient();
+    const authUrl = `https://sellercentral.amazon.${client.marketplace === 'UK' ? 'co.uk' : client.marketplace.toLowerCase()}/apps/authorize/consent?application_id=${client.lwaClientId}&state=netanaliza&version=beta`;
+
+    ui.alert(
+      'Get Authorization Code',
+      `1. Send this link to client:\n\n${authUrl}\n\n` +
+      `2. Client authorizes the app\n\n` +
+      `3. Client copies the "spapi_oauth_code" from callback URL\n\n` +
+      `4. Paste the code in SP-API Auth sheet\n\n` +
+      `5. Use Menu → SP-API Auth → Manual: Exchange Auth Code`,
+      ui.ButtonSet.OK
+    );
+  } catch (error) {
+    ui.alert('Error', 'Please setup active client first in Client Settings sheet', ui.ButtonSet.OK);
   }
-
-  // Create new trigger (every 5 minutes)
-  ScriptApp.newTrigger('processActivationEmails')
-    .timeBased()
-    .everyMinutes(5)
-    .create();
-
-  SpreadsheetApp.getUi().alert('Success! ✅',
-    'Email automation trigger created!\n\nWill check for activation emails every 5 minutes.',
-    SpreadsheetApp.getUi().ButtonSet.OK);
-}
-
-/**
- * Remove email automation trigger
- */
-function removeEmailAutomationTrigger() {
-  const triggers = ScriptApp.getProjectTriggers();
-  let count = 0;
-
-  for (const trigger of triggers) {
-    if (trigger.getHandlerFunction() === 'processActivationEmails') {
-      ScriptApp.deleteTrigger(trigger);
-      count++;
-    }
-  }
-
-  SpreadsheetApp.getUi().alert('Success! ✅',
-    `Removed ${count} email automation trigger(s)`,
-    SpreadsheetApp.getUi().ButtonSet.OK);
 }
