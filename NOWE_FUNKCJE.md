@@ -345,19 +345,11 @@ Jeśli masz pytania lub problemy:
    - Dodano sprawdzenie czy arkusz APlus-Basic/APlus-Premium istnieje
    - Teraz pokazuje jasny komunikat błędu zamiast crashować
 
-2. **✅ Eksport A+ Content - Przepisany na SP-API**
-   - Usunięto dependency na niedziałający Cloud Function
-   - Przepisano `publishAPlusContent()` aby używać bezpośrednio SP-API
-   - Dodano wsparcie dla POST requestów z body w `callSPAPI()`
-   - Funkcja teraz bezpośrednio:
-     * Tworzy/aktualizuje dokumenty A+ content przez SP-API
-     * Buduje właściwą strukturę modułów
-     * Wysyła do zatwierdzenia/publikacji
-
-3. **✅ callSPAPI() - Rozszerzone możliwości**
+2. **✅ callSPAPI() - Rozszerzone możliwości**
    - Dodano parametr `body` dla POST/PUT requestów
    - Dodano obsługę kodów odpowiedzi 201 i 202 (tworzenie/operacje async)
    - Funkcja teraz w pełni obsługuje REST API (GET, POST, PUT)
+   - Przydatne dla przyszłych rozszerzeń
 
 ### Znane Ograniczenia:
 
@@ -365,15 +357,6 @@ Jeśli masz pytania lub problemy:
    - SP-API pokazuje tylko pierwsze 20 dokumentów
    - Niektóre produkty mogą mieć A+ tylko w innych marketplace
    - Wymaga odpowiednich uprawnień SP-API
-
-2. **❌ "Import Products" (stara wersja)** - Nie działa
-   - Ta funkcja używa starej infrastruktury Cloud Function
-   - **Zalecenie:** Użyj "Import by ASIN(s)" lub "Search Products by Keyword"
-
-3. **⚠️ Eksport A+ Content** - Podstawowa implementacja
-   - Obecnie obsługuje tylko podstawowe moduły STANDARD_IMAGE_TEXT_OVERLAY
-   - Pełne wsparcie dla wszystkich 9 typów modułów wymaga dodatkowej pracy
-   - Wymaga kolumny "Marketplace" w arkuszu (domyślnie: DE)
 
 ---
 
