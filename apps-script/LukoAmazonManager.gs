@@ -149,6 +149,7 @@ function onOpen() {
     .addSeparator()
     .addSubMenu(ui.createMenu('Export to Amazon')
       .addItem('📤 Export Products (ProductsMain)', 'lukoExportProducts')
+      .addItem('⚙️ Export Advanced (Partial/Full Update)', 'lukoExportProductsAdvanced')
       .addSeparator()
       .addItem('Sync Selected Products', 'lukoSyncSelectedProducts')
       .addItem('Sync All Marketplaces', 'lukoSyncAllMarketplaces')
@@ -163,7 +164,10 @@ function onOpen() {
     .addSubMenu(ui.createMenu('Import from Amazon')
       .addItem('📥 Import Reverse Feed CSV', 'lukoImportReverseFeed')
       .addSeparator()
-      .addItem('Import Products', 'lukoImportProducts')
+      .addItem('🔍 Search Products by Keyword', 'lukoSearchProducts')
+      .addItem('📦 Import by ASIN(s)', 'lukoImportByASIN')
+      .addSeparator()
+      .addItem('Import Products (Full Catalog)', 'lukoImportProducts')
       .addItem('Import Pricing', 'lukoImportPricing')
       .addItem('Import Inventory', 'lukoImportInventory')
       .addItem('Import A+ Content', 'lukoImportAPlus'))
@@ -182,6 +186,8 @@ function onOpen() {
       .addItem('View Templates Sheet', 'lukoViewTemplates'))
 
     .addSubMenu(ui.createMenu('Tools')
+      .addItem('🔌 Test API Connection', 'lukoTestAPIConnection')
+      .addSeparator()
       .addItem('🎨 Generate Spreadsheet', 'lukoGenerateFullSpreadsheet')
       .addItem('🔧 Regenerate Config Only', 'lukoRegenerateConfigOnly')
       .addSeparator()
@@ -1311,15 +1317,272 @@ function lukoImportProducts() {
 }
 
 function lukoImportPricing() {
-  showInfo('Import Pricing feature coming soon!');
+  const ui = SpreadsheetApp.getUi();
+
+  const response = ui.prompt(
+    'Import Pricing',
+    'Enter SKU or ASIN to import pricing:',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() !== ui.Button.OK) return;
+
+  const identifier = response.getResponseText().trim();
+  if (!identifier) {
+    showError('No SKU or ASIN provided');
+    return;
+  }
+
+  const marketplaceResponse = ui.prompt(
+    'Select Marketplace',
+    'Enter marketplace code (e.g., DE, FR, UK):',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (marketplaceResponse.getSelectedButton() !== ui.Button.OK) return;
+
+  const marketplace = marketplaceResponse.getResponseText().trim().toUpperCase();
+  const marketplaceConfig = getMarketplaceConfig(marketplace);
+
+  if (!marketplaceConfig) {
+    showError(`Invalid marketplace: ${marketplace}`);
+    return;
+  }
+
+  showProgress(`Importing pricing for ${identifier}...`);
+
+  try {
+    const credentials = getCredentials();
+    const config = getConfig();
+    const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
+
+    // Fetch pricing using Product Pricing API
+    const pricing = fetchProductPricing(identifier, marketplaceConfig, tokens.access_token);
+
+    ui.alert(
+      'Pricing Information',
+      `Product: ${identifier}\n` +
+      `Marketplace: ${marketplace}\n\n` +
+      `List Price: ${pricing.listPrice} ${pricing.currency}\n` +
+      `Current Price: ${pricing.currentPrice} ${pricing.currency}\n` +
+      `Buy Box Price: ${pricing.buyBoxPrice} ${pricing.currency}`,
+      ui.ButtonSet.OK
+    );
+
+  } catch (error) {
+    handleError('lukoImportPricing', error);
+  }
 }
 
 function lukoImportInventory() {
-  showInfo('Import Inventory feature coming soon!');
+  const ui = SpreadsheetApp.getUi();
+
+  const response = ui.prompt(
+    'Import Inventory',
+    'Enter SKU to import inventory:',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() !== ui.Button.OK) return;
+
+  const sku = response.getResponseText().trim();
+  if (!sku) {
+    showError('No SKU provided');
+    return;
+  }
+
+  const marketplaceResponse = ui.prompt(
+    'Select Marketplace',
+    'Enter marketplace code (e.g., DE, FR, UK):',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (marketplaceResponse.getSelectedButton() !== ui.Button.OK) return;
+
+  const marketplace = marketplaceResponse.getResponseText().trim().toUpperCase();
+  const marketplaceConfig = getMarketplaceConfig(marketplace);
+
+  if (!marketplaceConfig) {
+    showError(`Invalid marketplace: ${marketplace}`);
+    return;
+  }
+
+  showProgress(`Importing inventory for ${sku}...`);
+
+  try {
+    const credentials = getCredentials();
+    const config = getConfig();
+    const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
+
+    // Fetch inventory using FBA Inventory API
+    const inventory = fetchInventoryBySKU(sku, marketplaceConfig, tokens.access_token);
+
+    ui.alert(
+      'Inventory Information',
+      `SKU: ${sku}\n` +
+      `Marketplace: ${marketplace}\n\n` +
+      `Available Quantity: ${inventory.quantity}\n` +
+      `Fulfillment Channel: ${inventory.fulfillmentChannel}\n` +
+      `Condition: ${inventory.condition}`,
+      ui.ButtonSet.OK
+    );
+
+  } catch (error) {
+    handleError('lukoImportInventory', error);
+  }
 }
 
 function lukoImportAPlus() {
-  showInfo('Import A+ Content feature coming soon!');
+  const ui = SpreadsheetApp.getUi();
+
+  const response = ui.prompt(
+    'Import A+ Content',
+    'Enter ASIN to import A+ content:',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() !== ui.Button.OK) return;
+
+  const asin = response.getResponseText().trim();
+  if (!asin) {
+    showError('No ASIN provided');
+    return;
+  }
+
+  const marketplaceResponse = ui.prompt(
+    'Select Marketplace',
+    'Enter marketplace code (e.g., DE, FR, UK):',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (marketplaceResponse.getSelectedButton() !== ui.Button.OK) return;
+
+  const marketplace = marketplaceResponse.getResponseText().trim().toUpperCase();
+  const marketplaceConfig = getMarketplaceConfig(marketplace);
+
+  if (!marketplaceConfig) {
+    showError(`Invalid marketplace: ${marketplace}`);
+    return;
+  }
+
+  showProgress(`Importing A+ content for ${asin}...`);
+
+  try {
+    const credentials = getCredentials();
+    const config = getConfig();
+    const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
+
+    // Fetch A+ content using APlusContent API
+    const aplusContent = fetchAPlusContent(asin, marketplaceConfig, tokens.access_token);
+
+    if (!aplusContent || !aplusContent.contentDocument) {
+      ui.alert('No A+ Content Found', `No A+ content found for ASIN ${asin} in ${marketplace}`, ui.ButtonSet.OK);
+      return;
+    }
+
+    // Show summary and offer to import to sheet
+    const confirmMsg = `Found A+ content for ${asin}:\n\n` +
+      `Content ID: ${aplusContent.contentReferenceKey}\n` +
+      `Status: ${aplusContent.status}\n` +
+      `Modules: ${aplusContent.contentDocument.contentModuleList?.length || 0}\n\n` +
+      `Import to APlus sheet?`;
+
+    const confirm = ui.alert('A+ Content Found', confirmMsg, ui.ButtonSet.YES_NO);
+
+    if (confirm === ui.Button.YES) {
+      importAPlusToSheet(asin, aplusContent, marketplace);
+      ui.alert('Success', 'A+ content imported to APlus-Basic sheet', ui.ButtonSet.OK);
+    }
+
+  } catch (error) {
+    handleError('lukoImportAPlus', error);
+  }
+}
+
+function fetchInventoryBySKU(sku, marketplaceConfig, accessToken) {
+  try {
+    const path = `/fba/inventory/v1/summaries`;
+    const params = {
+      details: true,
+      granularityType: 'Marketplace',
+      granularityId: marketplaceConfig.marketplaceId,
+      sellerSkus: sku
+    };
+
+    const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
+
+    const inventories = response.inventorySummaries || [];
+    if (inventories.length > 0) {
+      const inv = inventories[0];
+      return {
+        quantity: inv.totalQuantity || 0,
+        fulfillmentChannel: inv.fulfillmentChannelCode || 'AMAZON_NA',
+        condition: inv.condition || 'NewItem'
+      };
+    }
+
+    return { quantity: 0, fulfillmentChannel: 'N/A', condition: 'N/A' };
+
+  } catch (error) {
+    throw new Error(`Failed to fetch inventory: ${error.message}`);
+  }
+}
+
+function fetchAPlusContent(asin, marketplaceConfig, accessToken) {
+  try {
+    const path = `/aplus/2020-11-01/contentDocuments`;
+    const params = {
+      marketplaceId: marketplaceConfig.marketplaceId,
+      asins: asin,
+      pageSize: 10
+    };
+
+    const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
+
+    const contentDocuments = response.contentMetadataRecords || [];
+    if (contentDocuments.length > 0) {
+      return contentDocuments[0];
+    }
+
+    return null;
+
+  } catch (error) {
+    throw new Error(`Failed to fetch A+ content: ${error.message}`);
+  }
+}
+
+function importAPlusToSheet(asin, aplusContent, marketplace) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('APlus-Basic');
+
+  if (!sheet) {
+    showError('APlus-Basic sheet not found. Please generate spreadsheet first.');
+    return;
+  }
+
+  // Extract content modules
+  const modules = aplusContent.contentDocument?.contentModuleList || [];
+
+  for (let i = 0; i < modules.length; i++) {
+    const module = modules[i];
+
+    sheet.appendRow([
+      false, // checkbox
+      asin,
+      aplusContent.contentReferenceKey,
+      i + 1, // module number
+      module.contentModuleType || 'STANDARD_IMAGE_TEXT_OVERLAY',
+      marketplace,
+      '', // heading
+      '', // body text
+      '', // image 1
+      '', // image 2
+      '', // image 3
+      '', // image 4
+      'PENDING',
+      new Date()
+    ]);
+  }
 }
 
 function populateProductsSheet(products, marketplace) {

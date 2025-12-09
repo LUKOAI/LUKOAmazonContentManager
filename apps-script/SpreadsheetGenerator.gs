@@ -42,6 +42,7 @@ function lukoGenerateFullSpreadsheet() {
 
     // Generate all sheets
     generateProductsMainSheet(ss);
+    generateImportedProductsSheet(ss);
     generateTemplatesSheet(ss);
     generateAPlusBasicSheet(ss);
     generateAPlusPremiumSheet(ss);
