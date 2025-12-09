@@ -1050,7 +1050,6 @@ function extractAPlusData(sheet, rowNumber, contentType) {
     moduleNumber: getColumnValue(values, headers, 'Module Number'),
     moduleType: getColumnValue(values, headers, 'Module Type'),
     language: getColumnValue(values, headers, 'Language'),
-    marketplace: getColumnValue(values, headers, 'Marketplace') || 'DE', // Default to DE if not specified
     content: {}
   };
 
@@ -1086,82 +1085,29 @@ function extractAPlusData(sheet, rowNumber, contentType) {
 
 function publishAPlusContent(aplusData, contentType) {
   try {
-    // Get credentials and tokens
-    const credentials = getCredentials();
-    const config = getConfig();
-    const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
-
-    // Get marketplace from data
-    const marketplaceConfig = getMarketplaceConfig(aplusData.marketplace || 'DE');
-
-    // Create or update A+ content document
-    const contentReferenceKey = aplusData.contentId || `CONTENT-${aplusData.asin}-${Date.now()}`;
-
-    // Build content document payload
-    const contentDocument = {
-      contentDocument: {
-        name: `A+ Content for ${aplusData.asin}`,
-        contentType: contentType === 'BASIC' ? 'EBC' : 'EMC',
-        contentSubType: 'STANDARD',
-        locale: aplusData.language || 'de_DE',
-        contentModuleList: [
-          {
-            contentModuleType: aplusData.moduleType || 'STANDARD_IMAGE_TEXT_OVERLAY',
-            standardImageTextOverlay: {
-              overlayColorType: 'DARK',
-              block: [
-                {
-                  image: {
-                    uploadDestinationId: '',
-                    imageCropSpecification: {
-                      size: { width: { value: 970, units: 'pixels' }, height: { value: 300, units: 'pixels' } },
-                      offset: { x: { value: 0, units: 'pixels' }, y: { value: 0, units: 'pixels' } }
-                    },
-                    altText: aplusData.content.images?.[0]?.alt || ''
-                  },
-                  headline: { value: aplusData.content.heading || '', decoratorSet: [] },
-                  body: { value: aplusData.content.bodyText || '', decoratorSet: [] }
-                }
-              ]
-            }
-          }
-        ]
-      }
+    const payload = {
+      operation: 'publish_aplus',
+      contentType: contentType,
+      data: aplusData,
+      credentials: getCredentials()
     };
 
-    // Try to create/update content document
-    let response;
-    if (aplusData.contentId) {
-      // Update existing content
-      const updatePath = `/aplus/2020-11-01/contentDocuments/${contentReferenceKey}`;
-      response = callSPAPI('POST', updatePath, marketplaceConfig.marketplaceId, {}, tokens.access_token, contentDocument);
-    } else {
-      // Create new content
-      const createPath = `/aplus/2020-11-01/contentDocuments`;
-      response = callSPAPI('POST', createPath, marketplaceConfig.marketplaceId, {}, tokens.access_token, contentDocument);
-    }
-
-    // Submit for approval (publish)
-    if (response.contentReferenceKey) {
-      const approvalPath = `/aplus/2020-11-01/contentDocuments/${response.contentReferenceKey}/approvalSubmission`;
-      callSPAPI('POST', approvalPath, marketplaceConfig.marketplaceId, {}, tokens.access_token);
-    }
+    const response = callCloudFunction(payload);
 
     return {
       asin: aplusData.asin,
-      contentId: response.contentReferenceKey || contentReferenceKey,
-      status: 'SUCCESS',
-      message: 'A+ content published successfully',
+      contentId: aplusData.contentId,
+      status: response.status,
+      message: response.message,
       timestamp: new Date()
     };
 
   } catch (error) {
-    Logger.log(`Error publishing A+ content: ${error.message}`);
     return {
       asin: aplusData.asin,
       contentId: aplusData.contentId,
       status: 'ERROR',
-      message: error.message || error.toString(),
+      message: error.toString(),
       timestamp: new Date()
     };
   }
