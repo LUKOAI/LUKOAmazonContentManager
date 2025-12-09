@@ -115,14 +115,14 @@ function lukoTestAPIConnection() {
 /**
  * Call SP-API with proper authentication
  */
-function callSPAPI(method, path, marketplaceId, params, accessToken) {
+function callSPAPI(method, path, marketplaceId, params, accessToken, body) {
   const marketplaceConfig = MARKETPLACE_LANGUAGES['DE']; // Default to DE
   const endpoint = marketplaceConfig.endpoint;
 
   let url = endpoint + path;
 
   // Add query parameters
-  if (Object.keys(params).length > 0) {
+  if (params && Object.keys(params).length > 0) {
     const queryString = Object.keys(params)
       .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
       .join('&');
@@ -138,13 +138,18 @@ function callSPAPI(method, path, marketplaceId, params, accessToken) {
     muteHttpExceptions: true
   };
 
+  // Add body for POST/PUT requests
+  if (body && (method === 'POST' || method === 'PUT')) {
+    options.payload = JSON.stringify(body);
+  }
+
   Logger.log(`Calling SP-API: ${method} ${url}`);
 
   const response = UrlFetchApp.fetch(url, options);
   const responseCode = response.getResponseCode();
   const responseBody = response.getContentText();
 
-  if (responseCode !== 200) {
+  if (responseCode !== 200 && responseCode !== 201 && responseCode !== 202) {
     let errorMessage = `SP-API Error ${responseCode}`;
     try {
       const error = JSON.parse(responseBody);
