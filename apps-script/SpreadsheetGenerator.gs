@@ -69,7 +69,7 @@ function lukoGenerateFullSpreadsheet() {
 // PRODUCTS MAIN SHEET
 // ========================================
 
-function generateProductsMainSheet(ss) {
+function generateProductsMainSheetOLD(ss) {
   const sheet = ss.getSheetByName('ProductsMain');
   sheet.clear();
 
@@ -1065,7 +1065,7 @@ function findColumnByName(sheet, columnName) {
 // TEMPLATES SHEET
 // ========================================
 
-function generateTemplatesSheet(ss) {
+function generateTemplatesSheetOLD(ss) {
   const sheet = ss.insertSheet('Templates');
 
   // Unfreeze any existing frozen columns to avoid merge conflicts
@@ -1186,7 +1186,7 @@ function generateTemplatesSheet(ss) {
 // ERROR LOG SHEET
 // ========================================
 
-function generateErrorLogSheet(ss) {
+function generateErrorLogSheetOLD(ss) {
   const sheet = ss.insertSheet('ErrorLog');
 
   // Unfreeze any existing frozen columns to avoid merge conflicts
