@@ -433,9 +433,7 @@ function showReverseFeedHelp() {
   );
 }
 
-function lukoImportByASIN() {
-  showInfo('Import by ASIN (API) coming soon!\n\nFor now, use Import Reverse Feed CSV.');
-}
+// lukoImportByASIN() is now implemented in ProductImporter.gs
 
 // ========================================
 // HELPER FUNCTIONS

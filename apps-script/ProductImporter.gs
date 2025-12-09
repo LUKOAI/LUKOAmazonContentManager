@@ -59,7 +59,7 @@ function lukoTestAPIConnection() {
         'GET',
         `/catalog/2022-04-01/items/${testASIN}`,
         testResults.marketplace,
-        {},
+        { marketplaceIds: testResults.marketplace },
         tokens.access_token
       );
 
@@ -289,12 +289,24 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
       // Fetch product data from SP-API
       const productData = fetchProductByASIN(asin, marketplaceConfig, tokens.access_token);
 
-      // Fetch seller information
-      const sellerInfo = fetchSellerByASIN(asin, marketplaceConfig, tokens.access_token);
-      productData.sellerId = sellerInfo.sellerId || '';
-      productData.sellerName = sellerInfo.sellerName || '';
+      // Rate limiting: wait 500ms between product fetches
+      Utilities.sleep(500);
 
-      // Fetch pricing
+      // Fetch seller information (may fail due to permissions - that's OK)
+      try {
+        const sellerInfo = fetchSellerByASIN(asin, marketplaceConfig, tokens.access_token);
+        productData.sellerId = sellerInfo.sellerId || '';
+        productData.sellerName = sellerInfo.sellerName || '';
+      } catch (e) {
+        Logger.log(`Could not fetch seller info for ${asin}: ${e.message}`);
+        productData.sellerId = 'N/A (requires permission)';
+        productData.sellerName = '';
+      }
+
+      // Rate limiting: wait 300ms
+      Utilities.sleep(300);
+
+      // Fetch pricing (may hit rate limits - that's OK)
       try {
         const pricing = fetchProductPricing(asin, marketplaceConfig, tokens.access_token);
         productData.listPrice = pricing.listPrice || '';
@@ -302,8 +314,14 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
         productData.currency = pricing.currency || '';
       } catch (e) {
         Logger.log(`Could not fetch pricing for ${asin}: ${e.message}`);
+        productData.listPrice = '';
+        productData.currentPrice = '';
+        productData.currency = '';
         warnings++;
       }
+
+      // Rate limiting: wait 300ms
+      Utilities.sleep(300);
 
       // Fetch inventory (if available)
       try {
@@ -311,6 +329,7 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
         productData.availableQuantity = inventory.quantity || '';
       } catch (e) {
         Logger.log(`Could not fetch inventory for ${asin}: ${e.message}`);
+        productData.availableQuantity = '';
         warnings++;
       }
 
@@ -330,6 +349,11 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
         status: 'ERROR',
         message: error.message
       }], marketplace, 'IMPORT_BY_ASIN');
+    }
+
+    // Rate limiting between products: wait 1 second
+    if (success + failed < asins.length) {
+      Utilities.sleep(1000);
     }
   }
 

@@ -1530,11 +1530,11 @@ function fetchInventoryBySKU(sku, marketplaceConfig, accessToken) {
 
 function fetchAPlusContent(asin, marketplaceConfig, accessToken) {
   try {
+    // A+ Content API requires specific query format
     const path = `/aplus/2020-11-01/contentDocuments`;
     const params = {
       marketplaceId: marketplaceConfig.marketplaceId,
-      asins: asin,
-      pageSize: 10
+      asinSet: asin  // Changed from 'asins' to 'asinSet'
     };
 
     const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
@@ -1547,6 +1547,7 @@ function fetchAPlusContent(asin, marketplaceConfig, accessToken) {
     return null;
 
   } catch (error) {
+    Logger.log(`Failed to fetch A+ content for ${asin}: ${error.message}`);
     throw new Error(`Failed to fetch A+ content: ${error.message}`);
   }
 }
