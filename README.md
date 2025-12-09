@@ -7,7 +7,7 @@
 ## 🔗 Ważne Linki
 
 ### 📊 Google Sheets & Apps Script
-- **Google Sheets (Arkusz):** [TUTAJ WSTAW LINK DO ARKUSZA]
+- **Google Sheets (Arkusz):** https://docs.google.com/spreadsheets/d/11ogc3d7o5kr22LqnoLx4CS1weX8u-lA9Y6ZDnMJQXNc/edit?gid=1870781416#gid=1870781416
 - **Apps Script Editor:** https://script.google.com/d/1zQ9FDfM2bwol3KRd6LuYuylY6jzHh2bhSvviFPg6Lq2sxv0dB9lOF-jx/edit
 - **Script ID:** `1zQ9FDfM2bwol3KRd6LuYuylY6jzHh2bhSvviFPg6Lq2sxv0dB9lOF-jx`
 
