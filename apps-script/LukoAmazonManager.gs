@@ -1530,25 +1530,38 @@ function fetchInventoryBySKU(sku, marketplaceConfig, accessToken) {
 
 function fetchAPlusContent(asin, marketplaceConfig, accessToken) {
   try {
-    // A+ Content API requires specific query format
-    const path = `/aplus/2020-11-01/contentDocuments`;
-    const params = {
+    // A+ Content API - search for content by ASIN
+    // First, try to find if this ASIN has A+ content
+    const searchPath = `/aplus/2020-11-01/contentDocuments`;
+    const searchParams = {
       marketplaceId: marketplaceConfig.marketplaceId,
-      asinSet: asin  // Changed from 'asins' to 'asinSet'
+      pageSize: 20
     };
 
-    const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
+    const searchResponse = callSPAPI('GET', searchPath, marketplaceConfig.marketplaceId, searchParams, accessToken);
 
-    const contentDocuments = response.contentMetadataRecords || [];
-    if (contentDocuments.length > 0) {
-      return contentDocuments[0];
+    const contentRecords = searchResponse.contentMetadataRecords || [];
+
+    // Search through records to find one that contains our ASIN
+    for (const record of contentRecords) {
+      const asins = record.asinMetadataSet || [];
+      const hasOurAsin = asins.some(asinObj => asinObj.asin === asin);
+
+      if (hasOurAsin) {
+        Logger.log(`Found A+ content for ${asin}: ${record.contentReferenceKey}`);
+        return record;
+      }
     }
 
+    // If not found in first page, ASIN might not have A+ content
+    // or it's on another page (would need pagination)
+    Logger.log(`No A+ content found for ${asin} in first ${contentRecords.length} records`);
     return null;
 
   } catch (error) {
     Logger.log(`Failed to fetch A+ content for ${asin}: ${error.message}`);
-    throw new Error(`Failed to fetch A+ content: ${error.message}`);
+    // Don't throw - return null instead so import can continue
+    return null;
   }
 }
 

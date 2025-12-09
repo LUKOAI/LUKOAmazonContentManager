@@ -51,15 +51,19 @@ function lukoTestAPIConnection() {
       const tokens = getAccessTokenFromRefresh(refreshToken, config);
       testResults.tokenRefresh = '✅';
 
-      // Test actual API call (getCatalogItem for a known ASIN)
+      // Test actual API call (simple search to verify API works)
       testResults.marketplace = 'A1PA6795UKMFR9'; // DE marketplace
-      const testASIN = 'B08N5WRWNW'; // Common Amazon product
 
+      // Use search instead of specific ASIN to avoid "not found" errors
       const apiResult = callSPAPI(
         'GET',
-        `/catalog/2022-04-01/items/${testASIN}`,
+        '/catalog/2022-04-01/items',
         testResults.marketplace,
-        { marketplaceIds: testResults.marketplace },
+        {
+          marketplaceIds: testResults.marketplace,
+          keywords: 'laptop',
+          pageSize: 1
+        },
         tokens.access_token
       );
 
@@ -374,19 +378,42 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
   const attributes = item.attributes || {};
   const summaries = item.summaries || [];
   const images = item.images || [];
+  const dimensions = item.dimensions || [];
 
   const summary = summaries[0] || {};
 
+  // Extract dimensions from dimensions array (if available)
+  const dimensionsData = {};
+  for (const dim of dimensions) {
+    if (dim.marketplaceId === marketplaceConfig.marketplaceId) {
+      const itemDims = dim.item || {};
+      const packageDims = dim.package || {};
+
+      dimensionsData.itemLength = itemDims.length?.value || '';
+      dimensionsData.itemWidth = itemDims.width?.value || '';
+      dimensionsData.itemHeight = itemDims.height?.value || '';
+      dimensionsData.itemWeight = itemDims.weight?.value || '';
+      dimensionsData.packageLength = packageDims.length?.value || '';
+      dimensionsData.packageWidth = packageDims.width?.value || '';
+      dimensionsData.packageHeight = packageDims.height?.value || '';
+      dimensionsData.packageWeight = packageDims.weight?.value || '';
+      break;
+    }
+  }
+
+  // Fallback to attributes if dimensions not in dimensions array
+  const getAttr = (name) => attributes[name]?.[0]?.value || '';
+
   return {
     asin: asin,
-    sku: attributes.sku?.[0]?.value || '',
-    title: summary.itemName || attributes.item_name?.[0]?.value || '',
-    brand: summary.brand || attributes.brand?.[0]?.value || '',
-    manufacturer: attributes.manufacturer?.[0]?.value || '',
+    sku: getAttr('sku'),
+    title: summary.itemName || getAttr('item_name'),
+    brand: summary.brand || getAttr('brand'),
+    manufacturer: getAttr('manufacturer'),
     productType: item.productTypes?.[0]?.productType || 'PRODUCT',
 
     // Bullet points
-    bulletPoint1: attributes.bullet_point?.[0]?.value || '',
+    bulletPoint1: getAttr('bullet_point') || attributes.bullet_point?.[0]?.value || '',
     bulletPoint2: attributes.bullet_point?.[1]?.value || '',
     bulletPoint3: attributes.bullet_point?.[2]?.value || '',
     bulletPoint4: attributes.bullet_point?.[3]?.value || '',
@@ -397,7 +424,7 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
     bulletPoint9: attributes.bullet_point?.[8]?.value || '',
 
     // Description
-    description: attributes.product_description?.[0]?.value || '',
+    description: getAttr('product_description'),
 
     // Images
     mainImageURL: images[0]?.images?.[0]?.link || '',
@@ -407,25 +434,25 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
     additionalImage4: images[0]?.images?.[4]?.link || '',
     additionalImage5: images[0]?.images?.[5]?.link || '',
 
-    // Dimensions
-    itemLength: attributes.item_length?.[0]?.value || '',
-    itemWidth: attributes.item_width?.[0]?.value || '',
-    itemHeight: attributes.item_height?.[0]?.value || '',
-    itemWeight: attributes.item_weight?.[0]?.value || '',
-    packageLength: attributes.package_length?.[0]?.value || '',
-    packageWidth: attributes.package_width?.[0]?.value || '',
-    packageHeight: attributes.package_height?.[0]?.value || '',
-    packageWeight: attributes.package_weight?.[0]?.value || '',
+    // Dimensions (prefer dimensions array, fallback to attributes)
+    itemLength: dimensionsData.itemLength || getAttr('item_length'),
+    itemWidth: dimensionsData.itemWidth || getAttr('item_width'),
+    itemHeight: dimensionsData.itemHeight || getAttr('item_height'),
+    itemWeight: dimensionsData.itemWeight || getAttr('item_weight'),
+    packageLength: dimensionsData.packageLength || getAttr('package_length'),
+    packageWidth: dimensionsData.packageWidth || getAttr('package_width'),
+    packageHeight: dimensionsData.packageHeight || getAttr('package_height'),
+    packageWeight: dimensionsData.packageWeight || getAttr('package_weight'),
 
     // Additional info
-    modelNumber: attributes.model_number?.[0]?.value || '',
-    releaseDate: attributes.release_date?.[0]?.value || '',
-    packageQuantity: attributes.package_quantity?.[0]?.value || '',
-    countryOfOrigin: attributes.country_of_origin?.[0]?.value || '',
+    modelNumber: getAttr('model_number'),
+    releaseDate: getAttr('release_date'),
+    packageQuantity: getAttr('package_quantity'),
+    countryOfOrigin: getAttr('country_of_origin'),
 
     // Parent/variation info
-    parentASIN: attributes.parent_asin?.[0]?.value || '',
-    variationTheme: attributes.variation_theme?.[0]?.value || '',
+    parentASIN: getAttr('parent_asin'),
+    variationTheme: getAttr('variation_theme'),
 
     // Metadata
     importDate: new Date(),
