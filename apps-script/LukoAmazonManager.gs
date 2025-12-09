@@ -1008,6 +1008,12 @@ function lukoPublishAPlus() {
 
     const sheetName = contentType === 'BASIC' ? SHEETS.aplusBasic : SHEETS.aplusPremium;
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+
+    if (!sheet) {
+      showError(`${sheetName} sheet not found. Please generate spreadsheet first.`);
+      return;
+    }
+
     const selectedRows = getSelectedCheckboxRows(sheet);
 
     if (selectedRows.length === 0) {
