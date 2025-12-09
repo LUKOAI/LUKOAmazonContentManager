@@ -138,7 +138,15 @@ const MARKETPLACE_LANGUAGES = {
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
 
-  ui.createMenu('Amazon Manager')
+  ui.createMenu('NetAnaliza Manager')
+    .addSubMenu(ui.createMenu('👥 Client Management')
+      .addItem('📋 Show Active Client', 'showActiveClientInfo')
+      .addItem('🔄 Switch Active Client', 'switchActiveClient')
+      .addItem('➕ Add New Client', 'addNewClient')
+      .addSeparator()
+      .addItem('📊 View Client Settings Sheet', 'viewClientSettings')
+      .addItem('🔧 Setup Client Settings', 'generateClientSettingsSheet')
+      .addItem('📥 Migrate from Old Config', 'migrateFromOldConfig'))
     .addSubMenu(ui.createMenu('🔑 SP-API Auth')
       .addItem('📧 Setup Email Automation', 'setupEmailAutomationTrigger')
       .addItem('🔄 Process Emails Now', 'processActivationEmails')
@@ -758,48 +766,8 @@ function extractProductData(sheet, rowNumber, activeLanguages) {
 }
 
 function syncProductToAmazon(productData, marketplace, marketplaceConfig) {
-  try {
-    // Prepare payload for Cloud Function
-    const payload = {
-      operation: productData.action.toLowerCase(),
-      marketplace: marketplace,
-      marketplaceId: marketplaceConfig.marketplaceId,
-      asin: productData.asin,
-      sku: productData.sku,
-      productType: productData.productType,
-      content: productData.content,
-      credentials: getCredentials()
-    };
-
-    // Add optional fields if present
-    if (productData.modelNumber) payload.modelNumber = productData.modelNumber;
-    if (productData.releaseDate) payload.releaseDate = productData.releaseDate;
-    if (productData.packageQuantity) payload.packageQuantity = productData.packageQuantity;
-    if (productData.pricing) payload.pricing = productData.pricing;
-    if (productData.inventory) payload.inventory = productData.inventory;
-    if (productData.compliance) payload.compliance = productData.compliance;
-    if (productData.dimensions) payload.dimensions = productData.dimensions;
-
-    // Call Cloud Function
-    const response = callCloudFunction(payload);
-
-    return {
-      asin: productData.asin,
-      marketplace: marketplace,
-      status: response.status,
-      message: response.message,
-      timestamp: new Date()
-    };
-
-  } catch (error) {
-    return {
-      asin: productData.asin,
-      marketplace: marketplace,
-      status: 'ERROR',
-      message: error.toString(),
-      timestamp: new Date()
-    };
-  }
+  // Use new direct SP-API call (no Cloud Function)
+  return syncProductToAmazonDirect(productData, marketplace, marketplaceConfig);
 }
 
 
@@ -2078,86 +2046,37 @@ function getMarketplaceDomain(marketplace) {
 }
 
 function getCredentials() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.config);
-  if (!sheet) {
-    throw new Error('Config sheet not found. Please create Config sheet first.');
-  }
-
-  const data = sheet.getDataRange().getValues();
-
-  // Build credentials map from Config sheet (Column A = Key, Column B = Value)
-  const credentials = {};
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] && data[i][1]) {
-      credentials[data[i][0]] = data[i][1];
-    }
-  }
-
-  // Try multiple key name variations for backwards compatibility
-  const lwaClientId = credentials['LWA Client ID'] || credentials['lwaClientId'] || credentials['Client ID'];
-  const lwaClientSecret = credentials['LWA Client Secret'] || credentials['lwaClientSecret'] || credentials['Client Secret'];
-  const refreshToken = credentials['Refresh Token'] || credentials['refreshToken'];
-  const sellerId = credentials['Seller ID'] || credentials['sellerId'] || credentials['Merchant ID'];
-
-  // Validate that all required credentials are present
-  const missing = [];
-  if (!lwaClientId) missing.push('LWA Client ID');
-  if (!lwaClientSecret) missing.push('LWA Client Secret');
-  if (!refreshToken) missing.push('Refresh Token');
-  if (!sellerId) missing.push('Seller ID');
-
-  if (missing.length > 0) {
-    throw new Error(`Missing required credentials in Config sheet: ${missing.join(', ')}\n\nPlease fill in Config sheet with:\n- LWA Client ID (from Amazon SP-API)\n- LWA Client Secret (from Amazon SP-API)\n- Refresh Token (from Amazon SP-API)\n- Seller ID (your Merchant ID)`);
-  }
+  // New version: Get credentials from active client
+  const client = getActiveClient();
 
   return {
-    lwaClientId: lwaClientId,
-    lwaClientSecret: lwaClientSecret,
-    refreshToken: refreshToken,
-    sellerId: sellerId
+    lwaClientId: client.lwaClientId,
+    lwaClientSecret: client.lwaClientSecret,
+    refreshToken: client.refreshToken,
+    sellerId: client.sellerId
   };
 }
 
-function callCloudFunction(payload) {
-  const configSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.config);
-  if (!configSheet) {
-    throw new Error('Config sheet not found');
-  }
+// ========================================
+// REMOVED: callCloudFunction
+// Now using direct SP-API calls via SPApiDirect.gs
+// ========================================
 
-  const data = configSheet.getDataRange().getValues();
-  let cloudFunctionUrl = '';
+// Helper functions for menu actions
+function viewClientSettings() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Client Settings');
 
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === 'Cloud Function URL') {
-      cloudFunctionUrl = data[i][1];
-      break;
-    }
-  }
-
-  if (!cloudFunctionUrl) {
-    throw new Error('Cloud Function URL not configured');
-  }
-
-  const options = {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
-
-  try {
-    const response = UrlFetchApp.fetch(cloudFunctionUrl, options);
-    const result = JSON.parse(response.getContentText());
-
-    if (response.getResponseCode() !== 200) {
-      throw new Error(result.error || result.message || 'Cloud Function error');
-    }
-
-    return result;
-
-  } catch (error) {
-    Logger.log(`Cloud Function Error: ${error.toString()}`);
-    throw error;
+  if (!sheet) {
+    const ui = SpreadsheetApp.getUi();
+    ui.alert(
+      'Client Settings Not Found',
+      'Client Settings sheet does not exist.\n\nWould you like to create it now?',
+      ui.ButtonSet.OK
+    );
+    generateClientSettingsSheet();
+  } else {
+    ss.setActiveSheet(sheet);
   }
 }
 
@@ -2177,15 +2096,23 @@ function updateRowStatus(sheet, rowNumber, result) {
   // Convert status to spec format: SUCCESS → DONE, ERROR → FAILED
   const status = result.status === 'SUCCESS' ? 'DONE' : result.status === 'ERROR' ? 'FAILED' : result.status;
 
-  // Update Status column
+  // Update Status column - include client info
   if (statusCol > 0) {
-    sheet.getRange(rowNumber, statusCol).setValue(status);
+    let statusText = status;
+    if (result.clientName && result.sellerId) {
+      statusText = `${status} [${result.clientName} - ${result.sellerId}]`;
+    }
+    sheet.getRange(rowNumber, statusCol).setValue(statusText);
   }
 
   // Update ErrorMessage column (only on failure)
   if (errorCol > 0) {
     if (status === 'FAILED') {
-      sheet.getRange(rowNumber, errorCol).setValue(result.message || '');
+      let errorMsg = result.message || '';
+      if (result.clientName) {
+        errorMsg = `[${result.clientName}] ${errorMsg}`;
+      }
+      sheet.getRange(rowNumber, errorCol).setValue(errorMsg);
     } else {
       sheet.getRange(rowNumber, errorCol).setValue(''); // Clear error on success
     }
@@ -2217,7 +2144,12 @@ function updateRowStatus(sheet, rowNumber, result) {
 
   // Update ModifiedBy with user email
   if (modifiedByCol > 0) {
-    sheet.getRange(rowNumber, modifiedByCol).setValue(Session.getActiveUser().getEmail());
+    const modifiedBy = Session.getActiveUser().getEmail();
+    let modifiedByText = modifiedBy;
+    if (result.clientName) {
+      modifiedByText = `${modifiedBy} [Client: ${result.clientName}]`;
+    }
+    sheet.getRange(rowNumber, modifiedByCol).setValue(modifiedByText);
   }
 }
 

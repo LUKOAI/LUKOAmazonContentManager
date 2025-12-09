@@ -52,7 +52,7 @@ function lukoGenerateFullSpreadsheet() {
     generatePromoCodesSheet(ss);
     generateLogsSheet(ss);
     generateErrorLogSheet(ss);
-    generateSettingsSheet(ss);
+    generateClientSettingsSheet(); // New Client Settings instead of old Settings
     generateHelpSheet(ss);
 
     // Set active sheet to ProductsMain
