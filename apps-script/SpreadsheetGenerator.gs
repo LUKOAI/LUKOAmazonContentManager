@@ -1289,31 +1289,3 @@ function generateErrorLogSheet(ss) {
 
   Logger.log('ErrorLog sheet generated');
 }
-
-// ========================================
-// MENU
-// ========================================
-
-function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-  ui.createMenu('🚀 LUKO Generator')
-    .addItem('Generate Full Spreadsheet', 'lukoGenerateFullSpreadsheet')
-    .addSeparator()
-    .addItem('About', 'showAbout')
-    .addToUi();
-}
-
-function showAbout() {
-  const ui = SpreadsheetApp.getUi();
-  ui.alert(
-    'LUKO-ACM Spreadsheet Generator',
-    'Version 1.0.0\n\nGenerates complete Amazon content management spreadsheet with:\n\n' +
-    '• Product listings (all fields)\n' +
-    '• A+ Content Basic & Premium\n' +
-    '• Images & Videos\n' +
-    '• Variations\n' +
-    '• Multi-language support\n\n' +
-    'Support: support@netanaliza.com',
-    ui.ButtonSet.OK
-  );
-}
