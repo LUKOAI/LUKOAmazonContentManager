@@ -73,6 +73,9 @@ function generateProductsMainSheet(ss) {
   const sheet = ss.getSheetByName('ProductsMain');
   sheet.clear();
 
+  // Unfreeze any existing frozen columns to avoid merge conflicts
+  sheet.setFrozenColumns(0);
+
   // === ROW 1: LANGUAGE SELECTOR ===
   sheet.getRange('A1').setValue('Language:').setFontWeight('bold');
   sheet.getRange('B1').setValue('EN').setFontWeight('bold').setBackground('#4285F4').setFontColor('#FFFFFF');
@@ -431,6 +434,9 @@ function addProductDataValidation(sheet) {
 function generateAPlusBasicSheet(ss) {
   const sheet = ss.insertSheet('APlusBasic');
 
+  // Unfreeze any existing frozen columns to avoid merge conflicts
+  sheet.setFrozenColumns(0);
+
   // Row 1: Title (merge BEFORE freezing)
   sheet.getRange('A1:Z1').merge()
     .setValue('A+ Content Basic - All 9 Module Types')
@@ -512,6 +518,9 @@ function getAPlusBasicHeaders() {
 function generateAPlusPremiumSheet(ss) {
   const sheet = ss.insertSheet('APlusPremium');
 
+  // Unfreeze any existing frozen columns to avoid merge conflicts
+  sheet.setFrozenColumns(0);
+
   // Merge BEFORE freezing
   sheet.getRange('A1:Z1').merge()
     .setValue('A+ Content Premium (Brand Story)')
@@ -564,6 +573,9 @@ function getAPlusPremiumHeaders() {
 
 function generateImagesSheet(ss) {
   const sheet = ss.insertSheet('Images');
+
+  // Unfreeze any existing frozen columns to avoid merge conflicts
+  sheet.setFrozenColumns(0);
 
   // Merge BEFORE freezing
   sheet.getRange('A1:Z1').merge()
@@ -621,6 +633,9 @@ function getImagesHeaders() {
 function generateVariationsSheet(ss) {
   const sheet = ss.insertSheet('Variations');
 
+  // Unfreeze any existing frozen columns to avoid merge conflicts
+  sheet.setFrozenColumns(0);
+
   // Merge BEFORE freezing
   sheet.getRange('A1:Z1').merge()
     .setValue('Product Variations (Parent-Child Relationships)')
@@ -668,6 +683,9 @@ function generateVariationsSheet(ss) {
 
 function generateCouponsSheet(ss) {
   const sheet = ss.insertSheet('Coupons');
+
+  // Unfreeze any existing frozen columns to avoid merge conflicts
+  sheet.setFrozenColumns(0);
 
   // Header
   sheet.getRange('A1:M1').merge()
@@ -809,6 +827,9 @@ function generateCouponsSheet(ss) {
 function generatePromoCodesSheet(ss) {
   const sheet = ss.insertSheet('PromoCodes');
 
+  // Unfreeze any existing frozen columns to avoid merge conflicts
+  sheet.setFrozenColumns(0);
+
   // Header
   sheet.getRange('A1:H1').merge()
     .setValue('🎫 Generated Promo Codes')
@@ -945,6 +966,9 @@ function generateLogsSheet(ss) {
 function generateSettingsSheet(ss) {
   const sheet = ss.insertSheet('Settings');
 
+  // Unfreeze any existing frozen columns to avoid merge conflicts
+  sheet.setFrozenColumns(0);
+
   sheet.getRange('A1:B1').merge()
     .setValue('LUKO-ACM Settings')
     .setFontWeight('bold')
@@ -986,6 +1010,9 @@ function generateSettingsSheet(ss) {
 
 function generateHelpSheet(ss) {
   const sheet = ss.insertSheet('Help');
+
+  // Unfreeze any existing frozen columns to avoid merge conflicts
+  sheet.setFrozenColumns(0);
 
   sheet.getRange('A1:B1').merge()
     .setValue('LUKO-ACM Help & Resources')
@@ -1040,6 +1067,9 @@ function findColumnByName(sheet, columnName) {
 
 function generateTemplatesSheet(ss) {
   const sheet = ss.insertSheet('Templates');
+
+  // Unfreeze any existing frozen columns to avoid merge conflicts
+  sheet.setFrozenColumns(0);
 
   // Header
   sheet.getRange('A1:F1').merge()
@@ -1158,6 +1188,9 @@ function generateTemplatesSheet(ss) {
 
 function generateErrorLogSheet(ss) {
   const sheet = ss.insertSheet('ErrorLog');
+
+  // Unfreeze any existing frozen columns to avoid merge conflicts
+  sheet.setFrozenColumns(0);
 
   // Header
   sheet.getRange('A1:H1').merge()
