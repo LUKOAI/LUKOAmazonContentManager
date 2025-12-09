@@ -701,7 +701,7 @@ function generateCouponsSheet(ss) {
     .setValue('Create and manage Amazon coupons and promotions. Generated codes will appear in PromoCodes sheet.')
     .setFontStyle('italic')
     .setBackground('#FCE4EC')
-    .setWrapText(true);
+    .setWrap(true);
 
   // Column headers
   const headers = [
@@ -815,7 +815,7 @@ function generateCouponsSheet(ss) {
 
   sheet.getRange(instrRow + 1, 1, instructions.length, 1).setValues(instructions)
     .setBackground('#FCE4EC')
-    .setWrapText(true);
+    .setWrap(true);
 
   Logger.log('Coupons sheet generated');
 }
@@ -844,7 +844,7 @@ function generatePromoCodesSheet(ss) {
     .setValue('This sheet is automatically populated when you create coupons with "Private (Multiple Codes)" visibility.')
     .setFontStyle('italic')
     .setBackground('#E1BEE7')
-    .setWrapText(true);
+    .setWrap(true);
 
   // Column headers
   const headers = [
@@ -924,7 +924,7 @@ function generatePromoCodesSheet(ss) {
     .setValue('💡 TIP: You can export this sheet to CSV and distribute codes via email campaigns, influencers, or your website.')
     .setBackground('#FFF9C4')
     .setFontStyle('italic')
-    .setWrapText(true);
+    .setWrap(true);
 
   Logger.log('PromoCodes sheet generated');
 }
@@ -1085,7 +1085,7 @@ function generateTemplatesSheet(ss) {
     .setValue('Select a template in ProductsMain to auto-highlight required fields. Each template shows estimated time and difficulty.')
     .setFontStyle('italic')
     .setBackground('#EDE7F6')
-    .setWrapText(true);
+    .setWrap(true);
 
   // Column headers
   const headers = ['Template ID', 'Name', 'Symbol', 'Category', 'Difficulty', 'Est. Time', 'Description', 'Why It Works', 'Required Fields Count'];
@@ -1177,7 +1177,7 @@ function generateTemplatesSheet(ss) {
     .setValue('💡 TIP: Enter template ID (e.g., T01) in the Template column of ProductsMain sheet. Required fields will be auto-highlighted!')
     .setBackground('#FFF9C4')
     .setFontStyle('italic')
-    .setWrapText(true);
+    .setWrap(true);
 
   Logger.log('Templates sheet generated');
 }
@@ -1206,7 +1206,7 @@ function generateErrorLogSheet(ss) {
     .setValue('This sheet automatically captures export errors and validation issues. Each error includes Amazon\'s message and our recommended fix.')
     .setFontStyle('italic')
     .setBackground('#FFCDD2')
-    .setWrapText(true);
+    .setWrap(true);
 
   // Column headers
   const headers = [
