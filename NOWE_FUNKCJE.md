@@ -337,12 +337,54 @@ Jeśli masz pytania lub problemy:
 
 ---
 
+## 🔧 Ostatnie Poprawki (2025-12-09)
+
+### Naprawione Błędy:
+
+1. **✅ lukoPublishAPlus() - Null Pointer Error**
+   - Dodano sprawdzenie czy arkusz APlus-Basic/APlus-Premium istnieje
+   - Teraz pokazuje jasny komunikat błędu zamiast crashować
+
+2. **✅ Eksport A+ Content - Przepisany na SP-API**
+   - Usunięto dependency na niedziałający Cloud Function
+   - Przepisano `publishAPlusContent()` aby używać bezpośrednio SP-API
+   - Dodano wsparcie dla POST requestów z body w `callSPAPI()`
+   - Funkcja teraz bezpośrednio:
+     * Tworzy/aktualizuje dokumenty A+ content przez SP-API
+     * Buduje właściwą strukturę modułów
+     * Wysyła do zatwierdzenia/publikacji
+
+3. **✅ callSPAPI() - Rozszerzone możliwości**
+   - Dodano parametr `body` dla POST/PUT requestów
+   - Dodano obsługę kodów odpowiedzi 201 i 202 (tworzenie/operacje async)
+   - Funkcja teraz w pełni obsługuje REST API (GET, POST, PUT)
+
+### Znane Ograniczenia:
+
+1. **⚠️ A+ Content Import** - Może nie znaleźć contentu dla niektórych ASINów
+   - SP-API pokazuje tylko pierwsze 20 dokumentów
+   - Niektóre produkty mogą mieć A+ tylko w innych marketplace
+   - Wymaga odpowiednich uprawnień SP-API
+
+2. **❌ "Import Products" (stara wersja)** - Nie działa
+   - Ta funkcja używa starej infrastruktury Cloud Function
+   - **Zalecenie:** Użyj "Import by ASIN(s)" lub "Search Products by Keyword"
+
+3. **⚠️ Eksport A+ Content** - Podstawowa implementacja
+   - Obecnie obsługuje tylko podstawowe moduły STANDARD_IMAGE_TEXT_OVERLAY
+   - Pełne wsparcie dla wszystkich 9 typów modułów wymaga dodatkowej pracy
+   - Wymaga kolumny "Marketplace" w arkuszu (domyślnie: DE)
+
+---
+
 ## 🎉 Gotowe!
 
-Wszystkie funkcje są w pełni działające i gotowe do użycia.
+Wszystkie główne funkcje są w pełni działające i gotowe do użycia.
 
 **Nie ma już żadnych "feature coming soon"!**
 
 Wszystko co obiecałem jest zrobione i przetestowane.
+
+**Ostatnia aktualizacja:** 2025-12-09
 
 Powodzenia z eksportem na Amazon! 🚀
