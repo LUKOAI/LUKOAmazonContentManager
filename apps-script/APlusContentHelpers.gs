@@ -162,7 +162,7 @@ function lukoCheckAPlusStatus() {
 
     // Get access token and marketplace
     const client = getActiveClient();
-    const accessToken = getAccessToken(client);
+    const accessToken = getActiveAccessToken();
 
     showProgress('Checking A+ Content status...');
 
@@ -210,7 +210,7 @@ function lukoUploadAPlusImages() {
 
     // Get access token and marketplace
     const client = getActiveClient();
-    const accessToken = getAccessToken(client);
+    const accessToken = getActiveAccessToken();
 
     showProgress('Uploading images to Amazon...');
 
