@@ -59,8 +59,33 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   }
 
   // Helper function to get image ID or null
+  // Enhanced to support image library lookup
   function getImageId(fieldName) {
-    return aplusData.images?.[`${fieldName}_id`] || null;
+    // First priority: Direct uploadDestinationId from sheet
+    const directId = aplusData.images?.[`${fieldName}_id`];
+    if (directId) {
+      Logger.log(`Using direct uploadDestinationId for ${fieldName}: ${directId}`);
+      return directId;
+    }
+
+    // Second priority: Lookup from image library by URL
+    const imageUrl = aplusData.images?.[`${fieldName}_url`];
+    if (imageUrl) {
+      Logger.log(`Attempting library lookup for ${fieldName} with URL: ${imageUrl}`);
+      const libraryId = lookupUploadDestinationId(imageUrl);
+      if (libraryId) {
+        Logger.log(`Found uploadDestinationId in library: ${libraryId}`);
+        return libraryId;
+      } else {
+        Logger.log(`⚠️ WARNING: No uploadDestinationId found in library for: ${imageUrl}`);
+        Logger.log(`Please either:`);
+        Logger.log(`  1. Add this image to Image Library (sync from existing A+ Content)`);
+        Logger.log(`  2. Manually upload to Seller Central Asset Library and add to library sheet`);
+      }
+    }
+
+    Logger.log(`No image data found for ${fieldName}`);
+    return null;
   }
 
   // ========== STANDARD MODULES ==========
