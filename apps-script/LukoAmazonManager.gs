@@ -999,10 +999,12 @@ function lukoPublishAPlus() {
 function extractAPlusData(sheet, rowNumber, contentType) {
   const range = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn());
   const values = range.getValues()[0];
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  // Headers are in row 3, not row 1
+  const headers = sheet.getRange(3, 1, 1, sheet.getLastColumn()).getValues()[0];
 
   // Debug: Log first few values
   Logger.log(`Row ${rowNumber}: ${values.slice(0, 5).join(' | ')}`);
+  Logger.log(`Headers (row 3): ${headers.slice(0, 5).join(' | ')}`);
 
   const asin = getColumnValue(values, headers, 'ASIN');
   const moduleNumber = getColumnValue(values, headers, 'Module Number');
