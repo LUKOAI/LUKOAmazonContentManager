@@ -169,11 +169,15 @@ function onOpen() {
       .addSeparator()
       .addItem('📚 Create Image Library', 'createImageLibrarySheet')
       .addItem('🔄 Sync Images to Library', 'syncImagesToLibrary')
-      .addSeparator()
-      .addItem('🧪 Test S3 Direct Upload', 'testS3DirectUpload')
-      .addItem('🧪 Search S3 Credential Endpoints', 'searchForS3CredentialEndpoints')
-      .addItem('🧪 Test Asset Library API', 'testAssetLibraryEndpoints')
-      .addItem('🧪 Test A+ Parameters', 'testAPlusDocumentParameters')
+      // EXPERIMENTAL/DIAGNOSTIC FUNCTIONS - Zakomentowane bo nie działają (brak dostępu do Amazon S3 bucket)
+      // Te funkcje testują endpoint S3 i Asset Library API, które zwracają 403 Forbidden
+      // Zostawione w kodzie do celów diagnostycznych i dokumentacji
+      // Aby aktywować: odkomentuj poniższe linie
+      // .addSeparator()
+      // .addItem('🧪 Test S3 Direct Upload', 'testS3DirectUpload')
+      // .addItem('🧪 Search S3 Credential Endpoints', 'searchForS3CredentialEndpoints')
+      // .addItem('🧪 Test Asset Library API', 'testAssetLibraryEndpoints')
+      // .addItem('🧪 Test A+ Parameters', 'testAPlusDocumentParameters')
       .addSeparator()
       .addItem('Create Coupons', 'lukoCreateCoupons')
       .addItem('Launch Promotions', 'lukoLaunchPromotions'))
