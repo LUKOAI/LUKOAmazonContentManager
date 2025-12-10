@@ -547,12 +547,10 @@ function buildAPlusContentDocument(aplusData, marketplace) {
       companyLogo: {
         uploadDestinationId: null
         // Note: Images must be uploaded to Amazon first via Content Assets API
-        // For now, we skip the image and only send text content
-      },
-      companyLogoLink: null
+      }
     };
 
-    // Add descriptions in all languages
+    // Add descriptions in all languages as textList
     module.standardCompanyLogo.companyDescriptionTextBlock = {};
     for (const lang in aplusData.moduleContent) {
       const locale = convertLanguageToLocale(lang, marketplace);
@@ -577,27 +575,37 @@ function buildAPlusContentDocument(aplusData, marketplace) {
       }
     };
 
-    // Add headlines and body text for all languages
-    module.standardImageTextOverlay.block.headline = {};
-    module.standardImageTextOverlay.block.body = {};
+    // Add headlines and body text as textList
+    const headlineList = [];
+    const bodyList = [];
 
     for (const lang in aplusData.moduleContent) {
       const locale = convertLanguageToLocale(lang, marketplace);
       if (!locale) continue;
 
       if (aplusData.moduleContent[lang].headline) {
-        module.standardImageTextOverlay.block.headline[locale] = {
+        headlineList.push({
+          locale: locale,
           value: aplusData.moduleContent[lang].headline,
           decoratorSet: []
-        };
+        });
       }
 
       if (aplusData.moduleContent[lang].body) {
-        module.standardImageTextOverlay.block.body[locale] = {
+        bodyList.push({
+          locale: locale,
           value: aplusData.moduleContent[lang].body,
           decoratorSet: []
-        };
+        });
       }
+    }
+
+    if (headlineList.length > 0) {
+      module.standardImageTextOverlay.block.headline = { textList: headlineList };
+    }
+
+    if (bodyList.length > 0) {
+      module.standardImageTextOverlay.block.body = { textList: bodyList };
     }
   }
 
@@ -607,39 +615,49 @@ function buildAPlusContentDocument(aplusData, marketplace) {
       image: {
         uploadDestinationId: null
         // Note: Images must be uploaded to Amazon first via Content Assets API
-      },
-      headline: {},
-      bulletedListBlock: []
+      }
     };
 
-    // Add headlines for all languages
+    // Add headlines as textList
+    const headlineList = [];
     for (const lang in aplusData.moduleContent) {
       const locale = convertLanguageToLocale(lang, marketplace);
       if (locale && aplusData.moduleContent[lang].headline) {
-        module.standardSingleImageHighlights.headline[locale] = {
+        headlineList.push({
+          locale: locale,
           value: aplusData.moduleContent[lang].headline,
           decoratorSet: []
-        };
+        });
       }
     }
+    if (headlineList.length > 0) {
+      module.standardSingleImageHighlights.headline = { textList: headlineList };
+    }
 
-    // Add bulleted list items (up to 4 highlights)
+    // Add bulleted list items (up to 4 highlights) as textList
     for (let i = 1; i <= 4; i++) {
-      const bulletItem = {};
-      let hasContent = false;
+      const bulletTextList = [];
 
       for (const lang in aplusData.moduleContent) {
         const locale = convertLanguageToLocale(lang, marketplace);
         const highlightText = aplusData.moduleContent[lang][`highlight${i}`];
 
         if (locale && highlightText) {
-          bulletItem[locale] = { value: highlightText, decoratorSet: []};
-          hasContent = true;
+          bulletTextList.push({
+            locale: locale,
+            value: highlightText,
+            decoratorSet: []
+          });
         }
       }
 
-      if (hasContent) {
-        module.standardSingleImageHighlights.bulletedListBlock.push(bulletItem);
+      if (bulletTextList.length > 0) {
+        if (!module.standardSingleImageHighlights.bulletedListBlock) {
+          module.standardSingleImageHighlights.bulletedListBlock = [];
+        }
+        module.standardSingleImageHighlights.bulletedListBlock.push({
+          textList: bulletTextList
+        });
       }
     }
   }
