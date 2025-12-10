@@ -541,84 +541,11 @@ function buildAPlusContentDocument(aplusData, marketplace) {
     contentModuleType: aplusData.moduleType
   };
 
-  // STANDARD_COMPANY_LOGO module
-  if (aplusData.moduleType === 'STANDARD_COMPANY_LOGO') {
-    module.standardCompanyLogo = {
-      companyLogo: {
-        uploadDestinationId: null
-        // Note: Images must be uploaded to Amazon first via Content Assets API
-      }
-    };
+  // STANDARD_TEXT module - Simple text block without images
+  if (aplusData.moduleType === 'STANDARD_TEXT') {
+    module.standardText = {};
 
-    // Add descriptions in all languages as textList
-    module.standardCompanyLogo.companyDescriptionTextBlock = {};
-    for (const lang in aplusData.moduleContent) {
-      const locale = convertLanguageToLocale(lang, marketplace);
-      if (locale && aplusData.moduleContent[lang].companyDescription) {
-        module.standardCompanyLogo.companyDescriptionTextBlock[locale] = {
-          value: aplusData.moduleContent[lang].companyDescription,
-          decoratorSet: []
-        };
-      }
-    }
-  }
-
-  // STANDARD_IMAGE_TEXT_OVERLAY module
-  else if (aplusData.moduleType === 'STANDARD_IMAGE_TEXT_OVERLAY') {
-    module.standardImageTextOverlay = {
-      overlayColorType: aplusData.images.overlayColorType || 'BLACK',
-      block: {
-        image: {
-          uploadDestinationId: null
-          // Note: Images must be uploaded to Amazon first via Content Assets API
-        }
-      }
-    };
-
-    // Add headlines and body text as textList
-    const headlineList = [];
-    const bodyList = [];
-
-    for (const lang in aplusData.moduleContent) {
-      const locale = convertLanguageToLocale(lang, marketplace);
-      if (!locale) continue;
-
-      if (aplusData.moduleContent[lang].headline) {
-        headlineList.push({
-          locale: locale,
-          value: aplusData.moduleContent[lang].headline,
-          decoratorSet: []
-        });
-      }
-
-      if (aplusData.moduleContent[lang].body) {
-        bodyList.push({
-          locale: locale,
-          value: aplusData.moduleContent[lang].body,
-          decoratorSet: []
-        });
-      }
-    }
-
-    if (headlineList.length > 0) {
-      module.standardImageTextOverlay.block.headline = { textList: headlineList };
-    }
-
-    if (bodyList.length > 0) {
-      module.standardImageTextOverlay.block.body = { textList: bodyList };
-    }
-  }
-
-  // STANDARD_SINGLE_IMAGE_HIGHLIGHTS module
-  else if (aplusData.moduleType === 'STANDARD_SINGLE_IMAGE_HIGHLIGHTS') {
-    module.standardSingleImageHighlights = {
-      image: {
-        uploadDestinationId: null
-        // Note: Images must be uploaded to Amazon first via Content Assets API
-      }
-    };
-
-    // Add headlines as textList
+    // Build headline textList
     const headlineList = [];
     for (const lang in aplusData.moduleContent) {
       const locale = convertLanguageToLocale(lang, marketplace);
@@ -631,35 +558,128 @@ function buildAPlusContentDocument(aplusData, marketplace) {
       }
     }
     if (headlineList.length > 0) {
-      module.standardSingleImageHighlights.headline = { textList: headlineList };
+      module.standardText.headline = { textList: headlineList };
     }
 
-    // Add bulleted list items (up to 4 highlights) as textList
+    // Build body textList
+    const bodyList = [];
+    for (const lang in aplusData.moduleContent) {
+      const locale = convertLanguageToLocale(lang, marketplace);
+      if (locale && aplusData.moduleContent[lang].body) {
+        bodyList.push({
+          locale: locale,
+          value: aplusData.moduleContent[lang].body,
+          decoratorSet: []
+        });
+      }
+    }
+    if (bodyList.length > 0) {
+      module.standardText.body = { textList: bodyList };
+    }
+  }
+
+  // STANDARD_HEADER_TEXT_LIST_BLOCK module - Header with bullet points
+  else if (aplusData.moduleType === 'STANDARD_HEADER_TEXT_LIST_BLOCK') {
+    module.standardHeaderTextListBlock = {};
+
+    // Main headline textList
+    const mainHeadlineList = [];
+    for (const lang in aplusData.moduleContent) {
+      const locale = convertLanguageToLocale(lang, marketplace);
+      if (locale && aplusData.moduleContent[lang].headline) {
+        mainHeadlineList.push({
+          locale: locale,
+          value: aplusData.moduleContent[lang].headline,
+          decoratorSet: []
+        });
+      }
+    }
+    if (mainHeadlineList.length > 0) {
+      module.standardHeaderTextListBlock.headline = { textList: mainHeadlineList };
+    }
+
+    // Build blocks with bullet points (up to 4 highlights)
+    module.standardHeaderTextListBlock.block = [];
     for (let i = 1; i <= 4; i++) {
-      const bulletTextList = [];
+      const blockHeadlineList = [];
+      const blockBodyList = [];
 
       for (const lang in aplusData.moduleContent) {
         const locale = convertLanguageToLocale(lang, marketplace);
         const highlightText = aplusData.moduleContent[lang][`highlight${i}`];
+        const descriptionText = aplusData.moduleContent[lang][`description${i}`];
 
         if (locale && highlightText) {
-          bulletTextList.push({
+          blockHeadlineList.push({
             locale: locale,
             value: highlightText,
             decoratorSet: []
           });
         }
+
+        if (locale && descriptionText) {
+          blockBodyList.push({
+            locale: locale,
+            value: descriptionText,
+            decoratorSet: []
+          });
+        }
       }
 
-      if (bulletTextList.length > 0) {
-        if (!module.standardSingleImageHighlights.bulletedListBlock) {
-          module.standardSingleImageHighlights.bulletedListBlock = [];
+      if (blockHeadlineList.length > 0 || blockBodyList.length > 0) {
+        const block = {};
+        if (blockHeadlineList.length > 0) {
+          block.headline = { textList: blockHeadlineList };
         }
-        module.standardSingleImageHighlights.bulletedListBlock.push({
-          textList: bulletTextList
+        if (blockBodyList.length > 0) {
+          block.body = { textList: blockBodyList };
+        }
+        module.standardHeaderTextListBlock.block.push(block);
+      }
+    }
+  }
+
+  // STANDARD_SINGLE_SIDE_IMAGE module - Simple text with optional side image
+  else if (aplusData.moduleType === 'STANDARD_SINGLE_SIDE_IMAGE') {
+    module.standardSingleSideImage = {
+      imagePositionType: 'RIGHT', // or LEFT
+      block: {}
+    };
+
+    // Build headline textList
+    const headlineList = [];
+    for (const lang in aplusData.moduleContent) {
+      const locale = convertLanguageToLocale(lang, marketplace);
+      if (locale && aplusData.moduleContent[lang].headline) {
+        headlineList.push({
+          locale: locale,
+          value: aplusData.moduleContent[lang].headline,
+          decoratorSet: []
         });
       }
     }
+    if (headlineList.length > 0) {
+      module.standardSingleSideImage.block.headline = { textList: headlineList };
+    }
+
+    // Build body textList
+    const bodyList = [];
+    for (const lang in aplusData.moduleContent) {
+      const locale = convertLanguageToLocale(lang, marketplace);
+      if (locale && aplusData.moduleContent[lang].body) {
+        bodyList.push({
+          locale: locale,
+          value: aplusData.moduleContent[lang].body,
+          decoratorSet: []
+        });
+      }
+    }
+    if (bodyList.length > 0) {
+      module.standardSingleSideImage.block.body = { textList: bodyList };
+    }
+
+    // Note: image.uploadDestinationId can be added later if needed
+    // For now, module works without image
   }
 
   contentDocument.contentModuleList.push(module);
