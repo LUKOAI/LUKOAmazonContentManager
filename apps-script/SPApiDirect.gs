@@ -588,11 +588,11 @@ function buildAPlusContentDocument(aplusData, marketplace) {
         imageCropSpecification: {
           size: {
             width: {
-              value: 970,
+              value: 300,
               units: 'pixels'
             },
             height: {
-              value: 600,
+              value: 300,
               units: 'pixels'
             }
           },
