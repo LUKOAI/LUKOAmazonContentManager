@@ -581,18 +581,30 @@ function buildAPlusContentDocument(aplusData, marketplace) {
       block: {}
     };
 
-    // Add image if uploadDestinationId is provided
+    // Add image to block if uploadDestinationId is provided
     if (aplusData.images.image_id) {
-      module.standardSingleSideImage.image = {
+      module.standardSingleSideImage.block.image = {
         uploadDestinationId: aplusData.images.image_id,
         imageCropSpecification: {
           size: {
-            width: 970,
-            height: 600
+            width: {
+              value: 970,
+              units: 'pixels'
+            },
+            height: {
+              value: 600,
+              units: 'pixels'
+            }
           },
           offset: {
-            x: 0,
-            y: 0
+            x: {
+              value: 0,
+              units: 'pixels'
+            },
+            y: {
+              value: 0,
+              units: 'pixels'
+            }
           }
         }
       };
@@ -625,9 +637,9 @@ function buildAPlusContentDocument(aplusData, marketplace) {
       block: {}
     };
 
-    // heading is TextComponent - NO textList
+    // headline is TextComponent - NO textList (note: it's 'headline' not 'heading')
     if (content.headline) {
-      module.standardHeaderImageText.heading = {
+      module.standardHeaderImageText.headline = {
         value: content.headline,
         decoratorSet: []
       };
@@ -639,12 +651,24 @@ function buildAPlusContentDocument(aplusData, marketplace) {
         uploadDestinationId: aplusData.images.image_id,
         imageCropSpecification: {
           size: {
-            width: 970,
-            height: 300
+            width: {
+              value: 970,
+              units: 'pixels'
+            },
+            height: {
+              value: 300,
+              units: 'pixels'
+            }
           },
           offset: {
-            x: 0,
-            y: 0
+            x: {
+              value: 0,
+              units: 'pixels'
+            },
+            y: {
+              value: 0,
+              units: 'pixels'
+            }
           }
         }
       };
