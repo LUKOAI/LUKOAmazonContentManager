@@ -545,13 +545,9 @@ function buildAPlusContentDocument(aplusData, marketplace) {
   if (aplusData.moduleType === 'STANDARD_COMPANY_LOGO') {
     module.standardCompanyLogo = {
       companyLogo: {
-        uploadDestinationId: null,
-        imageCropSpecification: {
-          size: { width: { value: 600, units: 'pixels' }, height: { value: 180, units: 'pixels' } },
-          offset: { x: { value: 0, units: 'pixels' }, y: { value: 0, units: 'pixels' } }
-        },
-        altText: 'Company Logo',
-        imageUrl: aplusData.images.companyLogoImage_URL || aplusData.images.companyLogoImage
+        uploadDestinationId: null
+        // Note: Images must be uploaded to Amazon first via Content Assets API
+        // For now, we skip the image and only send text content
       },
       companyLogoLink: null
     };
@@ -561,7 +557,10 @@ function buildAPlusContentDocument(aplusData, marketplace) {
     for (const lang in aplusData.moduleContent) {
       const locale = convertLanguageToLocale(lang, marketplace);
       if (locale && aplusData.moduleContent[lang].companyDescription) {
-        module.standardCompanyLogo.companyDescriptionTextBlock[locale] = aplusData.moduleContent[lang].companyDescription;
+        module.standardCompanyLogo.companyDescriptionTextBlock[locale] = {
+          value: aplusData.moduleContent[lang].companyDescription,
+          decoratorSet: []
+        };
       }
     }
   }
@@ -570,21 +569,13 @@ function buildAPlusContentDocument(aplusData, marketplace) {
   else if (aplusData.moduleType === 'STANDARD_IMAGE_TEXT_OVERLAY') {
     module.standardImageTextOverlay = {
       overlayColorType: aplusData.images.overlayColorType || 'BLACK',
-      block: {}
+      block: {
+        image: {
+          uploadDestinationId: null
+          // Note: Images must be uploaded to Amazon first via Content Assets API
+        }
+      }
     };
-
-    // Add overlay image
-    if (aplusData.images.overlayImage_URL) {
-      module.standardImageTextOverlay.block.image = {
-        uploadDestinationId: null,
-        imageCropSpecification: {
-          size: { width: { value: 970, units: 'pixels' }, height: { value: 600, units: 'pixels' } },
-          offset: { x: { value: 0, units: 'pixels' }, y: { value: 0, units: 'pixels' } }
-        },
-        altText: 'Overlay Image',
-        imageUrl: aplusData.images.overlayImage_URL
-      };
-    }
 
     // Add headlines and body text for all languages
     module.standardImageTextOverlay.block.headline = {};
@@ -613,23 +604,13 @@ function buildAPlusContentDocument(aplusData, marketplace) {
   // STANDARD_SINGLE_IMAGE_HIGHLIGHTS module
   else if (aplusData.moduleType === 'STANDARD_SINGLE_IMAGE_HIGHLIGHTS') {
     module.standardSingleImageHighlights = {
-      image: null,
+      image: {
+        uploadDestinationId: null
+        // Note: Images must be uploaded to Amazon first via Content Assets API
+      },
       headline: {},
-      highlights: []
+      bulletedListBlock: []
     };
-
-    // Add main image
-    if (aplusData.images.image_URL) {
-      module.standardSingleImageHighlights.image = {
-        uploadDestinationId: null,
-        imageCropSpecification: {
-          size: { width: { value: 970, units: 'pixels' }, height: { value: 600, units: 'pixels' } },
-          offset: { x: { value: 0, units: 'pixels' }, y: { value: 0, units: 'pixels' } }
-        },
-        altText: 'Product Image',
-        imageUrl: aplusData.images.image_URL
-      };
-    }
 
     // Add headlines for all languages
     for (const lang in aplusData.moduleContent) {
@@ -642,9 +623,9 @@ function buildAPlusContentDocument(aplusData, marketplace) {
       }
     }
 
-    // Add highlights (up to 4)
+    // Add bulleted list items (up to 4 highlights)
     for (let i = 1; i <= 4; i++) {
-      const highlight = {};
+      const bulletItem = {};
       let hasContent = false;
 
       for (const lang in aplusData.moduleContent) {
@@ -652,15 +633,13 @@ function buildAPlusContentDocument(aplusData, marketplace) {
         const highlightText = aplusData.moduleContent[lang][`highlight${i}`];
 
         if (locale && highlightText) {
-          if (!highlight[locale]) {
-            highlight[locale] = { value: highlightText, decoratorSet: [] };
-            hasContent = true;
-          }
+          bulletItem[locale] = { value: highlightText, decoratorSet: []};
+          hasContent = true;
         }
       }
 
       if (hasContent) {
-        module.standardSingleImageHighlights.highlights.push(highlight);
+        module.standardSingleImageHighlights.bulletedListBlock.push(bulletItem);
       }
     }
   }
