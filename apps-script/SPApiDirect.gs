@@ -539,7 +539,7 @@ function buildAPlusContentDocument(aplusData, marketplace) {
   const contentDocument = {
     name: contentRefKey,
     contentType: 'EBC',  // Enhanced Brand Content
-    contentSubType: aplusData.moduleType,
+    contentSubType: 'STANDARD',  // Content subtype (not module type)
     locale: convertMarketplaceToLocale(marketplace),
     contentModuleList: []
   };
@@ -553,27 +553,19 @@ function buildAPlusContentDocument(aplusData, marketplace) {
   if (aplusData.moduleType === 'STANDARD_TEXT') {
     module.standardText = {};
 
-    // Add headline (structure: {textList: [{value, decoratorSet}]})
+    // Add headline (direct structure without textList wrapper)
     if (content.headline) {
       module.standardText.headline = {
-        textList: [
-          {
-            value: content.headline,
-            decoratorSet: []
-          }
-        ]
+        value: content.headline,
+        decoratorSet: []
       };
     }
 
     // Add body (required field)
     if (content.body) {
       module.standardText.body = {
-        textList: [
-          {
-            value: content.body,
-            decoratorSet: []
-          }
-        ]
+        value: content.body,
+        decoratorSet: []
       };
     }
   }
@@ -588,24 +580,16 @@ function buildAPlusContentDocument(aplusData, marketplace) {
     // Add headline
     if (content.headline) {
       module.standardSingleSideImage.block.headline = {
-        textList: [
-          {
-            value: content.headline,
-            decoratorSet: []
-          }
-        ]
+        value: content.headline,
+        decoratorSet: []
       };
     }
 
     // Add body
     if (content.body) {
       module.standardSingleSideImage.block.body = {
-        textList: [
-          {
-            value: content.body,
-            decoratorSet: []
-          }
-        ]
+        value: content.body,
+        decoratorSet: []
       };
     }
 
@@ -621,28 +605,33 @@ function buildAPlusContentDocument(aplusData, marketplace) {
     // Add headline
     if (content.headline) {
       module.standardHeaderImageText.heading = {
-        textList: [
-          {
-            value: content.headline,
-            decoratorSet: []
-          }
-        ]
+        value: content.headline,
+        decoratorSet: []
       };
     }
 
-    // Add body paragraphs (up to 4)
-    for (let i = 1; i <= 4; i++) {
-      const paragraphText = content[`paragraph${i}`] || content[`highlight${i}`];
-      if (paragraphText) {
-        if (!module.standardHeaderImageText.block.descriptionTextBlock) {
-          module.standardHeaderImageText.block.descriptionTextBlock = {
-            textList: []
-          };
+    // Add body paragraph
+    if (content.body) {
+      module.standardHeaderImageText.block.body = {
+        value: content.body,
+        decoratorSet: []
+      };
+    }
+
+    // Or add multiple paragraphs from highlights
+    if (!content.body && content.highlight1) {
+      const paragraphs = [];
+      for (let i = 1; i <= 4; i++) {
+        const paragraphText = content[`highlight${i}`];
+        if (paragraphText) {
+          paragraphs.push({
+            value: paragraphText,
+            decoratorSet: []
+          });
         }
-        module.standardHeaderImageText.block.descriptionTextBlock.textList.push({
-          value: paragraphText,
-          decoratorSet: []
-        });
+      }
+      if (paragraphs.length > 0) {
+        module.standardHeaderImageText.block.body = paragraphs[0];
       }
     }
 
