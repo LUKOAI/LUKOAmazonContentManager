@@ -553,19 +553,27 @@ function buildAPlusContentDocument(aplusData, marketplace) {
   if (aplusData.moduleType === 'STANDARD_TEXT') {
     module.standardText = {};
 
-    // Add headline (required field structure: {value, decoratorSet})
+    // Add headline (structure: {textList: [{value, decoratorSet}]})
     if (content.headline) {
       module.standardText.headline = {
-        value: content.headline,
-        decoratorSet: []
+        textList: [
+          {
+            value: content.headline,
+            decoratorSet: []
+          }
+        ]
       };
     }
 
     // Add body (required field)
     if (content.body) {
       module.standardText.body = {
-        value: content.body,
-        decoratorSet: []
+        textList: [
+          {
+            value: content.body,
+            decoratorSet: []
+          }
+        ]
       };
     }
   }
@@ -580,16 +588,24 @@ function buildAPlusContentDocument(aplusData, marketplace) {
     // Add headline
     if (content.headline) {
       module.standardSingleSideImage.block.headline = {
-        value: content.headline,
-        decoratorSet: []
+        textList: [
+          {
+            value: content.headline,
+            decoratorSet: []
+          }
+        ]
       };
     }
 
     // Add body
     if (content.body) {
       module.standardSingleSideImage.block.body = {
-        value: content.body,
-        decoratorSet: []
+        textList: [
+          {
+            value: content.body,
+            decoratorSet: []
+          }
+        ]
       };
     }
 
@@ -605,25 +621,29 @@ function buildAPlusContentDocument(aplusData, marketplace) {
     // Add headline
     if (content.headline) {
       module.standardHeaderImageText.heading = {
-        value: content.headline,
-        decoratorSet: []
+        textList: [
+          {
+            value: content.headline,
+            decoratorSet: []
+          }
+        ]
       };
     }
 
     // Add body paragraphs (up to 4)
-    const paragraphBlocks = [];
     for (let i = 1; i <= 4; i++) {
       const paragraphText = content[`paragraph${i}`] || content[`highlight${i}`];
       if (paragraphText) {
-        paragraphBlocks.push({
+        if (!module.standardHeaderImageText.block.descriptionTextBlock) {
+          module.standardHeaderImageText.block.descriptionTextBlock = {
+            textList: []
+          };
+        }
+        module.standardHeaderImageText.block.descriptionTextBlock.textList.push({
           value: paragraphText,
           decoratorSet: []
         });
       }
-    }
-
-    if (paragraphBlocks.length > 0) {
-      module.standardHeaderImageText.block.body = paragraphBlocks[0];
     }
 
     // Note: image can be added later
