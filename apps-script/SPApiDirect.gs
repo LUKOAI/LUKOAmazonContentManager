@@ -683,6 +683,9 @@ function createAPlusContent(contentDocument, contentReferenceKey, marketplaceCon
     contentReferenceKey: contentReferenceKey
   };
 
+  // Debug: Log the payload being sent
+  Logger.log(`A+ Content Payload: ${JSON.stringify(payload, null, 2)}`);
+
   const options = {
     method: 'post',
     headers: {
@@ -698,6 +701,9 @@ function createAPlusContent(contentDocument, contentReferenceKey, marketplaceCon
   const response = UrlFetchApp.fetch(url, options);
   const responseCode = response.getResponseCode();
   const responseBody = response.getContentText();
+
+  Logger.log(`A+ API Response Code: ${responseCode}`);
+  Logger.log(`A+ API Response: ${responseBody}`);
 
   if (responseCode < 200 || responseCode >= 300) {
     let errorMessage = `SP-API Error ${responseCode}`;

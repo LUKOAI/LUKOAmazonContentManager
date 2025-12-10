@@ -1001,9 +1001,26 @@ function extractAPlusData(sheet, rowNumber, contentType) {
   const values = range.getValues()[0];
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
+  // Debug: Log first few values
+  Logger.log(`Row ${rowNumber}: ${values.slice(0, 5).join(' | ')}`);
+
   const asin = getColumnValue(values, headers, 'ASIN');
   const moduleNumber = getColumnValue(values, headers, 'Module Number');
   const moduleType = getColumnValue(values, headers, 'Module Type');
+
+  Logger.log(`Extracted - ASIN: "${asin}", Module: "${moduleNumber}", Type: "${moduleType}"`);
+
+  if (!asin || asin === '') {
+    throw new Error(`ASIN is empty in row ${rowNumber}. Please fill in the ASIN column.`);
+  }
+
+  if (!moduleNumber || moduleNumber === '') {
+    throw new Error(`Module Number is empty in row ${rowNumber}. Please fill in the Module Number column.`);
+  }
+
+  if (!moduleType || moduleType === '') {
+    throw new Error(`Module Type is empty in row ${rowNumber}. Please fill in the Module Type column.`);
+  }
 
   // Extract multi-language content for all available languages
   const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
@@ -1018,10 +1035,13 @@ function extractAPlusData(sheet, rowNumber, contentType) {
     // Extract all fields for this language
     for (let i = 0; i < headers.length; i++) {
       const header = headers[i];
-      if (header.startsWith(prefix) && header.endsWith(`_${lang}`)) {
+      if (header && header.startsWith(prefix) && header.endsWith(`_${lang}`)) {
         // Extract field name without prefix and language suffix
         const fieldName = header.substring(prefix.length, header.length - 3);
-        langContent[fieldName] = values[i];
+        const value = values[i];
+        if (value && value !== '') {
+          langContent[fieldName] = value;
+        }
       }
     }
 
@@ -1035,11 +1055,19 @@ function extractAPlusData(sheet, rowNumber, contentType) {
   const images = {};
   for (let i = 0; i < headers.length; i++) {
     const header = headers[i];
-    if (header.startsWith(prefix) && header.includes('Image_URL')) {
-      const fieldName = header.substring(prefix.length);
-      images[fieldName] = values[i];
+    if (header && header.startsWith(prefix)) {
+      if (header.includes('Image_URL') || header.includes('ColorType')) {
+        const fieldName = header.substring(prefix.length);
+        const value = values[i];
+        if (value && value !== '') {
+          images[fieldName] = value;
+        }
+      }
     }
   }
+
+  Logger.log(`Module content languages: ${Object.keys(moduleContent).join(', ')}`);
+  Logger.log(`Images: ${Object.keys(images).join(', ')}`);
 
   return {
     asin: asin,
