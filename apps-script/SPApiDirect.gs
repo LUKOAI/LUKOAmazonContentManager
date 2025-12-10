@@ -675,15 +675,16 @@ function buildAPlusContentDocument(aplusData, marketplace) {
  */
 function createAPlusContent(contentDocument, contentReferenceKey, marketplaceConfig, accessToken) {
   const endpoint = marketplaceConfig.endpoint;
-  const url = `${endpoint}/aplus/2020-11-01/contentDocuments`;
+  // Add marketplaceId as query parameter
+  const url = `${endpoint}/aplus/2020-11-01/contentDocuments?marketplaceId=${marketplaceConfig.marketplaceId}`;
 
+  // Payload should only contain contentDocument
   const payload = {
-    contentDocument: contentDocument,
-    marketplaceId: marketplaceConfig.marketplaceId,
-    contentReferenceKey: contentReferenceKey
+    contentDocument: contentDocument
   };
 
   // Debug: Log the payload being sent
+  Logger.log(`A+ Content URL: ${url}`);
   Logger.log(`A+ Content Payload: ${JSON.stringify(payload, null, 2)}`);
 
   const options = {
