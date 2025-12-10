@@ -130,7 +130,14 @@ function refreshAccessToken() {
   }
 
   try {
-    const config = getConfigFromActiveClient();
+    // Get LWA credentials from Client Settings
+    const client = getActiveClient();
+    const config = {
+      clientId: client.lwaClientId,
+      clientSecret: client.lwaClientSecret,
+      redirectUri: 'https://ads.netanaliza.com/amazon-callback'
+    };
+
     const tokens = getAccessTokenFromRefresh(refreshToken, config);
 
     authSheet.getRange(activeRow, 5).setValue(tokens.access_token);
