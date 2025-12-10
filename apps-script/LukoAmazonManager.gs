@@ -212,6 +212,8 @@ function onOpen() {
       .addItem('🎨 Generate Spreadsheet', 'lukoGenerateFullSpreadsheet')
       .addItem('🔧 Regenerate Config Only', 'lukoRegenerateConfigOnly')
       .addSeparator()
+      .addItem('📋 Setup Google Forms Import', 'showGoogleFormsSetupInstructions')
+      .addSeparator()
       .addItem('Translate Content', 'lukoTranslateContent')
       .addItem('Generate Variants', 'lukoGenerateVariants')
       .addSeparator()

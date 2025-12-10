@@ -1,0 +1,416 @@
+/**
+ * Google Forms → APlusBasic Auto-Import Integration
+ *
+ * Automatically imports A+ Content data from Google Form submissions
+ * directly into the APlusBasic sheet at the first available row.
+ *
+ * FORM STRUCTURE:
+ * - Form URL: https://docs.google.com/forms/d/1LDysIzwc5kfSBG3cAT7cDKnWlx6w-Sj9vJw2YhbrYI8/edit
+ * - Response Sheet: ClaudeAPlusQueue
+ * - Column A: Timestamp
+ * - Column B: JSON payload from Claude
+ *
+ * SETUP:
+ * 1. Open Apps Script editor
+ * 2. Go to Triggers (clock icon)
+ * 3. Add trigger: onFormSubmit → From spreadsheet → On form submit
+ * 4. Save and authorize
+ */
+
+/**
+ * Main trigger function - runs on form submission
+ * @param {Object} e - Event object from form submission
+ */
+function onFormSubmit(e) {
+  try {
+    Logger.log('=== FORM IMPORT STARTED ===');
+    Logger.log('Event values: ' + JSON.stringify(e.values));
+
+    // 1. Extract and parse JSON from column B (e.values[1])
+    var jsonText = e.values[1];
+    Logger.log('Raw JSON text: ' + jsonText);
+
+    if (!jsonText || jsonText.trim() === '') {
+      throw new Error('Empty JSON payload - column B is empty');
+    }
+
+    var data;
+    try {
+      data = JSON.parse(jsonText);
+    } catch (parseError) {
+      throw new Error('Invalid JSON format: ' + parseError.message);
+    }
+
+    // 2. Validate structure
+    if (!data.modules || !Array.isArray(data.modules)) {
+      throw new Error('Invalid JSON structure: missing "modules" array');
+    }
+
+    if (data.modules.length === 0) {
+      throw new Error('Empty modules array - no data to import');
+    }
+
+    Logger.log('Parsed ' + data.modules.length + ' modules from JSON');
+
+    // 3. Get target sheet
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var aplusSheet = ss.getSheetByName('APlusBasic');
+
+    if (!aplusSheet) {
+      throw new Error('APlusBasic sheet not found - please create it first');
+    }
+
+    // 4. Find first empty row
+    var targetRow = findFirstEmptyRow(aplusSheet);
+    Logger.log('First empty row: ' + targetRow);
+
+    var startRow = targetRow;
+
+    // 5. Write each module
+    var modulesWritten = 0;
+    data.modules.forEach(function(module, index) {
+      Logger.log('Processing module ' + (index + 1) + '/' + data.modules.length);
+
+      if (!module.columns) {
+        Logger.log('WARNING: Module ' + (index + 1) + ' has no columns - skipping');
+        return;
+      }
+
+      // Write each column value
+      for (var colLetter in module.columns) {
+        var colNumber = columnLetterToNumber(colLetter);
+        var value = module.columns[colLetter];
+
+        Logger.log('  Writing to ' + colLetter + ' (col ' + colNumber + '): ' + value);
+        aplusSheet.getRange(targetRow, colNumber).setValue(value);
+      }
+
+      targetRow++;
+      modulesWritten++;
+    });
+
+    Logger.log('=== IMPORT COMPLETE ===');
+    Logger.log('Modules written: ' + modulesWritten);
+    Logger.log('Rows: ' + startRow + ' to ' + (targetRow - 1));
+
+    // 6. Success notification
+    var ui = SpreadsheetApp.getUi();
+    ui.alert(
+      '✅ A+ Content Import Success',
+      modulesWritten + ' module(s) imported to APlusBasic.\n\n' +
+      'Starting at row ' + startRow + '\n' +
+      'Ending at row ' + (targetRow - 1) + '\n\n' +
+      'You can now publish these modules using:\n' +
+      'Export to Amazon → 📤 Publish A+ Content',
+      ui.ButtonSet.OK
+    );
+
+    // 7. Log success
+    logOperation('FORM_IMPORT', 'SUCCESS', modulesWritten + ' modules imported (rows ' + startRow + '-' + (targetRow - 1) + ')');
+
+  } catch (error) {
+    // Error handling
+    Logger.log('ERROR: ' + error.message);
+    Logger.log('Stack: ' + error.stack);
+
+    SpreadsheetApp.getUi().alert(
+      '❌ A+ Content Import Failed',
+      'Error: ' + error.message + '\n\n' +
+      'Check Extensions → Apps Script → Executions for details.\n\n' +
+      'Common issues:\n' +
+      '• Invalid JSON format\n' +
+      '• Missing "modules" array in JSON\n' +
+      '• APlusBasic sheet not found',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+
+    logOperation('FORM_IMPORT', 'ERROR', error.message + ' | Stack: ' + error.stack);
+  }
+}
+
+/**
+ * Converts column letter to column number
+ * @param {string} letter - Column letter (A, B, AA, BB, etc.)
+ * @returns {number} - Column number (1-based)
+ *
+ * Examples:
+ *   A → 1
+ *   B → 2
+ *   Z → 26
+ *   AA → 27
+ *   BB → 54
+ *   ZZ → 702
+ */
+function columnLetterToNumber(letter) {
+  var column = 0;
+  var length = letter.length;
+
+  for (var i = 0; i < length; i++) {
+    column += (letter.charCodeAt(i) - 64) * Math.pow(26, length - i - 1);
+  }
+
+  return column;
+}
+
+/**
+ * Finds the first completely empty row in a sheet
+ * @param {Sheet} sheet - Google Sheets sheet object
+ * @returns {number} - Row number (1-based)
+ *
+ * Logic:
+ * - Starts checking from row 4 (assumes rows 1-3 are headers)
+ * - Checks all columns up to maxCol (150 columns = up to column EV)
+ * - Returns first row where ALL cells are empty
+ * - If no empty row found, returns lastRow + 1
+ */
+function findFirstEmptyRow(sheet) {
+  var lastRow = sheet.getLastRow();
+  var maxCol = 150; // Check up to column EV (150 columns)
+
+  Logger.log('Finding first empty row. Last row with data: ' + lastRow);
+
+  // Start checking from row 4 (after headers in rows 1-3)
+  for (var row = 4; row <= lastRow + 1; row++) {
+    var range = sheet.getRange(row, 1, 1, maxCol);
+    var values = range.getValues()[0];
+
+    var isEmpty = values.every(function(cell) {
+      return cell === '' || cell === null || cell === undefined;
+    });
+
+    if (isEmpty) {
+      Logger.log('Found empty row: ' + row);
+      return row;
+    }
+  }
+
+  // If no empty row found in existing data, return next after last
+  Logger.log('No empty row found, using: ' + (lastRow + 1));
+  return lastRow + 1;
+}
+
+/**
+ * Logs operation to Logs sheet
+ * @param {string} operation - Operation name (e.g., 'FORM_IMPORT')
+ * @param {string} status - Status (SUCCESS, ERROR, WARNING)
+ * @param {string} details - Details or error message
+ */
+function logOperation(operation, status, details) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var logSheet = ss.getSheetByName('Logs');
+
+    if (!logSheet) {
+      // Create Logs sheet if it doesn't exist
+      logSheet = ss.insertSheet('Logs');
+      logSheet.appendRow(['Timestamp', 'Operation', 'Status', 'Details', 'User']);
+      logSheet.getRange(1, 1, 1, 5).setFontWeight('bold');
+      logSheet.setFrozenRows(1);
+    }
+
+    logSheet.appendRow([
+      new Date(),
+      operation,
+      status,
+      details,
+      Session.getActiveUser().getEmail()
+    ]);
+
+    // Auto-resize columns for readability
+    logSheet.autoResizeColumn(1);
+    logSheet.autoResizeColumn(2);
+    logSheet.autoResizeColumn(3);
+
+  } catch (logError) {
+    // If logging fails, just log to console - don't interrupt main flow
+    Logger.log('Failed to write to Logs sheet: ' + logError.message);
+  }
+}
+
+/**
+ * Test function - simulates form submission with sample JSON
+ * Use this to test the import without submitting actual form
+ *
+ * To run: Extensions → Apps Script → Select testFormImport → Run
+ */
+function testFormImport() {
+  // Sample JSON matching the expected format
+  var sampleJSON = {
+    "modules": [
+      {
+        "row": null,
+        "columns": {
+          "A": true,
+          "B": "B0FNRLYQ3G",
+          "C": 1,
+          "D": "STANDARD_COMPANY_LOGO",
+          "E": "aplus-media-library-service-media/test-logo.jpg",
+          "F": "Test German text",
+          "G": "Test English text"
+        }
+      },
+      {
+        "row": null,
+        "columns": {
+          "A": true,
+          "B": "B0FNRLYQ3G",
+          "C": 2,
+          "D": "STANDARD_TEXT",
+          "F": "German description",
+          "G": "English description"
+        }
+      }
+    ]
+  };
+
+  // Simulate form submission event
+  var mockEvent = {
+    values: [
+      new Date().toISOString(), // Timestamp
+      JSON.stringify(sampleJSON)  // JSON payload
+    ]
+  };
+
+  Logger.log('Running test import with sample JSON...');
+  onFormSubmit(mockEvent);
+  Logger.log('Test complete. Check APlusBasic sheet and Logs sheet.');
+}
+
+/**
+ * Test function - invalid JSON (should show error)
+ */
+function testFormImportInvalidJSON() {
+  var mockEvent = {
+    values: [
+      new Date().toISOString(),
+      '{invalid json here'  // Intentionally broken JSON
+    ]
+  };
+
+  Logger.log('Testing with invalid JSON (should fail gracefully)...');
+  onFormSubmit(mockEvent);
+}
+
+/**
+ * Test function - missing modules key (should show error)
+ */
+function testFormImportMissingModules() {
+  var invalidJSON = {
+    "data": "some data",
+    "notModules": []
+  };
+
+  var mockEvent = {
+    values: [
+      new Date().toISOString(),
+      JSON.stringify(invalidJSON)
+    ]
+  };
+
+  Logger.log('Testing with missing modules key (should fail gracefully)...');
+  onFormSubmit(mockEvent);
+}
+
+/**
+ * Utility function - test column letter conversion
+ */
+function testColumnLetterConversion() {
+  var tests = [
+    {letter: 'A', expected: 1},
+    {letter: 'B', expected: 2},
+    {letter: 'Z', expected: 26},
+    {letter: 'AA', expected: 27},
+    {letter: 'AB', expected: 28},
+    {letter: 'AZ', expected: 52},
+    {letter: 'BA', expected: 53},
+    {letter: 'BB', expected: 54},
+    {letter: 'ZZ', expected: 702}
+  ];
+
+  Logger.log('Testing column letter to number conversion:');
+  tests.forEach(function(test) {
+    var result = columnLetterToNumber(test.letter);
+    var status = result === test.expected ? '✅' : '❌';
+    Logger.log(status + ' ' + test.letter + ' → ' + result + ' (expected ' + test.expected + ')');
+  });
+}
+
+/**
+ * Show Google Forms setup instructions dialog
+ * Accessible from: Tools → Setup Google Forms Import
+ */
+function showGoogleFormsSetupInstructions() {
+  var ui = SpreadsheetApp.getUi();
+
+  // Check if trigger already exists
+  var triggers = ScriptApp.getProjectTriggers();
+  var triggerExists = false;
+
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'onFormSubmit') {
+      triggerExists = true;
+      break;
+    }
+  }
+
+  var statusMessage = triggerExists
+    ? '✅ TRIGGER AKTYWNY\nGoogle Forms import jest skonfigurowany i działa.'
+    : '⚠️ TRIGGER NIE SKONFIGUROWANY\nMusisz utworzyć trigger aby import działał automatycznie.';
+
+  var message = statusMessage + '\n\n';
+  message += '═══════════════════════════════\n';
+  message += 'JAK SKONFIGUROWAĆ:\n';
+  message += '═══════════════════════════════\n\n';
+  message += '1. Kliknij OK w tym oknie\n';
+  message += '2. Idź do: Extensions → Apps Script\n';
+  message += '3. Kliknij ikonę zegara ⏰ (Triggers)\n';
+  message += '4. Kliknij: + Add Trigger\n\n';
+  message += 'Wypełnij:\n';
+  message += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+  message += '• Function to run: onFormSubmit\n';
+  message += '• Deployment: Head\n';
+  message += '• Event source: From spreadsheet\n';
+  message += '• Event type: On form submit\n';
+  message += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+  message += '5. Kliknij Save\n';
+  message += '6. Autoryzuj (jeśli potrzebne)\n\n';
+  message += '═══════════════════════════════\n';
+  message += 'JAK PRZETESTOWAĆ:\n';
+  message += '═══════════════════════════════\n\n';
+  message += '1. W Apps Script wybierz:\n';
+  message += '   testFormImport\n';
+  message += '2. Kliknij Run\n';
+  message += '3. Sprawdź arkusz APlusBasic\n';
+  message += '   (powinny pojawić się 2 testowe wiersze)\n\n';
+  message += '═══════════════════════════════\n';
+  message += 'FORM URL:\n';
+  message += '═══════════════════════════════\n';
+  message += 'https://docs.google.com/forms/d/\n';
+  message += '1LDysIzwc5kfSBG3cAT7cDKnWlx6w\n';
+  message += '-Sj9vJw2YhbrYI8/edit\n\n';
+  message += '═══════════════════════════════\n\n';
+  message += 'Pełna dokumentacja:\n';
+  message += 'docs/GOOGLE_FORMS_INTEGRATION.md';
+
+  ui.alert('📋 Google Forms → APlusBasic Import Setup', message, ui.ButtonSet.OK);
+}
+
+/**
+ * Check Google Forms trigger status
+ * Returns true if trigger exists and is active
+ */
+function checkFormsTriggerStatus() {
+  var triggers = ScriptApp.getProjectTriggers();
+
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'onFormSubmit') {
+      Logger.log('✅ onFormSubmit trigger found and active');
+      Logger.log('Trigger ID: ' + triggers[i].getUniqueId());
+      Logger.log('Event Type: ' + triggers[i].getEventType());
+      return true;
+    }
+  }
+
+  Logger.log('⚠️ onFormSubmit trigger NOT found');
+  return false;
+}
