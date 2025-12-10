@@ -1058,12 +1058,14 @@ function extractAPlusData(sheet, rowNumber, contentType) {
     }
   }
 
-  // Extract image URLs (language-independent)
+  // Extract image URLs and IDs (language-independent)
   const images = {};
   for (let i = 0; i < headers.length; i++) {
     const header = headers[i];
     if (header && header.startsWith(prefix)) {
-      if (header.includes('Image_URL') || header.includes('ColorType')) {
+      // Match: _url, _id, _imagePositionType, _overlayColorType, etc.
+      if (header.includes('_url') || header.includes('_id') ||
+          header.includes('_imagePositionType') || header.includes('_overlayColorType')) {
         const fieldName = header.substring(prefix.length);
         const value = values[i];
         if (value && value !== '') {

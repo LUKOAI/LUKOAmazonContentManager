@@ -577,9 +577,26 @@ function buildAPlusContentDocument(aplusData, marketplace) {
   // STANDARD_SINGLE_SIDE_IMAGE module - Text with optional side image
   else if (aplusData.moduleType === 'STANDARD_SINGLE_SIDE_IMAGE') {
     module.standardSingleSideImage = {
-      imagePositionType: 'RIGHT',
+      imagePositionType: aplusData.images.imagePositionType || 'RIGHT',
       block: {}
     };
+
+    // Add image if uploadDestinationId is provided
+    if (aplusData.images.image_id) {
+      module.standardSingleSideImage.image = {
+        uploadDestinationId: aplusData.images.image_id,
+        imageCropSpecification: {
+          size: {
+            width: 970,
+            height: 600
+          },
+          offset: {
+            x: 0,
+            y: 0
+          }
+        }
+      };
+    }
 
     // headline is TextComponent - NO textList
     if (content.headline) {
@@ -600,8 +617,6 @@ function buildAPlusContentDocument(aplusData, marketplace) {
         ]
       };
     }
-
-    // Note: image can be added later via Content Assets API
   }
 
   // STANDARD_HEADER_IMAGE_TEXT module - Header with image and text
@@ -615,6 +630,23 @@ function buildAPlusContentDocument(aplusData, marketplace) {
       module.standardHeaderImageText.heading = {
         value: content.headline,
         decoratorSet: []
+      };
+    }
+
+    // Add image to block if uploadDestinationId is provided
+    if (aplusData.images.image_id) {
+      module.standardHeaderImageText.block.image = {
+        uploadDestinationId: aplusData.images.image_id,
+        imageCropSpecification: {
+          size: {
+            width: 970,
+            height: 300
+          },
+          offset: {
+            x: 0,
+            y: 0
+          }
+        }
       };
     }
 
@@ -648,8 +680,6 @@ function buildAPlusContentDocument(aplusData, marketplace) {
         };
       }
     }
-
-    // Note: image can be added later
   }
 
   contentDocument.contentModuleList.push(module);
