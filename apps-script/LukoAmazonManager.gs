@@ -166,6 +166,7 @@ function onOpen() {
       .addSeparator()
       .addItem('📤 Publish A+ Content', 'lukoPublishAPlus')
       .addItem('📤 Upload A+ Images', 'lukoUploadAPlusImages')
+      .addItem('🔍 Extract Image IDs', 'lukoExtractImageIds')
       .addItem('✅ Check A+ Status', 'lukoCheckAPlusStatus')
       .addSeparator()
       .addItem('Create Coupons', 'lukoCreateCoupons')
