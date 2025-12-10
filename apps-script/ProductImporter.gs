@@ -46,9 +46,12 @@ function lukoTestAPIConnection() {
     // Test token refresh
     const startTime = new Date().getTime();
     try {
-      const config = getConfig();
-      const refreshToken = getCredentials().refreshToken;
-      const tokens = getAccessTokenFromRefresh(refreshToken, config);
+      const credentials = getCredentials();
+      const config = {
+        clientId: credentials.lwaClientId,
+        clientSecret: credentials.lwaClientSecret
+      };
+      const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
       testResults.tokenRefresh = '✅';
 
       // Test actual API call (simple search to verify API works)
@@ -279,7 +282,10 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
   }
 
   const credentials = getCredentials();
-  const config = getConfig();
+  const config = {
+    clientId: credentials.lwaClientId,
+    clientSecret: credentials.lwaClientSecret
+  };
   const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
 
   let success = 0;
@@ -559,7 +565,10 @@ function lukoSearchProducts() {
 
   try {
     const credentials = getCredentials();
-    const config = getConfig();
+    const config = {
+      clientId: credentials.lwaClientId,
+      clientSecret: credentials.lwaClientSecret
+    };
     const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
 
     // Search using Catalog API

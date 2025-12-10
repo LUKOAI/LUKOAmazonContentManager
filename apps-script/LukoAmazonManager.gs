@@ -1319,7 +1319,10 @@ function lukoImportPricing() {
 
   try {
     const credentials = getCredentials();
-    const config = getConfig();
+    const config = {
+      clientId: credentials.lwaClientId,
+      clientSecret: credentials.lwaClientSecret
+    };
     const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
 
     // Fetch pricing using Product Pricing API
@@ -1377,7 +1380,10 @@ function lukoImportInventory() {
 
   try {
     const credentials = getCredentials();
-    const config = getConfig();
+    const config = {
+      clientId: credentials.lwaClientId,
+      clientSecret: credentials.lwaClientSecret
+    };
     const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
 
     // Fetch inventory using FBA Inventory API
@@ -1435,7 +1441,10 @@ function lukoImportAPlus() {
 
   try {
     const credentials = getCredentials();
-    const config = getConfig();
+    const config = {
+      clientId: credentials.lwaClientId,
+      clientSecret: credentials.lwaClientSecret
+    };
     const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
 
     // Fetch A+ content using APlusContent API
