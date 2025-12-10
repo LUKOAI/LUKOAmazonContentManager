@@ -553,19 +553,15 @@ function buildAPlusContentDocument(aplusData, marketplace) {
   if (aplusData.moduleType === 'STANDARD_TEXT') {
     module.standardText = {};
 
-    // Add headline with textList wrapper (NO locale inside, locale is at document level)
+    // headline is TextComponent - NO textList wrapper, direct {value, decoratorSet}
     if (content.headline) {
       module.standardText.headline = {
-        textList: [
-          {
-            value: content.headline,
-            decoratorSet: []
-          }
-        ]
+        value: content.headline,
+        decoratorSet: []
       };
     }
 
-    // Add body (required field)
+    // body is ParagraphComponent - REQUIRES textList wrapper
     if (content.body) {
       module.standardText.body = {
         textList: [
@@ -585,19 +581,15 @@ function buildAPlusContentDocument(aplusData, marketplace) {
       block: {}
     };
 
-    // Add headline
+    // headline is TextComponent - NO textList
     if (content.headline) {
       module.standardSingleSideImage.block.headline = {
-        textList: [
-          {
-            value: content.headline,
-            decoratorSet: []
-          }
-        ]
+        value: content.headline,
+        decoratorSet: []
       };
     }
 
-    // Add body
+    // body is ParagraphComponent - REQUIRES textList
     if (content.body) {
       module.standardSingleSideImage.block.body = {
         textList: [
@@ -618,19 +610,15 @@ function buildAPlusContentDocument(aplusData, marketplace) {
       block: {}
     };
 
-    // Add headline
+    // heading is TextComponent - NO textList
     if (content.headline) {
       module.standardHeaderImageText.heading = {
-        textList: [
-          {
-            value: content.headline,
-            decoratorSet: []
-          }
-        ]
+        value: content.headline,
+        decoratorSet: []
       };
     }
 
-    // Add body paragraph
+    // body is ParagraphComponent - REQUIRES textList
     if (content.body) {
       module.standardHeaderImageText.block.body = {
         textList: [
