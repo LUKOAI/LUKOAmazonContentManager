@@ -40,18 +40,13 @@ function getConfig() {
  * Get configuration from Client Settings (active client)
  */
 function getConfigFromActiveClient() {
-  try {
-    const client = getActiveClient();
-    return {
-      clientId: client.lwaClientId,
-      clientSecret: client.lwaClientSecret,
-      redirectUri: 'https://ads.netanaliza.com/amazon-callback',
-      sellerId: client.sellerId
-    };
-  } catch (error) {
-    // Fallback to old getConfig if Client Settings not available
-    return getConfig();
-  }
+  const client = getActiveClient();
+  return {
+    clientId: client.lwaClientId,
+    clientSecret: client.lwaClientSecret,
+    redirectUri: 'https://ads.netanaliza.com/amazon-callback',
+    sellerId: client.sellerId
+  };
 }
 
 /**
