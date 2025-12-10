@@ -553,19 +553,27 @@ function buildAPlusContentDocument(aplusData, marketplace) {
   if (aplusData.moduleType === 'STANDARD_TEXT') {
     module.standardText = {};
 
-    // Add headline (direct structure without textList wrapper)
+    // Add headline with textList wrapper (NO locale inside, locale is at document level)
     if (content.headline) {
       module.standardText.headline = {
-        value: content.headline,
-        decoratorSet: []
+        textList: [
+          {
+            value: content.headline,
+            decoratorSet: []
+          }
+        ]
       };
     }
 
     // Add body (required field)
     if (content.body) {
       module.standardText.body = {
-        value: content.body,
-        decoratorSet: []
+        textList: [
+          {
+            value: content.body,
+            decoratorSet: []
+          }
+        ]
       };
     }
   }
@@ -580,16 +588,24 @@ function buildAPlusContentDocument(aplusData, marketplace) {
     // Add headline
     if (content.headline) {
       module.standardSingleSideImage.block.headline = {
-        value: content.headline,
-        decoratorSet: []
+        textList: [
+          {
+            value: content.headline,
+            decoratorSet: []
+          }
+        ]
       };
     }
 
     // Add body
     if (content.body) {
       module.standardSingleSideImage.block.body = {
-        value: content.body,
-        decoratorSet: []
+        textList: [
+          {
+            value: content.body,
+            decoratorSet: []
+          }
+        ]
       };
     }
 
@@ -605,33 +621,43 @@ function buildAPlusContentDocument(aplusData, marketplace) {
     // Add headline
     if (content.headline) {
       module.standardHeaderImageText.heading = {
-        value: content.headline,
-        decoratorSet: []
+        textList: [
+          {
+            value: content.headline,
+            decoratorSet: []
+          }
+        ]
       };
     }
 
     // Add body paragraph
     if (content.body) {
       module.standardHeaderImageText.block.body = {
-        value: content.body,
-        decoratorSet: []
+        textList: [
+          {
+            value: content.body,
+            decoratorSet: []
+          }
+        ]
       };
     }
 
     // Or add multiple paragraphs from highlights
     if (!content.body && content.highlight1) {
-      const paragraphs = [];
+      const bodyTextList = [];
       for (let i = 1; i <= 4; i++) {
         const paragraphText = content[`highlight${i}`];
         if (paragraphText) {
-          paragraphs.push({
+          bodyTextList.push({
             value: paragraphText,
             decoratorSet: []
           });
         }
       }
-      if (paragraphs.length > 0) {
-        module.standardHeaderImageText.block.body = paragraphs[0];
+      if (bodyTextList.length > 0) {
+        module.standardHeaderImageText.block.body = {
+          textList: bodyTextList
+        };
       }
     }
 
