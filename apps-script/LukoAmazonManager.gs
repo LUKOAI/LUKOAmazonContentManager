@@ -987,9 +987,11 @@ function lukoPublishAPlus() {
     }
 
     logOperations(results, 'ALL', `PUBLISH_APLUS_${contentType}`);
+    hideProgress();
     showSummary(results);
 
   } catch (error) {
+    hideProgress();
     handleError('lukoPublishAPlus', error);
   }
 }
@@ -999,64 +1001,72 @@ function extractAPlusData(sheet, rowNumber, contentType) {
   const values = range.getValues()[0];
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
-  const aplus = {
-    asin: getColumnValue(values, headers, 'ASIN'),
-    contentId: getColumnValue(values, headers, 'Content ID'),
-    moduleNumber: getColumnValue(values, headers, 'Module Number'),
-    moduleType: getColumnValue(values, headers, 'Module Type'),
-    language: getColumnValue(values, headers, 'Language'),
-    content: {}
-  };
+  const asin = getColumnValue(values, headers, 'ASIN');
+  const moduleNumber = getColumnValue(values, headers, 'Module Number');
+  const moduleType = getColumnValue(values, headers, 'Module Type');
 
-  // Extract module-specific content based on type
-  if (contentType === 'BASIC') {
-    aplus.content = {
-      heading: getColumnValue(values, headers, `Heading [${aplus.language}]`),
-      subheading: getColumnValue(values, headers, `Subheading [${aplus.language}]`),
-      bodyText: getColumnValue(values, headers, `Body Text [${aplus.language}]`),
-      images: [
-        { url: getColumnValue(values, headers, 'Image 1 URL'), alt: getColumnValue(values, headers, `Image 1 Alt [${aplus.language}]`) },
-        { url: getColumnValue(values, headers, 'Image 2 URL'), alt: getColumnValue(values, headers, `Image 2 Alt [${aplus.language}]`) },
-        { url: getColumnValue(values, headers, 'Image 3 URL'), alt: getColumnValue(values, headers, `Image 3 Alt [${aplus.language}]`) },
-        { url: getColumnValue(values, headers, 'Image 4 URL'), alt: getColumnValue(values, headers, `Image 4 Alt [${aplus.language}]`) }
-      ].filter(img => img.url),
-      cta: {
-        text: getColumnValue(values, headers, `CTA Text [${aplus.language}]`),
-        link: getColumnValue(values, headers, 'CTA Link')
+  // Extract multi-language content for all available languages
+  const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
+  const moduleContent = {};
+
+  // Build prefix for this module (e.g., aplus_basic_m1_)
+  const prefix = `aplus_basic_m${moduleNumber}_`;
+
+  for (const lang of languages) {
+    const langContent = {};
+
+    // Extract all fields for this language
+    for (let i = 0; i < headers.length; i++) {
+      const header = headers[i];
+      if (header.startsWith(prefix) && header.endsWith(`_${lang}`)) {
+        // Extract field name without prefix and language suffix
+        const fieldName = header.substring(prefix.length, header.length - 3);
+        langContent[fieldName] = values[i];
       }
-    };
-  } else {
-    // Premium content structure
-    aplus.content = {
-      heroImage: getColumnValue(values, headers, 'Hero Image URL'),
-      heroVideo: getColumnValue(values, headers, 'Hero Video URL'),
-      brandLogo: getColumnValue(values, headers, 'Brand Logo URL'),
-      tagline: getColumnValue(values, headers, `Tagline [${aplus.language}]`)
-    };
+    }
+
+    // Only add if there's content for this language
+    if (Object.keys(langContent).length > 0) {
+      moduleContent[lang] = langContent;
+    }
   }
 
-  return aplus;
+  // Extract image URLs (language-independent)
+  const images = {};
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i];
+    if (header.startsWith(prefix) && header.includes('Image_URL')) {
+      const fieldName = header.substring(prefix.length);
+      images[fieldName] = values[i];
+    }
+  }
+
+  return {
+    asin: asin,
+    moduleNumber: moduleNumber,
+    moduleType: moduleType,
+    moduleContent: moduleContent,
+    images: images
+  };
 }
 
 function publishAPlusContent(aplusData, contentType) {
   try {
-    throw new Error(
-      'A+ Content publishing via direct SP-API is not yet available in v3.0.\n' +
-      'Please use Amazon Seller Central to publish A+ Content.'
-    );
+    const client = getActiveClient();
+    const marketplace = client.marketplace || 'DE';
+    const marketplaceConfig = getMarketplaceConfig(marketplace);
 
-    return {
-      asin: aplusData.asin,
-      contentId: aplusData.contentId,
-      status: response.status,
-      message: response.message,
-      timestamp: new Date()
-    };
+    if (!marketplaceConfig) {
+      throw new Error(`Invalid marketplace: ${marketplace}`);
+    }
+
+    // Call direct SP-API function
+    return publishAPlusContentDirect(aplusData, marketplace, marketplaceConfig);
 
   } catch (error) {
     return {
       asin: aplusData.asin,
-      contentId: aplusData.contentId,
+      moduleNumber: aplusData.moduleNumber,
       status: 'ERROR',
       message: error.toString(),
       timestamp: new Date()

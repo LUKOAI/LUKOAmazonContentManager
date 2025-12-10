@@ -483,6 +483,270 @@ function convertToLocale(langCode, marketplace) {
   return marketplaceLocales[langCode] || null;
 }
 
+// ========================================
+// A+ CONTENT PUBLISHING
+// ========================================
+
+/**
+ * Publish A+ Content module to Amazon
+ */
+function publishAPlusContentDirect(aplusData, marketplace, marketplaceConfig) {
+  try {
+    const client = getActiveClient();
+    const accessToken = getActiveAccessToken();
+
+    showProgress(`[${client.clientName}] Publishing A+ Content for ${aplusData.asin}...`);
+
+    // Build A+ Content payload based on module type
+    const contentDocument = buildAPlusContentDocument(aplusData, marketplace);
+
+    // Create or update content document
+    const contentReferenceKey = `${aplusData.asin}_module${aplusData.moduleNumber}_${Date.now()}`;
+
+    const result = createAPlusContent(contentDocument, contentReferenceKey, marketplaceConfig, accessToken);
+
+    return {
+      asin: aplusData.asin,
+      moduleNumber: aplusData.moduleNumber,
+      contentReferenceKey: contentReferenceKey,
+      status: 'SUCCESS',
+      message: `A+ Content submitted successfully`,
+      timestamp: new Date()
+    };
+
+  } catch (error) {
+    return {
+      asin: aplusData.asin,
+      moduleNumber: aplusData.moduleNumber,
+      status: 'ERROR',
+      message: error.toString(),
+      timestamp: new Date()
+    };
+  }
+}
+
+/**
+ * Build A+ Content document from module data
+ */
+function buildAPlusContentDocument(aplusData, marketplace) {
+  const contentDocument = {
+    contentType: 'EBC',  // Enhanced Brand Content
+    contentSubType: aplusData.moduleType,
+    locale: convertMarketplaceToLocale(marketplace),
+    contentModuleList: []
+  };
+
+  // Build module based on type
+  const module = {
+    contentModuleType: aplusData.moduleType
+  };
+
+  // STANDARD_COMPANY_LOGO module
+  if (aplusData.moduleType === 'STANDARD_COMPANY_LOGO') {
+    module.standardCompanyLogo = {
+      companyLogo: {
+        uploadDestinationId: null,
+        imageCropSpecification: {
+          size: { width: { value: 600, units: 'pixels' }, height: { value: 180, units: 'pixels' } },
+          offset: { x: { value: 0, units: 'pixels' }, y: { value: 0, units: 'pixels' } }
+        },
+        altText: 'Company Logo',
+        imageUrl: aplusData.images.companyLogoImage_URL || aplusData.images.companyLogoImage
+      },
+      companyLogoLink: null
+    };
+
+    // Add descriptions in all languages
+    module.standardCompanyLogo.companyDescriptionTextBlock = {};
+    for (const lang in aplusData.moduleContent) {
+      const locale = convertLanguageToLocale(lang, marketplace);
+      if (locale && aplusData.moduleContent[lang].companyDescription) {
+        module.standardCompanyLogo.companyDescriptionTextBlock[locale] = aplusData.moduleContent[lang].companyDescription;
+      }
+    }
+  }
+
+  // STANDARD_IMAGE_TEXT_OVERLAY module
+  else if (aplusData.moduleType === 'STANDARD_IMAGE_TEXT_OVERLAY') {
+    module.standardImageTextOverlay = {
+      overlayColorType: aplusData.images.overlayColorType || 'BLACK',
+      block: {}
+    };
+
+    // Add overlay image
+    if (aplusData.images.overlayImage_URL) {
+      module.standardImageTextOverlay.block.image = {
+        uploadDestinationId: null,
+        imageCropSpecification: {
+          size: { width: { value: 970, units: 'pixels' }, height: { value: 600, units: 'pixels' } },
+          offset: { x: { value: 0, units: 'pixels' }, y: { value: 0, units: 'pixels' } }
+        },
+        altText: 'Overlay Image',
+        imageUrl: aplusData.images.overlayImage_URL
+      };
+    }
+
+    // Add headlines and body text for all languages
+    module.standardImageTextOverlay.block.headline = {};
+    module.standardImageTextOverlay.block.body = {};
+
+    for (const lang in aplusData.moduleContent) {
+      const locale = convertLanguageToLocale(lang, marketplace);
+      if (!locale) continue;
+
+      if (aplusData.moduleContent[lang].headline) {
+        module.standardImageTextOverlay.block.headline[locale] = {
+          value: aplusData.moduleContent[lang].headline,
+          decoratorSet: []
+        };
+      }
+
+      if (aplusData.moduleContent[lang].body) {
+        module.standardImageTextOverlay.block.body[locale] = {
+          value: aplusData.moduleContent[lang].body,
+          decoratorSet: []
+        };
+      }
+    }
+  }
+
+  // STANDARD_SINGLE_IMAGE_HIGHLIGHTS module
+  else if (aplusData.moduleType === 'STANDARD_SINGLE_IMAGE_HIGHLIGHTS') {
+    module.standardSingleImageHighlights = {
+      image: null,
+      headline: {},
+      highlights: []
+    };
+
+    // Add main image
+    if (aplusData.images.image_URL) {
+      module.standardSingleImageHighlights.image = {
+        uploadDestinationId: null,
+        imageCropSpecification: {
+          size: { width: { value: 970, units: 'pixels' }, height: { value: 600, units: 'pixels' } },
+          offset: { x: { value: 0, units: 'pixels' }, y: { value: 0, units: 'pixels' } }
+        },
+        altText: 'Product Image',
+        imageUrl: aplusData.images.image_URL
+      };
+    }
+
+    // Add headlines for all languages
+    for (const lang in aplusData.moduleContent) {
+      const locale = convertLanguageToLocale(lang, marketplace);
+      if (locale && aplusData.moduleContent[lang].headline) {
+        module.standardSingleImageHighlights.headline[locale] = {
+          value: aplusData.moduleContent[lang].headline,
+          decoratorSet: []
+        };
+      }
+    }
+
+    // Add highlights (up to 4)
+    for (let i = 1; i <= 4; i++) {
+      const highlight = {};
+      let hasContent = false;
+
+      for (const lang in aplusData.moduleContent) {
+        const locale = convertLanguageToLocale(lang, marketplace);
+        const highlightText = aplusData.moduleContent[lang][`highlight${i}`];
+
+        if (locale && highlightText) {
+          if (!highlight[locale]) {
+            highlight[locale] = { value: highlightText, decoratorSet: [] };
+            hasContent = true;
+          }
+        }
+      }
+
+      if (hasContent) {
+        module.standardSingleImageHighlights.highlights.push(highlight);
+      }
+    }
+  }
+
+  contentDocument.contentModuleList.push(module);
+
+  return contentDocument;
+}
+
+/**
+ * Create A+ Content document via SP-API
+ */
+function createAPlusContent(contentDocument, contentReferenceKey, marketplaceConfig, accessToken) {
+  const endpoint = marketplaceConfig.endpoint;
+  const url = `${endpoint}/aplus/2020-11-01/contentDocuments`;
+
+  const payload = {
+    contentDocument: contentDocument,
+    marketplaceId: marketplaceConfig.marketplaceId,
+    contentReferenceKey: contentReferenceKey
+  };
+
+  const options = {
+    method: 'post',
+    headers: {
+      'x-amz-access-token': accessToken,
+      'Content-Type': 'application/json'
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  Logger.log(`Creating A+ Content: ${contentReferenceKey}`);
+
+  const response = UrlFetchApp.fetch(url, options);
+  const responseCode = response.getResponseCode();
+  const responseBody = response.getContentText();
+
+  if (responseCode < 200 || responseCode >= 300) {
+    let errorMessage = `SP-API Error ${responseCode}`;
+    try {
+      const error = JSON.parse(responseBody);
+      errorMessage = error.errors?.[0]?.message || error.message || responseBody;
+    } catch (e) {
+      errorMessage = responseBody;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return JSON.parse(responseBody);
+}
+
+/**
+ * Convert marketplace code to locale
+ */
+function convertMarketplaceToLocale(marketplace) {
+  const localeMap = {
+    'DE': 'de_DE',
+    'FR': 'fr_FR',
+    'IT': 'it_IT',
+    'ES': 'es_ES',
+    'UK': 'en_GB',
+    'NL': 'nl_NL',
+    'PL': 'pl_PL',
+    'SE': 'sv_SE'
+  };
+  return localeMap[marketplace] || 'en_GB';
+}
+
+/**
+ * Convert language code to locale for specific marketplace
+ */
+function convertLanguageToLocale(lang, marketplace) {
+  const localeMap = {
+    'DE': 'de_DE',
+    'EN': 'en_GB',
+    'FR': 'fr_FR',
+    'IT': 'it_IT',
+    'ES': 'es_ES',
+    'NL': 'nl_NL',
+    'PL': 'pl_PL',
+    'SE': 'sv_SE'
+  };
+  return localeMap[lang] || null;
+}
+
 /**
  * Call SP-API with proper authentication (enhanced version)
  */
