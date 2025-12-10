@@ -163,7 +163,11 @@ function onOpen() {
       .addSeparator()
       .addItem('Upload Images', 'lukoUploadImages')
       .addItem('Upload Videos', 'lukoUploadVideos')
-      .addItem('Publish A+ Content', 'lukoPublishAPlus')
+      .addSeparator()
+      .addItem('📤 Publish A+ Content', 'lukoPublishAPlus')
+      .addItem('📤 Upload A+ Images', 'lukoUploadAPlusImages')
+      .addItem('✅ Check A+ Status', 'lukoCheckAPlusStatus')
+      .addSeparator()
       .addItem('Create Coupons', 'lukoCreateCoupons')
       .addItem('Launch Promotions', 'lukoLaunchPromotions'))
 
