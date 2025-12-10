@@ -897,15 +897,10 @@ function uploadImagesToAmazon(imageData) {
       credentials: getCredentials()
     };
 
-    const response = callCloudFunction(payload);
-
-    return {
-      asin: imageData.asin,
-      marketplace: imageData.marketplace,
-      status: response.status,
-      message: response.message,
-      timestamp: new Date()
-    };
+    throw new Error(
+      'Image upload via direct SP-API is not yet available in v3.0.\n' +
+      'Please use Amazon Seller Central to upload images.'
+    );
 
   } catch (error) {
     return {
@@ -920,16 +915,10 @@ function uploadImagesToAmazon(imageData) {
 
 function uploadVideosToAmazon(videoData) {
   try {
-    const payload = {
-      operation: 'upload_videos',
-      marketplace: videoData.marketplace,
-      asin: videoData.asin,
-      sku: videoData.sku,
-      video: videoData,
-      credentials: getCredentials()
-    };
-
-    const response = callCloudFunction(payload);
+    throw new Error(
+      'Video upload via direct SP-API is not yet available in v3.0.\n' +
+      'Please use Amazon Seller Central to upload videos.'
+    );
 
     return {
       asin: videoData.asin,
@@ -1045,14 +1034,10 @@ function extractAPlusData(sheet, rowNumber, contentType) {
 
 function publishAPlusContent(aplusData, contentType) {
   try {
-    const payload = {
-      operation: 'publish_aplus',
-      contentType: contentType,
-      data: aplusData,
-      credentials: getCredentials()
-    };
-
-    const response = callCloudFunction(payload);
+    throw new Error(
+      'A+ Content publishing via direct SP-API is not yet available in v3.0.\n' +
+      'Please use Amazon Seller Central to publish A+ Content.'
+    );
 
     return {
       asin: aplusData.asin,
@@ -1175,14 +1160,10 @@ function extractPromotionData(sheet, rowNumber) {
 
 function createCouponOnAmazon(couponData) {
   try {
-    const payload = {
-      operation: 'create_coupon',
-      marketplace: couponData.marketplace,
-      coupon: couponData,
-      credentials: getCredentials()
-    };
-
-    const response = callCloudFunction(payload);
+    throw new Error(
+      'Coupon creation via direct SP-API is not yet available in v3.0.\n' +
+      'Please use Amazon Seller Central to create coupons.'
+    );
 
     return {
       asin: couponData.asin,
@@ -1207,14 +1188,10 @@ function createCouponOnAmazon(couponData) {
 
 function launchPromotionOnAmazon(promoData) {
   try {
-    const payload = {
-      operation: 'launch_promotion',
-      marketplace: promoData.marketplace,
-      promotion: promoData,
-      credentials: getCredentials()
-    };
-
-    const response = callCloudFunction(payload);
+    throw new Error(
+      'Promotion launch via direct SP-API is not yet available in v3.0.\n' +
+      'Please use Amazon Seller Central to launch promotions.'
+    );
 
     return {
       asin: promoData.asin,
@@ -1262,18 +1239,13 @@ function lukoImportProducts() {
 
     showProgress(`Importing products from Amazon ${marketplace}...`);
 
-    const payload = {
-      operation: 'import_products',
-      marketplace: marketplace,
-      marketplaceId: marketplaceConfig.marketplaceId,
-      credentials: getCredentials()
-    };
-
-    const response2 = callCloudFunction(payload);
-    const products = response2.products || [];
-
-    // Insert products into Products-Master and Content sheets
-    populateProductsSheet(products, marketplace);
+    throw new Error(
+      'Full catalog import via direct SP-API is not yet available in v3.0.\n\n' +
+      'Please use:\n' +
+      '• Menu → Import → Search Products by Keyword\n' +
+      '• Menu → Import → Import from ASIN List\n\n' +
+      'These alternatives allow you to import specific products.'
+    );
 
     ui.alert(`Imported ${products.length} products from Amazon ${marketplace}`);
 
@@ -1774,15 +1746,10 @@ function lukoTranslateContent() {
 }
 
 function translateText(text, sourceLang, targetLangs) {
-  const payload = {
-    operation: 'translate',
-    text: text,
-    sourceLang: sourceLang,
-    targetLangs: targetLangs
-  };
-
-  const response = callCloudFunction(payload);
-  return response.translations || {};
+  throw new Error(
+    'Translation via Cloud Function is not available in v3.0.\n\n' +
+    'Please use Google Translate or Amazon\'s translation services directly.'
+  );
 }
 
 function lukoApplyTemplate() {
@@ -2183,12 +2150,16 @@ function logOperations(results, marketplace, operationType) {
 }
 
 function showProgress(message) {
-  SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Processing...', -1);
+  SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Processing...', 5);
+}
+
+function hideProgress() {
+  SpreadsheetApp.getActiveSpreadsheet().toast('');
 }
 
 function showError(message) {
   SpreadsheetApp.getUi().alert('Error', message, SpreadsheetApp.getUi().ButtonSet.OK);
-  SpreadsheetApp.getActiveSpreadsheet().toast('');
+  hideProgress();
 }
 
 function showInfo(message) {
