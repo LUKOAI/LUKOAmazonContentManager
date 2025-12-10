@@ -529,7 +529,15 @@ function publishAPlusContentDirect(aplusData, marketplace, marketplaceConfig) {
  * Build A+ Content document from module data
  */
 function buildAPlusContentDocument(aplusData, marketplace) {
+  // Get the first language from moduleContent (since locale is at document level)
+  const firstLang = Object.keys(aplusData.moduleContent)[0];
+  const content = aplusData.moduleContent[firstLang];
+
+  // Generate unique content reference key
+  const contentRefKey = `${aplusData.asin}_module${aplusData.moduleNumber}_${Date.now()}`;
+
   const contentDocument = {
+    name: contentRefKey,
     contentType: 'EBC',  // Enhanced Brand Content
     contentSubType: aplusData.moduleType,
     locale: convertMarketplaceToLocale(marketplace),
@@ -541,145 +549,84 @@ function buildAPlusContentDocument(aplusData, marketplace) {
     contentModuleType: aplusData.moduleType
   };
 
-  // STANDARD_TEXT module - Simple text block without images
+  // STANDARD_TEXT module - Simple text block
   if (aplusData.moduleType === 'STANDARD_TEXT') {
     module.standardText = {};
 
-    // Build headline textList
-    const headlineList = [];
-    for (const lang in aplusData.moduleContent) {
-      const locale = convertLanguageToLocale(lang, marketplace);
-      if (locale && aplusData.moduleContent[lang].headline) {
-        headlineList.push({
-          locale: locale,
-          value: aplusData.moduleContent[lang].headline,
-          decoratorSet: []
-        });
-      }
-    }
-    if (headlineList.length > 0) {
-      module.standardText.headline = { textList: headlineList };
+    // Add headline (required field structure: {value, decoratorSet})
+    if (content.headline) {
+      module.standardText.headline = {
+        value: content.headline,
+        decoratorSet: []
+      };
     }
 
-    // Build body textList
-    const bodyList = [];
-    for (const lang in aplusData.moduleContent) {
-      const locale = convertLanguageToLocale(lang, marketplace);
-      if (locale && aplusData.moduleContent[lang].body) {
-        bodyList.push({
-          locale: locale,
-          value: aplusData.moduleContent[lang].body,
-          decoratorSet: []
-        });
-      }
-    }
-    if (bodyList.length > 0) {
-      module.standardText.body = { textList: bodyList };
+    // Add body (required field)
+    if (content.body) {
+      module.standardText.body = {
+        value: content.body,
+        decoratorSet: []
+      };
     }
   }
 
-  // STANDARD_HEADER_TEXT_LIST_BLOCK module - Header with bullet points
-  else if (aplusData.moduleType === 'STANDARD_HEADER_TEXT_LIST_BLOCK') {
-    module.standardHeaderTextListBlock = {};
-
-    // Main headline textList
-    const mainHeadlineList = [];
-    for (const lang in aplusData.moduleContent) {
-      const locale = convertLanguageToLocale(lang, marketplace);
-      if (locale && aplusData.moduleContent[lang].headline) {
-        mainHeadlineList.push({
-          locale: locale,
-          value: aplusData.moduleContent[lang].headline,
-          decoratorSet: []
-        });
-      }
-    }
-    if (mainHeadlineList.length > 0) {
-      module.standardHeaderTextListBlock.headline = { textList: mainHeadlineList };
-    }
-
-    // Build blocks with bullet points (up to 4 highlights)
-    module.standardHeaderTextListBlock.block = [];
-    for (let i = 1; i <= 4; i++) {
-      const blockHeadlineList = [];
-      const blockBodyList = [];
-
-      for (const lang in aplusData.moduleContent) {
-        const locale = convertLanguageToLocale(lang, marketplace);
-        const highlightText = aplusData.moduleContent[lang][`highlight${i}`];
-        const descriptionText = aplusData.moduleContent[lang][`description${i}`];
-
-        if (locale && highlightText) {
-          blockHeadlineList.push({
-            locale: locale,
-            value: highlightText,
-            decoratorSet: []
-          });
-        }
-
-        if (locale && descriptionText) {
-          blockBodyList.push({
-            locale: locale,
-            value: descriptionText,
-            decoratorSet: []
-          });
-        }
-      }
-
-      if (blockHeadlineList.length > 0 || blockBodyList.length > 0) {
-        const block = {};
-        if (blockHeadlineList.length > 0) {
-          block.headline = { textList: blockHeadlineList };
-        }
-        if (blockBodyList.length > 0) {
-          block.body = { textList: blockBodyList };
-        }
-        module.standardHeaderTextListBlock.block.push(block);
-      }
-    }
-  }
-
-  // STANDARD_SINGLE_SIDE_IMAGE module - Simple text with optional side image
+  // STANDARD_SINGLE_SIDE_IMAGE module - Text with optional side image
   else if (aplusData.moduleType === 'STANDARD_SINGLE_SIDE_IMAGE') {
     module.standardSingleSideImage = {
-      imagePositionType: 'RIGHT', // or LEFT
+      imagePositionType: 'RIGHT',
       block: {}
     };
 
-    // Build headline textList
-    const headlineList = [];
-    for (const lang in aplusData.moduleContent) {
-      const locale = convertLanguageToLocale(lang, marketplace);
-      if (locale && aplusData.moduleContent[lang].headline) {
-        headlineList.push({
-          locale: locale,
-          value: aplusData.moduleContent[lang].headline,
+    // Add headline
+    if (content.headline) {
+      module.standardSingleSideImage.block.headline = {
+        value: content.headline,
+        decoratorSet: []
+      };
+    }
+
+    // Add body
+    if (content.body) {
+      module.standardSingleSideImage.block.body = {
+        value: content.body,
+        decoratorSet: []
+      };
+    }
+
+    // Note: image can be added later via Content Assets API
+  }
+
+  // STANDARD_HEADER_IMAGE_TEXT module - Header with image and text
+  else if (aplusData.moduleType === 'STANDARD_HEADER_IMAGE_TEXT') {
+    module.standardHeaderImageText = {
+      block: {}
+    };
+
+    // Add headline
+    if (content.headline) {
+      module.standardHeaderImageText.heading = {
+        value: content.headline,
+        decoratorSet: []
+      };
+    }
+
+    // Add body paragraphs (up to 4)
+    const paragraphBlocks = [];
+    for (let i = 1; i <= 4; i++) {
+      const paragraphText = content[`paragraph${i}`] || content[`highlight${i}`];
+      if (paragraphText) {
+        paragraphBlocks.push({
+          value: paragraphText,
           decoratorSet: []
         });
       }
     }
-    if (headlineList.length > 0) {
-      module.standardSingleSideImage.block.headline = { textList: headlineList };
+
+    if (paragraphBlocks.length > 0) {
+      module.standardHeaderImageText.block.body = paragraphBlocks[0];
     }
 
-    // Build body textList
-    const bodyList = [];
-    for (const lang in aplusData.moduleContent) {
-      const locale = convertLanguageToLocale(lang, marketplace);
-      if (locale && aplusData.moduleContent[lang].body) {
-        bodyList.push({
-          locale: locale,
-          value: aplusData.moduleContent[lang].body,
-          decoratorSet: []
-        });
-      }
-    }
-    if (bodyList.length > 0) {
-      module.standardSingleSideImage.block.body = { textList: bodyList };
-    }
-
-    // Note: image.uploadDestinationId can be added later if needed
-    // For now, module works without image
+    // Note: image can be added later
   }
 
   contentDocument.contentModuleList.push(module);
@@ -742,16 +689,16 @@ function createAPlusContent(contentDocument, contentReferenceKey, marketplaceCon
  */
 function convertMarketplaceToLocale(marketplace) {
   const localeMap = {
-    'DE': 'de_DE',
-    'FR': 'fr_FR',
-    'IT': 'it_IT',
-    'ES': 'es_ES',
-    'UK': 'en_GB',
-    'NL': 'nl_NL',
-    'PL': 'pl_PL',
-    'SE': 'sv_SE'
+    'DE': 'de-DE',
+    'FR': 'fr-FR',
+    'IT': 'it-IT',
+    'ES': 'es-ES',
+    'UK': 'en-GB',
+    'NL': 'nl-NL',
+    'PL': 'pl-PL',
+    'SE': 'sv-SE'
   };
-  return localeMap[marketplace] || 'en_GB';
+  return localeMap[marketplace] || 'en-GB';
 }
 
 /**
@@ -759,14 +706,14 @@ function convertMarketplaceToLocale(marketplace) {
  */
 function convertLanguageToLocale(lang, marketplace) {
   const localeMap = {
-    'DE': 'de_DE',
-    'EN': 'en_GB',
-    'FR': 'fr_FR',
-    'IT': 'it_IT',
-    'ES': 'es_ES',
-    'NL': 'nl_NL',
-    'PL': 'pl_PL',
-    'SE': 'sv_SE'
+    'DE': 'de-DE',
+    'EN': 'en-GB',
+    'FR': 'fr-FR',
+    'IT': 'it-IT',
+    'ES': 'es-ES',
+    'NL': 'nl-NL',
+    'PL': 'pl-PL',
+    'SE': 'sv-SE'
   };
   return localeMap[lang] || null;
 }
