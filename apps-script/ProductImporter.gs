@@ -596,6 +596,7 @@ function lukoSearchProducts() {
     const asins = searchResults.map(p => p.asin);
     const results = importProductsByASIN(asins, marketplace, marketplaceConfig);
 
+    hideProgress();
     ui.alert(
       'Import Complete',
       `✅ Successfully imported: ${results.success}\n` +
@@ -605,6 +606,7 @@ function lukoSearchProducts() {
     );
 
   } catch (error) {
+    hideProgress();
     handleError('lukoSearchProducts', error);
   }
 }
@@ -805,12 +807,16 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
 // ========================================
 
 function showProgress(message) {
-  SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Processing...', -1);
+  SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Processing...', 5);
+}
+
+function hideProgress() {
+  SpreadsheetApp.getActiveSpreadsheet().toast('');
 }
 
 function showError(message) {
   SpreadsheetApp.getUi().alert('Error', message, SpreadsheetApp.getUi().ButtonSet.OK);
-  SpreadsheetApp.getActiveSpreadsheet().toast('');
+  hideProgress();
 }
 
 function showInfo(message) {
