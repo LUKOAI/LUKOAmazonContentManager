@@ -606,7 +606,8 @@ function buildAPlusContentDocument(aplusData, marketplace) {
               units: 'pixels'
             }
           }
-        }
+        },
+        altText: aplusData.images.image_altText || content.headline || 'Product image'
       };
     }
 
@@ -670,7 +671,8 @@ function buildAPlusContentDocument(aplusData, marketplace) {
               units: 'pixels'
             }
           }
-        }
+        },
+        altText: aplusData.images.image_altText || content.headline || 'Product image'
       };
     }
 
