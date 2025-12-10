@@ -111,10 +111,12 @@ function testAssetLibraryEndpoints() {
           });
         } else if (responseCode === 403) {
           Logger.log(`⚠️ Forbidden (403) - Endpoint exists but no permission`);
+          Logger.log(`Full 403 Response: ${responseBody}`);
           results.push({
             name: test.name,
             status: 'FORBIDDEN',
-            code: responseCode
+            code: responseCode,
+            response: responseBody
           });
         } else {
           Logger.log(`Response: ${responseBody.substring(0, 300)}`);
