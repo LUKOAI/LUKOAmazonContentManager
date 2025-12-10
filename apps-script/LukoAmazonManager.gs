@@ -170,6 +170,9 @@ function onOpen() {
       .addItem('🔄 Sync A+ Images', 'lukoSyncAPlusImages')
       .addItem('✅ Check A+ Status', 'lukoCheckAPlusStatus')
       .addSeparator()
+      .addItem('🧪 Test Asset Library API', 'testAssetLibraryEndpoints')
+      .addItem('🧪 Test A+ Parameters', 'testAPlusDocumentParameters')
+      .addSeparator()
       .addItem('Create Coupons', 'lukoCreateCoupons')
       .addItem('Launch Promotions', 'lukoLaunchPromotions'))
 
