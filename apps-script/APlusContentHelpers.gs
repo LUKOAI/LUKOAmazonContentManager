@@ -61,13 +61,12 @@ function createUploadDestination(filename, contentType, accessToken, marketplace
   const endpoint = marketplaceConfig.endpoint;
   const marketplaceId = marketplaceConfig.marketplaceId;
 
-  // Use Uploads API to create upload destination
+  // Use Uploads API to create upload destination for A+ Content
   const url = `${endpoint}/uploads/2020-11-01/uploadDestinations`;
 
-  // Try using feedDocuments as resource - this works for general uploads
-  // Then the same uploadDestinationId can be used in A+ Content
+  // Correct resource path for A+ Content images
   const payload = {
-    resource: 'feedDocuments',
+    resource: 'aplus/2020-11-01/contentDocuments',
     contentType: contentType || 'image/jpeg'
   };
 
