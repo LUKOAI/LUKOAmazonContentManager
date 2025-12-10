@@ -36,8 +36,8 @@ const SHEETS = {
   images: 'Images',
   images360: 'Images-360',
   videos: 'Videos',
-  aplusBasic: 'APlus-Basic',
-  aplusPremium: 'APlus-Premium',
+  aplusBasic: 'APlusBasic',
+  aplusPremium: 'APlusPremium',
   brandStore: 'BrandStore',
   brandStrip: 'BrandStrip',
   coupons: 'Coupons',
@@ -963,10 +963,16 @@ function lukoPublishAPlus() {
 
     const sheetName = contentType === 'BASIC' ? SHEETS.aplusBasic : SHEETS.aplusPremium;
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+
+    if (!sheet) {
+      showError(`Sheet "${sheetName}" not found!\n\nPlease generate the spreadsheet first:\nMenu → Tools → Generate Spreadsheet`);
+      return;
+    }
+
     const selectedRows = getSelectedCheckboxRows(sheet);
 
     if (selectedRows.length === 0) {
-      showError('Please select A+ content to publish');
+      showError('Please select A+ content to publish (check the ☑️ Export column)');
       return;
     }
 
