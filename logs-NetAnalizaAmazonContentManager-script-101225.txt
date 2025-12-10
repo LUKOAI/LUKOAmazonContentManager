@@ -1,0 +1,2971 @@
+https://script.google.com/u/0/home/projects/1PvvWRgkSWmzynSqUNv9jjWHj2sdXjCzKhvDmaCR5PxzBU1r7KCLASIlQ/executions
+
+Executions
+Showing 50 executions of many over last 7 daysShow in real time:
+
+Add a filter
+Deployment
+Function
+Type
+Start Time
+Duration
+Status
+Head	testAPlusDocumentParameters	Menu	Dec 10, 2025, 9:28:25 PM	12.581 s	
+Completed
+Cloud logs
+Dec 10, 2025, 9:28:27 PM	Info	========================================
+Dec 10, 2025, 9:28:27 PM	Info	Testing A+ Content Document Parameters
+Dec 10, 2025, 9:28:27 PM	Info	========================================
+Dec 10, 2025, 9:28:27 PM	Info	
+--- Testing includedDataSet: CONTENTS ---
+Dec 10, 2025, 9:28:27 PM	Info	Response Code: 200
+Dec 10, 2025, 9:28:27 PM	Info	✅ SUCCESS! Keys in response: warnings, nextPageToken, contentMetadataRecords
+Dec 10, 2025, 9:28:27 PM	Info	First record keys: contentReferenceKey, contentMetadata
+Dec 10, 2025, 9:28:28 PM	Info	
+--- Testing includedDataSet: METADATA ---
+Dec 10, 2025, 9:28:28 PM	Info	Response Code: 200
+Dec 10, 2025, 9:28:28 PM	Info	✅ SUCCESS! Keys in response: warnings, nextPageToken, contentMetadataRecords
+Dec 10, 2025, 9:28:28 PM	Info	First record keys: contentReferenceKey, contentMetadata
+Dec 10, 2025, 9:28:29 PM	Info	
+--- Testing includedDataSet: MEDIA ---
+Dec 10, 2025, 9:28:29 PM	Info	Response Code: 200
+Dec 10, 2025, 9:28:29 PM	Info	✅ SUCCESS! Keys in response: warnings, nextPageToken, contentMetadataRecords
+Dec 10, 2025, 9:28:29 PM	Info	First record keys: contentReferenceKey, contentMetadata
+Dec 10, 2025, 9:28:30 PM	Info	
+--- Testing includedDataSet: ASSETS ---
+Dec 10, 2025, 9:28:30 PM	Info	Response Code: 200
+Dec 10, 2025, 9:28:30 PM	Info	✅ SUCCESS! Keys in response: warnings, nextPageToken, contentMetadataRecords
+Dec 10, 2025, 9:28:30 PM	Info	First record keys: contentReferenceKey, contentMetadata
+Dec 10, 2025, 9:28:30 PM	Info	
+--- Testing includedDataSet: IMAGES ---
+Dec 10, 2025, 9:28:31 PM	Info	Response Code: 200
+Dec 10, 2025, 9:28:31 PM	Info	✅ SUCCESS! Keys in response: warnings, nextPageToken, contentMetadataRecords
+Dec 10, 2025, 9:28:31 PM	Info	First record keys: contentReferenceKey, contentMetadata
+Dec 10, 2025, 9:28:31 PM	Info	
+--- Testing includedDataSet: CONTENTS,METADATA ---
+Dec 10, 2025, 9:28:31 PM	Info	Response Code: 200
+Dec 10, 2025, 9:28:31 PM	Info	✅ SUCCESS! Keys in response: warnings, nextPageToken, contentMetadataRecords
+Dec 10, 2025, 9:28:31 PM	Info	First record keys: contentReferenceKey, contentMetadata
+Dec 10, 2025, 9:28:32 PM	Info	
+--- Testing includedDataSet: CONTENTS,METADATA,MEDIA ---
+Dec 10, 2025, 9:28:32 PM	Info	Response Code: 200
+Dec 10, 2025, 9:28:32 PM	Info	✅ SUCCESS! Keys in response: warnings, nextPageToken, contentMetadataRecords
+Dec 10, 2025, 9:28:32 PM	Info	First record keys: contentReferenceKey, contentMetadata
+Head	testAssetLibraryEndpoints	Menu	Dec 10, 2025, 9:27:21 PM	25.371 s	
+Completed
+Cloud logs
+Dec 10, 2025, 9:27:24 PM	Info	========================================
+Dec 10, 2025, 9:27:24 PM	Info	Testing Asset Library Endpoints
+Dec 10, 2025, 9:27:24 PM	Info	========================================
+Dec 10, 2025, 9:27:24 PM	Info	
+--- Testing: A+ Assets List ---
+Dec 10, 2025, 9:27:24 PM	Info	URL: https://sellingpartnerapi-eu.amazon.com/aplus/2020-11-01/assets?marketplaceId=A1PA6795UKMFR9
+Dec 10, 2025, 9:27:24 PM	Info	Response Code: 403
+Dec 10, 2025, 9:27:24 PM	Info	⚠️ Forbidden (403) - Endpoint exists but no permission
+Dec 10, 2025, 9:27:24 PM	Info	Full 403 Response: {
+  "errors": [
+    {
+      "code": "Unauthorized",
+      "message": "Access to requested resource is denied.",
+      "details": ""
+    }
+  ]
+}
+Dec 10, 2025, 9:27:25 PM	Info	
+--- Testing: A+ Media Library ---
+Dec 10, 2025, 9:27:25 PM	Info	URL: https://sellingpartnerapi-eu.amazon.com/aplus/2020-11-01/mediaLibrary?marketplaceId=A1PA6795UKMFR9
+Dec 10, 2025, 9:27:25 PM	Info	Response Code: 403
+Dec 10, 2025, 9:27:25 PM	Info	⚠️ Forbidden (403) - Endpoint exists but no permission
+Dec 10, 2025, 9:27:25 PM	Info	Full 403 Response: {
+  "errors": [
+    {
+      "code": "Unauthorized",
+      "message": "Access to requested resource is denied.",
+      "details": ""
+    }
+  ]
+}
+Dec 10, 2025, 9:27:26 PM	Info	
+--- Testing: A+ Content Assets ---
+Dec 10, 2025, 9:27:26 PM	Info	URL: https://sellingpartnerapi-eu.amazon.com/aplus/2020-11-01/contentAssets?marketplaceId=A1PA6795UKMFR9
+Dec 10, 2025, 9:27:26 PM	Info	Response Code: 403
+Dec 10, 2025, 9:27:26 PM	Info	⚠️ Forbidden (403) - Endpoint exists but no permission
+Dec 10, 2025, 9:27:26 PM	Info	Full 403 Response: {
+  "errors": [
+    {
+      "code": "Unauthorized",
+      "message": "Access to requested resource is denied.",
+      "details": ""
+    }
+  ]
+}
+Dec 10, 2025, 9:27:27 PM	Info	
+--- Testing: Media Assets ---
+Dec 10, 2025, 9:27:27 PM	Info	URL: https://sellingpartnerapi-eu.amazon.com/media/2020-11-01/assets?marketplaceId=A1PA6795UKMFR9
+Dec 10, 2025, 9:27:28 PM	Info	Response Code: 403
+Dec 10, 2025, 9:27:28 PM	Info	⚠️ Forbidden (403) - Endpoint exists but no permission
+Dec 10, 2025, 9:27:28 PM	Info	Full 403 Response: {
+  "errors": [
+    {
+      "code": "Unauthorized",
+      "message": "Access to requested resource is denied.",
+      "details": ""
+    }
+  ]
+}
+Dec 10, 2025, 9:27:29 PM	Info	
+--- Testing: Assets Library ---
+Dec 10, 2025, 9:27:29 PM	Info	URL: https://sellingpartnerapi-eu.amazon.com/assets/2020-11-01/library?marketplaceId=A1PA6795UKMFR9
+Dec 10, 2025, 9:27:29 PM	Info	Response Code: 403
+Dec 10, 2025, 9:27:29 PM	Info	⚠️ Forbidden (403) - Endpoint exists but no permission
+Dec 10, 2025, 9:27:29 PM	Info	Full 403 Response: {
+  "errors": [
+    {
+      "code": "Unauthorized",
+      "message": "Access to requested resource is denied.",
+      "details": ""
+    }
+  ]
+}
+Dec 10, 2025, 9:27:30 PM	Info	
+--- Testing: Content Media ---
+Dec 10, 2025, 9:27:30 PM	Info	URL: https://sellingpartnerapi-eu.amazon.com/content/2020-11-01/media?marketplaceId=A1PA6795UKMFR9
+Dec 10, 2025, 9:27:30 PM	Info	Response Code: 403
+Dec 10, 2025, 9:27:30 PM	Info	⚠️ Forbidden (403) - Endpoint exists but no permission
+Dec 10, 2025, 9:27:30 PM	Info	Full 403 Response: {
+  "errors": [
+    {
+      "code": "Unauthorized",
+      "message": "Access to requested resource is denied.",
+      "details": ""
+    }
+  ]
+}
+Dec 10, 2025, 9:27:31 PM	Info	
+--- Testing: Upload Destinations List ---
+Dec 10, 2025, 9:27:31 PM	Info	URL: https://sellingpartnerapi-eu.amazon.com/uploads/2020-11-01/uploadDestinations?resource=aplus/2020-11-01/contentDocuments
+Dec 10, 2025, 9:27:31 PM	Info	Response Code: 403
+Dec 10, 2025, 9:27:31 PM	Info	⚠️ Forbidden (403) - Endpoint exists but no permission
+Dec 10, 2025, 9:27:31 PM	Info	Full 403 Response: {
+  "errors": [
+    {
+      "code": "Unauthorized",
+      "message": "Access to requested resource is denied.",
+      "details": ""
+    }
+  ]
+}
+Dec 10, 2025, 9:27:32 PM	Info	
+--- Testing: Creative Assets ---
+Dec 10, 2025, 9:27:32 PM	Info	URL: https://sellingpartnerapi-eu.amazon.com/creative/2020-11-01/assets?marketplaceId=A1PA6795UKMFR9
+Dec 10, 2025, 9:27:32 PM	Info	Response Code: 403
+Dec 10, 2025, 9:27:32 PM	Info	⚠️ Forbidden (403) - Endpoint exists but no permission
+Dec 10, 2025, 9:27:32 PM	Info	Full 403 Response: {
+  "errors": [
+    {
+      "code": "Unauthorized",
+      "message": "Access to requested resource is denied.",
+      "details": ""
+    }
+  ]
+}
+Dec 10, 2025, 9:27:33 PM	Info	
+========================================
+Dec 10, 2025, 9:27:33 PM	Info	Test Results Summary
+Dec 10, 2025, 9:27:33 PM	Info	========================================
+Dec 10, 2025, 9:27:33 PM	Info	
+⚠️ FORBIDDEN ENDPOINTS (8) - exist but need permissions:
+Dec 10, 2025, 9:27:33 PM	Info	  - A+ Assets List
+Dec 10, 2025, 9:27:33 PM	Info	  - A+ Media Library
+Dec 10, 2025, 9:27:33 PM	Info	  - A+ Content Assets
+Dec 10, 2025, 9:27:33 PM	Info	  - Media Assets
+Dec 10, 2025, 9:27:33 PM	Info	  - Assets Library
+Dec 10, 2025, 9:27:33 PM	Info	  - Content Media
+Dec 10, 2025, 9:27:33 PM	Info	  - Upload Destinations List
+Dec 10, 2025, 9:27:33 PM	Info	  - Creative Assets
+Head	searchForS3CredentialEndpoints	Menu	Dec 10, 2025, 9:26:48 PM	15.726 s	
+Completed
+Cloud logs
+Dec 10, 2025, 9:26:51 PM	Info	========================================
+Dec 10, 2025, 9:26:51 PM	Info	Searching for S3 Credential Endpoints
+Dec 10, 2025, 9:26:51 PM	Info	========================================
+Dec 10, 2025, 9:26:51 PM	Info	
+--- Testing: A+ Assets Upload Credentials ---
+Dec 10, 2025, 9:26:51 PM	Info	URL: https://sellingpartnerapi-eu.amazon.com/aplus/2020-11-01/assets/uploadCredentials?marketplaceId=A1PA6795UKMFR9
+Dec 10, 2025, 9:26:52 PM	Info	Response Code: 403
+Dec 10, 2025, 9:26:52 PM	Info	Response: {
+  "errors": [
+    {
+      "code": "Unauthorized",
+      "message": "Access to requested resource is denied.",
+      "details": ""
+    }
+  ]
+}
+Dec 10, 2025, 9:26:53 PM	Info	
+--- Testing: A+ Media Upload ---
+Dec 10, 2025, 9:26:53 PM	Info	URL: https://sellingpartnerapi-eu.amazon.com/aplus/2020-11-01/media/upload?marketplaceId=A1PA6795UKMFR9
+Dec 10, 2025, 9:26:53 PM	Info	Response Code: 403
+Dec 10, 2025, 9:26:53 PM	Info	Response: {
+  "errors": [
+    {
+      "code": "Unauthorized",
+      "message": "Access to requested resource is denied.",
+      "details": ""
+    }
+  ]
+}
+Dec 10, 2025, 9:26:54 PM	Info	
+--- Testing: A+ Assets Create ---
+Dec 10, 2025, 9:26:54 PM	Info	URL: https://sellingpartnerapi-eu.amazon.com/aplus/2020-11-01/assets?marketplaceId=A1PA6795UKMFR9
+Dec 10, 2025, 9:26:54 PM	Info	Response Code: 403
+Dec 10, 2025, 9:26:54 PM	Info	Response: {
+  "errors": [
+    {
+      "code": "Unauthorized",
+      "message": "Access to requested resource is denied.",
+      "details": ""
+    }
+  ]
+}
+Dec 10, 2025, 9:26:55 PM	Info	
+--- Testing: Content Media Upload ---
+Dec 10, 2025, 9:26:55 PM	Info	URL: https://sellingpartnerapi-eu.amazon.com/content/2020-11-01/media/upload?marketplaceId=A1PA6795UKMFR9
+Dec 10, 2025, 9:26:56 PM	Info	Response Code: 403
+Dec 10, 2025, 9:26:56 PM	Info	Response: {
+  "errors": [
+    {
+      "code": "Unauthorized",
+      "message": "Access to requested resource is denied.",
+      "details": ""
+    }
+  ]
+}
+Dec 10, 2025, 9:26:57 PM	Info	
+========================================
+Dec 10, 2025, 9:26:57 PM	Info	Results Summary
+Dec 10, 2025, 9:26:57 PM	Info	========================================
+Dec 10, 2025, 9:26:57 PM	Info	A+ Assets Upload Credentials: 403
+Dec 10, 2025, 9:26:57 PM	Info	A+ Media Upload: 403
+Dec 10, 2025, 9:26:57 PM	Info	A+ Assets Create: 403
+Dec 10, 2025, 9:26:57 PM	Info	Content Media Upload: 403
+Head	testS3DirectUpload	Menu	Dec 10, 2025, 9:26:25 PM	14.306 s	
+Completed
+Cloud logs
+Dec 10, 2025, 9:26:29 PM	Info	Fetching image from URL...
+Dec 10, 2025, 9:26:29 PM	Info	Image fetched: image/jpeg, size: 29921
+Dec 10, 2025, 9:26:29 PM	Info	Generated filename: 4e7fec79-2aa9-475c-b80d-51da6adefc05.jpeg
+Dec 10, 2025, 9:26:29 PM	Info	Attempt 1: Simple POST without authentication...
+Dec 10, 2025, 9:26:30 PM	Info	Simple POST Response Code: 403
+Dec 10, 2025, 9:26:30 PM	Info	Response Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>HKZ4D841CR8MG0AR</RequestId><HostId>sEuiAQu25PhNYVbTwmgPTByYdOs6bXlYeWaVIDETzlFfSGWzQgxJBkCnlOdd6hA+drIzjwWxCwKP7OpLxZT/KbvTvzREN9V7</HostId></Error>
+Dec 10, 2025, 9:26:30 PM	Info	Response Headers: {"x-amz-request-id":"HKZ4D841CR8MG0AR","x-amz-id-2":"sEuiAQu25PhNYVbTwmgPTByYdOs6bXlYeWaVIDETzlFfSGWzQgxJBkCnlOdd6hA+drIzjwWxCwKP7OpLxZT/KbvTvzREN9V7","Transfer-Encoding":"chunked","Date":"Wed, 10 Dec 2025 20:26:29 GMT","Content-Type":"application/xml","Connection":"close","Server":"AmazonS3"}
+Dec 10, 2025, 9:26:30 PM	Info	Attempt 2: With SP-API access token...
+Dec 10, 2025, 9:26:31 PM	Info	Token POST Response Code: 403
+Dec 10, 2025, 9:26:31 PM	Info	Response Body: <?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>YXK6D12JQSNJYJ67</RequestId><HostId>ViDBEhHD/ginzjdck5XD5e3uHQh0P7cH//lKfXdVD8Q6dVkLaKCbCL4ujkikb6HwdEYst/s4j0I=</HostId></Error>
+Dec 10, 2025, 9:26:31 PM	Info	Response Headers: {"Content-Type":"application/xml","Server":"AmazonS3","Transfer-Encoding":"chunked","Date":"Wed, 10 Dec 2025 20:26:31 GMT","x-amz-id-2":"ViDBEhHD/ginzjdck5XD5e3uHQh0P7cH//lKfXdVD8Q6dVkLaKCbCL4ujkikb6HwdEYst/s4j0I=","Connection":"close","x-amz-request-id":"YXK6D12JQSNJYJ67"}
+Head	testS3DirectUpload	Menu	Dec 10, 2025, 9:25:56 PM	11.362 s	
+Completed
+Cloud logs
+No logs are available for this execution
+For recent executions there may be some delay in log availability.
+Head	syncImagesToLibrary	Menu	Dec 10, 2025, 9:24:18 PM	55.724 s	
+Completed
+Cloud logs
+Dec 10, 2025, 9:24:26 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:26 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:26 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:26 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:26 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:26 PM	Info	Processing module type: STANDARD_COMPARISON_TABLE
+Dec 10, 2025, 9:24:26 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:27 PM	Info	Getting A+ Content document: 4370c211-d76e-4258-a6bb-e3972ca0791b
+Dec 10, 2025, 9:24:27 PM	Info	Get Document Response Code: 400
+Dec 10, 2025, 9:24:27 PM	Info	Get Document Response: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content module type - Premium content is not available through the API"
+    }
+  ]
+}
+Dec 10, 2025, 9:24:27 PM	Info	Error processing 4370c211-d76e-4258-a6bb-e3972ca0791b: Error: Failed to get content document: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content module type - Premium content is not available through the API"
+    }
+  ]
+}
+Dec 10, 2025, 9:24:28 PM	Info	Getting A+ Content document: 41384b5b-3416-4d64-b6d0-47740dd88488
+Dec 10, 2025, 9:24:29 PM	Info	Get Document Response Code: 400
+Dec 10, 2025, 9:24:29 PM	Info	Get Document Response: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [BRAND], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:29 PM	Info	Error processing 41384b5b-3416-4d64-b6d0-47740dd88488: Error: Failed to get content document: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [BRAND], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:30 PM	Info	Getting A+ Content document: 0ff7823b-0b57-43c4-afe4-263c1f56eb1f
+Dec 10, 2025, 9:24:30 PM	Info	Get Document Response Code: 200
+Dec 10, 2025, 9:24:30 PM	Info	Logging output too large. Truncating output. Get Document Response: {
+  "warnings": [],
+  "contentRecord": {
+    "contentReferenceKey": "0ff7823b-0b57-43c4-afe4-263c1f56eb1f",
+    "contentMetadata": {
+      "name": "ULLMYS DE",
+      "marketplaceId": "A1PA6795UKMFR9",
+      "status": "APPROVED",
+      "badgeSet": [
+        "STANDARD",
+        "GENERATED"
+      ],
+      "updateTime": "2025-11-24T23:32:43.416Z"
+    },
+    "contentDocument": {
+      "name": "ULLMYS DE",
+      "contentType": "EBC",
+      "contentSubType": null,
+      "locale": "nl-NL",
+      "contentModuleList": [
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "RIGHT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/3444de6d-44c9-4a69-9567-9acaba9798ce.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 1377,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 1377,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 402,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Scandinavisch landschap met ULLMYS-logo, vertegenwoordigt handelsmerken van comfort en natuur."
+              },
+              "headline": {
+                "value": "ULLMYS – Scandinavisch comfort voor je voeten",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Geïnspireerd door de Scandinavische liefde voor gezelligheid en natuur, combineert ULLMYS traditioneel vakmanschap met modern design. Onze missie: Gezondheid en welzijn voor gevoelige voeten, vooral voor diabetici. Met 86% merinowol bieden wij je sokken die beschermen, verzorgen en verwennen – elke dag.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "LEFT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/bfc5b331-1c01-46ad-9af4-085b4143ec7b.png",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 300,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 300,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 0,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "diabetische sokken"
+              },
+              "headline": {
+                "value": "Natuurlijke bescherming door 86% merinowol",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "ULLMYS diabetische sokken van 86% merinowol bieden natuurlijk comfort voor gevoelige voeten. De vochtregulerende merinowol met lanoline zorgt voor droge, frisse voeten en ondersteunt de hygiëne – ideaal voor diabetici. Met naadloze afwerking en zachte tailleband voor een welzijn de hele dag.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": {
+            "headline": null,
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/89f5e20f-3bd8-4e2c-81b4-6fa2dbb938bf.png",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 1746,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 1080,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 174,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 0,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Donkergrijze sokken aan de voeten, met opvallende kenmerken: niet-bindende bovenkant, naadloze teen en extra demping. Tekstlabels verwijzen naar specifieke sokkenmerken in het Duits."
+              },
+              "headline": null,
+              "body": {
+                "textList": [
+                  {
+                    "value": "",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageT
+Dec 10, 2025, 9:24:30 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:30 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:30 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:30 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:30 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:30 PM	Info	Processing module type: STANDARD_COMPARISON_TABLE
+Dec 10, 2025, 9:24:30 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:31 PM	Info	Getting A+ Content document: a3b73d01-5938-4d57-85c9-f2a4eec1f86c
+Dec 10, 2025, 9:24:32 PM	Info	Get Document Response Code: 200
+Dec 10, 2025, 9:24:32 PM	Info	Logging output too large. Truncating output. Get Document Response: {
+  "warnings": [],
+  "contentRecord": {
+    "contentReferenceKey": "a3b73d01-5938-4d57-85c9-f2a4eec1f86c",
+    "contentMetadata": {
+      "name": "Kniehohe Merino Wollsocken – Dicke Terry",
+      "marketplaceId": "A1PA6795UKMFR9",
+      "status": "APPROVED",
+      "badgeSet": [
+        "GENERATED",
+        "STANDARD"
+      ],
+      "updateTime": "2025-11-17T00:58:52.714Z"
+    },
+    "contentDocument": {
+      "name": "Kniehohe Merino Wollsocken – Dicke Terry",
+      "contentType": "EBC",
+      "contentSubType": null,
+      "locale": "tr-TR",
+      "contentModuleList": [
+        {
+          "contentModuleType": "STANDARD_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": {
+            "headline": {
+              "value": "Dinlendirici uyku ve konfor için doğal sıcaklık",
+              "decoratorSet": []
+            },
+            "body": {
+              "textList": [
+                {
+                  "value": "Bu merinos yünlü çorapların soğuk ayakları nasıl rahatlattığını ve uykuyu nasıl iyileştirdiğini keşfedin. Bacak şikayetlerinde akşam rahatsızlığı için idealdir.",
+                  "decoratorSet": []
+                }
+              ]
+            }
+          },
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "LEFT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/17a831ad-82b0-4d1e-800a-faa79254b7f0.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 623,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 623,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 256,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "aplus content image"
+              },
+              "headline": {
+                "value": "Sıcak ayaklarla daha iyi uyku",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Soğuk ayaklar sınırlı dolaşım sayesinde uykuyu bozar. Bu çoraplar doğal olarak ısıtır ve vücut dinlenme süresini gösterir.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Avantajları:",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Bacaklardaki huzursuzluğu azaltır, nöropati veya kötü kan dolaşımını destekler.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Derin uyku için geceleri giyin.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "RIGHT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/e6e66134-d4d5-419e-8717-358e43fa8a54.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 597,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 597,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 60,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Farklı açılardan doku ve desen ayrıntılarını gösteren gri örme veya nervürlü tekstil malzemesinin yakın çekim dizisi."
+              },
+              "headline": {
+                "value": "Tıbbi ihtiyaçlarda destek",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Diyabet veya damar problemleri gibi koşullarda rahat kalıp ve doğal lifler kan dolaşımını destekler.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Kalın Terry dolgu sürtünmeyi ve basıncı azaltır, kabarcıkları ve tahrişleri en aza indirir.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Evde günlük konfor için mükemmel.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_TECH_SPECS",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescriptio
+Dec 10, 2025, 9:24:32 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:32 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:32 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:32 PM	Info	Processing module type: STANDARD_TECH_SPECS
+Dec 10, 2025, 9:24:32 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:32 PM	Info	Getting A+ Content document: cb589071-1c81-414a-bc32-5c749177b5a5
+Dec 10, 2025, 9:24:33 PM	Info	Get Document Response Code: 200
+Dec 10, 2025, 9:24:33 PM	Info	Logging output too large. Truncating output. Get Document Response: {
+  "warnings": [],
+  "contentRecord": {
+    "contentReferenceKey": "cb589071-1c81-414a-bc32-5c749177b5a5",
+    "contentMetadata": {
+      "name": "Kniehohe Merino Wollsocken – Dicke Terry",
+      "marketplaceId": "A1PA6795UKMFR9",
+      "status": "DRAFT",
+      "badgeSet": [
+        "GENERATED",
+        "STANDARD"
+      ],
+      "updateTime": "2025-11-14T20:25:38.676Z"
+    },
+    "contentDocument": {
+      "name": "Kniehohe Merino Wollsocken – Dicke Terry",
+      "contentType": "EBC",
+      "contentSubType": null,
+      "locale": "de-DE",
+      "contentModuleList": [
+        {
+          "contentModuleType": "STANDARD_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": {
+            "headline": {
+              "value": "Calor natural para un sueño reparador y comodidad",
+              "decoratorSet": []
+            },
+            "body": {
+              "textList": [
+                {
+                  "value": "Descubre cómo estos calcetines de lana merino alivian los pies fríos y mejoran el sueño. Ideal para relajarse por la noche en las molestias de las piernas.",
+                  "decoratorSet": []
+                }
+              ]
+            }
+          },
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "LEFT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/17a831ad-82b0-4d1e-800a-faa79254b7f0.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 623,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 623,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 256,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "aplus content image"
+              },
+              "headline": {
+                "value": "Dormir mejor con los pies calientes",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Los pies fríos interfieren con el sueño debido a la circulación limitada. Estos calcetines se calientan naturalmente y señalan al cuerpo tiempo de descanso.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Ventajas:",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Reduce la inquietud en las piernas, ayuda con neuropatía o mala circulación.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Úsalo por la noche para dormir profundamente.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "RIGHT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/e6e66134-d4d5-419e-8717-358e43fa8a54.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 597,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 597,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 60,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Secuencia de primer plano de material textil gris de punto o acanalado, que muestra detalles de textura y patrón desde diferentes ángulos."
+              },
+              "headline": {
+                "value": "Asistencia para necesidades médicas",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "En condiciones como diabetes o problemas de venas, el ajuste holgado y las fibras naturales promueven la circulación sanguínea.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "El acolchado grueso de Terry reduce la fricción y la presión, minimiza las ampollas y la irritación.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Perfecto para la comodidad diaria del hogar.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_TECH_SPECS",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+     
+Dec 10, 2025, 9:24:33 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:33 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:33 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:33 PM	Info	Processing module type: STANDARD_TECH_SPECS
+Dec 10, 2025, 9:24:33 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:34 PM	Info	Getting A+ Content document: 402fbfda-e18e-4d74-b508-bf1f0e091b61
+Dec 10, 2025, 9:24:35 PM	Info	Get Document Response Code: 200
+Dec 10, 2025, 9:24:35 PM	Info	Logging output too large. Truncating output. Get Document Response: {
+  "warnings": [],
+  "contentRecord": {
+    "contentReferenceKey": "402fbfda-e18e-4d74-b508-bf1f0e091b61",
+    "contentMetadata": {
+      "name": "Kniehohe Merino Wollsocken – Dicke Terry",
+      "marketplaceId": "A1PA6795UKMFR9",
+      "status": "DRAFT",
+      "badgeSet": [
+        "GENERATED",
+        "STANDARD"
+      ],
+      "updateTime": "2025-11-07T23:19:25.486Z"
+    },
+    "contentDocument": {
+      "name": "Kniehohe Merino Wollsocken – Dicke Terry",
+      "contentType": "EBC",
+      "contentSubType": null,
+      "locale": "pl-PL",
+      "contentModuleList": [
+        {
+          "contentModuleType": "STANDARD_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": {
+            "headline": {
+              "value": "Naturalne ciepło zapewnia spokojny sen i komfort",
+              "decoratorSet": []
+            },
+            "body": {
+              "textList": [
+                {
+                  "value": "Odkryj, jak te wełniane skarpety z merynosów łagodzą zimne stopy i poprawiają sen. Idealny do wieczornego relaksu w przypadku dolegliwości nóg.",
+                  "decoratorSet": []
+                }
+              ]
+            }
+          },
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "LEFT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/17a831ad-82b0-4d1e-800a-faa79254b7f0.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 623,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 623,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 256,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "aplus content image"
+              },
+              "headline": {
+                "value": "Lepszy sen z ciepłymi stopami",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Zimne stopy zakłócają sen dzięki ograniczonej cyrkulacji. Te skarpety ogrzewają naturalnie i sygnalizują czas odpoczynku.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Zalety:",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Zmniejsza niepokój w nogach, wspomaga neuropatię lub słabe krążenie.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Noś je w nocy do głębokiego snu.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "RIGHT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/e6e66134-d4d5-419e-8717-358e43fa8a54.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 597,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 597,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 60,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Sekwencja zbliżenia szarego dzianinowego lub żebrowanego materiału tekstylnego, pokazująca szczegóły tekstury i wzoru pod różnymi kątami."
+              },
+              "headline": {
+                "value": "Wsparcie w przypadku potrzeb medycznych",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "W takich warunkach jak cukrzyca lub problemy z żyłami, luźne dopasowanie i naturalne włókna wspomagają krążenie krwi.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Gruba wyściółka Terry redukuje tarcie i nacisk, minimalizuje pęcherze i podrażnienia.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Idealnie nadaje się do codziennego komfortu w domu.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_TECH_SPECS",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+        
+Dec 10, 2025, 9:24:35 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:35 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:35 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:35 PM	Info	Processing module type: STANDARD_TECH_SPECS
+Dec 10, 2025, 9:24:35 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:35 PM	Info	Getting A+ Content document: 78476c43-c9eb-47ce-b3e3-b8aa0c4d1de6
+Dec 10, 2025, 9:24:36 PM	Info	Get Document Response Code: 200
+Dec 10, 2025, 9:24:36 PM	Info	Logging output too large. Truncating output. Get Document Response: {
+  "warnings": [],
+  "contentRecord": {
+    "contentReferenceKey": "78476c43-c9eb-47ce-b3e3-b8aa0c4d1de6",
+    "contentMetadata": {
+      "name": "Kniehohe Merino Wollsocken – Dicke Terry",
+      "marketplaceId": "A1PA6795UKMFR9",
+      "status": "DRAFT",
+      "badgeSet": [
+        "GENERATED",
+        "STANDARD"
+      ],
+      "updateTime": "2025-10-28T19:28:29.355Z"
+    },
+    "contentDocument": {
+      "name": "Kniehohe Merino Wollsocken – Dicke Terry",
+      "contentType": "EBC",
+      "contentSubType": null,
+      "locale": "nl-NL",
+      "contentModuleList": [
+        {
+          "contentModuleType": "STANDARD_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": {
+            "headline": {
+              "value": "Natuurlijke warmte voor een goede nachtrust en comfort",
+              "decoratorSet": []
+            },
+            "body": {
+              "textList": [
+                {
+                  "value": "Ontdek hoe deze merinowollen sokken koude voeten verlichten en de slaap verbeteren. Ideaal voor avondontspanning bij beenklachten.",
+                  "decoratorSet": []
+                }
+              ]
+            }
+          },
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "LEFT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/17a831ad-82b0-4d1e-800a-faa79254b7f0.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 623,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 623,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 256,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "aplus content image"
+              },
+              "headline": {
+                "value": "Beter slapen met warme voeten",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Koude voeten verstoren de slaap door beperkte circulatie. Deze sokken verwarmen natuurlijk en signaleren het lichaam rusttijd.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Voordelen:",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Vermindert onrust in de benen, ondersteunt bij neuropathie of slechte doorbloeding.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Draag ze 's nachts voor een diepe slaap.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "RIGHT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/e6e66134-d4d5-419e-8717-358e43fa8a54.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 597,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 597,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 60,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Close-up van grijs gebreid of geribbeld textielmateriaal, met textuur- en patroondetails vanuit verschillende hoeken."
+              },
+              "headline": {
+                "value": "Ondersteuning bij medische behoeften",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Bij omstandigheden zoals diabetes of aderproblemen bevorderen de losse pasvorm en natuurlijke vezels de bloedcirculatie.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Dikke terry-voering vermindert wrijving en druk, minimaliseert blaren en irritatie.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Perfect voor dagelijks comfort thuis.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_TECH_SPECS",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardP
+Dec 10, 2025, 9:24:36 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:36 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:36 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:36 PM	Info	Processing module type: STANDARD_TECH_SPECS
+Dec 10, 2025, 9:24:36 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:36 PM	Info	Getting A+ Content document: 1741613f-fd09-478a-9672-308b5d8cbe48
+Dec 10, 2025, 9:24:37 PM	Info	Get Document Response Code: 400
+Dec 10, 2025, 9:24:37 PM	Info	Get Document Response: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [BRAND], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:37 PM	Info	Error processing 1741613f-fd09-478a-9672-308b5d8cbe48: Error: Failed to get content document: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [BRAND], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:38 PM	Info	Getting A+ Content document: 4468f44f-601a-494e-bfee-774a333fdfb9
+Dec 10, 2025, 9:24:39 PM	Info	Get Document Response Code: 400
+Dec 10, 2025, 9:24:39 PM	Info	Get Document Response: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [SHOPPABLE_COLLECTIONS], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:39 PM	Info	Error processing 4468f44f-601a-494e-bfee-774a333fdfb9: Error: Failed to get content document: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [SHOPPABLE_COLLECTIONS], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:39 PM	Info	Getting A+ Content document: d823f1a4-91a1-4fd9-9932-d7c7eda90a02
+Dec 10, 2025, 9:24:40 PM	Info	Get Document Response Code: 200
+Dec 10, 2025, 9:24:40 PM	Info	Logging output too large. Truncating output. Get Document Response: {
+  "warnings": [],
+  "contentRecord": {
+    "contentReferenceKey": "d823f1a4-91a1-4fd9-9932-d7c7eda90a02",
+    "contentMetadata": {
+      "name": "ULLMYS DE",
+      "marketplaceId": "A1PA6795UKMFR9",
+      "status": "APPROVED",
+      "badgeSet": [
+        "STANDARD"
+      ],
+      "updateTime": "2025-10-10T09:35:28.889Z"
+    },
+    "contentDocument": {
+      "name": "ULLMYS DE",
+      "contentType": "EBC",
+      "contentSubType": null,
+      "locale": "de-DE",
+      "contentModuleList": [
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "RIGHT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/3444de6d-44c9-4a69-9567-9acaba9798ce.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 1377,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 1377,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 402,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Scandinavian landscape with ULLMYS logo, representing brand values of comfort and nature."
+              },
+              "headline": {
+                "value": "ULLMYS – Skandinavischer Komfort für Ihre Füße",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Inspiriert von der skandinavischen Liebe zu Gemütlichkeit und Natur, vereint ULLMYS traditionelle Handwerkskunst mit modernem Design. Unsere Mission: Gesundheit und Wohlbefinden für empfindliche Füße, besonders für Diabetiker. Mit 86% Merinowolle bieten wir Ihnen Socken, die schützen, pflegen und verwöhnen – jeden Tag.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "LEFT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/bfc5b331-1c01-46ad-9af4-085b4143ec7b.png",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 300,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 300,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 0,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Diabetikersocken"
+              },
+              "headline": {
+                "value": "Natürlicher Schutz durch 86% Merinowolle",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "ULLMYS Diabetikersocken aus 86% Merinowolle bieten natürlichen Komfort für empfindliche Füße. Die feuchtigkeitsregulierende Merinowolle mit Lanolin sorgt für trockene, frische Füße und unterstützt die Hygiene – ideal für Diabetiker. Mit nahtloser Verarbeitung und weichem Bund für ganztägiges Wohlbefinden.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": {
+            "headline": null,
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/89f5e20f-3bd8-4e2c-81b4-6fa2dbb938bf.png",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 1746,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 1080,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 174,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 0,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Dunkelgraue Socken an den Füßen, hervorstechende Merkmale: nicht bindendes Oberteil, nahtlose Zehenpartie und zusätzliche Polsterung. Textbeschriftungen weisen auf bestimmte Sockenattribute"
+              },
+              "headline": null,
+              "body": {
+                "textList": [
+                  {
+                    "value": "",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFo
+Dec 10, 2025, 9:24:40 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:40 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:40 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:40 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:40 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:40 PM	Info	Processing module type: STANDARD_COMPARISON_TABLE
+Dec 10, 2025, 9:24:40 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:41 PM	Info	Getting A+ Content document: 029d6e05-4c73-4b6a-a655-19c4c2e2d2d6
+Dec 10, 2025, 9:24:42 PM	Info	Get Document Response Code: 200
+Dec 10, 2025, 9:24:42 PM	Info	Logging output too large. Truncating output. Get Document Response: {
+  "warnings": [],
+  "contentRecord": {
+    "contentReferenceKey": "029d6e05-4c73-4b6a-a655-19c4c2e2d2d6",
+    "contentMetadata": {
+      "name": "Kniehohe Merino Wollsocken – Dicke Terry",
+      "marketplaceId": "A1PA6795UKMFR9",
+      "status": "APPROVED",
+      "badgeSet": [
+        "STANDARD"
+      ],
+      "updateTime": "2025-10-10T09:31:48.76Z"
+    },
+    "contentDocument": {
+      "name": "Kniehohe Merino Wollsocken – Dicke Terry",
+      "contentType": "EBC",
+      "contentSubType": null,
+      "locale": "de-DE",
+      "contentModuleList": [
+        {
+          "contentModuleType": "STANDARD_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": {
+            "headline": {
+              "value": "Natürliche Wärme für erholsamen Schlaf und Komfort",
+              "decoratorSet": []
+            },
+            "body": {
+              "textList": [
+                {
+                  "value": "Entdecken Sie, wie diese Merino Wollsocken kalte Füße lindern und den Schlaf verbessern. Ideal für abendliche Entspannung bei Beinbeschwerden.",
+                  "decoratorSet": []
+                }
+              ]
+            }
+          },
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "LEFT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/17a831ad-82b0-4d1e-800a-faa79254b7f0.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 623,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 623,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 256,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "aplus content image"
+              },
+              "headline": {
+                "value": "Besser schlafen mit warmen Füßen",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Kalte Füße stören den Schlaf durch eingeschränkte Zirkulation. Diese Socken wärmen natürlich und signalisieren dem Körper Ruhezeit.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Vorteile:",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "Reduziert Unruhe in den Beinen,unterstützt bei Neuropathie oder schlechter Durchblutung.",
+                    "decoratorSet": [
+                      {
+                        "type": "LIST_UNORDERED",
+                        "offset": 0,
+                        "length": 89,
+                        "depth": 0
+                      },
+                      {
+                        "type": "LIST_ITEM",
+                        "offset": 0,
+                        "length": 31,
+                        "depth": 0
+                      },
+                      {
+                        "type": "LIST_ITEM",
+                        "offset": 31,
+                        "length": 58,
+                        "depth": 0
+                      }
+                    ]
+                  },
+                  {
+                    "value": "Tragen Sie sie nachts für tiefen Schlaf.",
+                    "decoratorSet": [
+                      {
+                        "type": "STYLE_BOLD",
+                        "offset": 0,
+                        "length": 40,
+                        "depth": 0
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "RIGHT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/e6e66134-d4d5-419e-8717-358e43fa8a54.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 597,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 597,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 60,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Nahaufnahme von grauem gestricktem oder geripptem Textilmaterial, das Textur- und Musterdetails aus verschiedenen Blickwinkeln zeigt."
+              },
+              "headline": {
+                "value": "Unterstützung bei medizinischen Bedürfnissen",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Bei Bedingungen wie Diabetes oder Venenproblemen fördern die lockere Passform und natürliche Fasern die Blutzirkulation.",
+                    "decoratorSet": []
+                  },
+                  {
+                    "value": "dicke Terry-Polsterung reduziert Reibung und Druck, minimiert Blasen und Reizungen.",
+                    "decoratorSet": [
+                      {
+                        "type": "LIST_ITEM",
+                      
+Dec 10, 2025, 9:24:42 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:42 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:42 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:42 PM	Info	Processing module type: STANDARD_TECH_SPECS
+Dec 10, 2025, 9:24:42 PM	Info	Processing module type: STANDARD_TEXT
+Dec 10, 2025, 9:24:42 PM	Info	Getting A+ Content document: 843d315b-8179-44ae-93b8-43809db3bfb0
+Dec 10, 2025, 9:24:45 PM	Info	Get Document Response Code: 200
+Dec 10, 2025, 9:24:45 PM	Info	Logging output too large. Truncating output. Get Document Response: {
+  "warnings": [],
+  "contentRecord": {
+    "contentReferenceKey": "843d315b-8179-44ae-93b8-43809db3bfb0",
+    "contentMetadata": {
+      "name": "ULLMYS DE",
+      "marketplaceId": "A1PA6795UKMFR9",
+      "status": "DRAFT",
+      "badgeSet": [
+        "GENERATED",
+        "STANDARD"
+      ],
+      "updateTime": "2025-10-08T13:02:41.958Z"
+    },
+    "contentDocument": {
+      "name": "ULLMYS DE",
+      "contentType": "EBC",
+      "contentSubType": null,
+      "locale": "de-DE",
+      "contentModuleList": [
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "RIGHT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/3444de6d-44c9-4a69-9567-9acaba9798ce.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 1377,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 1377,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 402,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Paisaje escandinavo con el logotipo de ULLMYS, representing brand values of comfort and nature."
+              },
+              "headline": {
+                "value": "ULLMYS - Comodidad escandinava para tus pies",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Inspirado en el amor escandinavo por la comodidad y la naturaleza, ULLMYS combina la artesanía tradicional con un diseño moderno. Nuestra misión: Salud y bienestar para pies sensibles, especialmente para diabéticos. Con 86% lana merino, te ofrecemos calcetines que protegen, cuidan y miman todos los días.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "LEFT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/bfc5b331-1c01-46ad-9af4-085b4143ec7b.png",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 300,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 300,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 0,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Calcetines para diabéticos"
+              },
+              "headline": {
+                "value": "Protección natural gracias al 86% de lana merino",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "La lana merino es un milagro de la naturaleza: Regula la humedad, mantiene tus pies secos y tiene un efecto antibacteriano gracias a la lanolina. Esto reduce los riesgos de infección – crucial para los diabéticos. Disfruta de pies sanos y frescos sin importar cuánto tiempo sea tu día.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": {
+            "headline": null,
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/e710368a-1734-4019-8123-d8cbd763eaea.png",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 1746,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 1080,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 174,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 0,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Paisaje costero cubierto de hierba con afloramientos rocosos y un horizonte brumoso. La superposición de texto menciona «ULLMYS» y el confort escandinavo para los pies"
+              },
+              "headline": null,
+              "body": {
+                "textList": [
+                  {
+                    "value": "",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null
+Dec 10, 2025, 9:24:45 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:45 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:45 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:45 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:45 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:45 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:45 PM	Info	Processing module type: STANDARD_COMPARISON_TABLE
+Dec 10, 2025, 9:24:45 PM	Info	Getting A+ Content document: dac2febd-6bd4-4b97-990f-376bc4575be4
+Dec 10, 2025, 9:24:46 PM	Info	Get Document Response Code: 400
+Dec 10, 2025, 9:24:46 PM	Info	Get Document Response: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [SHOPPABLE_COLLECTIONS], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:46 PM	Info	Error processing dac2febd-6bd4-4b97-990f-376bc4575be4: Error: Failed to get content document: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [SHOPPABLE_COLLECTIONS], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:47 PM	Info	Getting A+ Content document: 1ed4d924-32f3-4bc0-ab20-62ded66b125f
+Dec 10, 2025, 9:24:47 PM	Info	Get Document Response Code: 400
+Dec 10, 2025, 9:24:47 PM	Info	Get Document Response: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [BRAND], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:47 PM	Info	Error processing 1ed4d924-32f3-4bc0-ab20-62ded66b125f: Error: Failed to get content document: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [BRAND], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:48 PM	Info	Getting A+ Content document: 388d5340-00f2-4e56-b76b-e0886dcef436
+Dec 10, 2025, 9:24:50 PM	Info	Get Document Response Code: 200
+Dec 10, 2025, 9:24:50 PM	Info	Logging output too large. Truncating output. Get Document Response: {
+  "warnings": [],
+  "contentRecord": {
+    "contentReferenceKey": "388d5340-00f2-4e56-b76b-e0886dcef436",
+    "contentMetadata": {
+      "name": "ULLMYS DE",
+      "marketplaceId": "A1PA6795UKMFR9",
+      "status": "APPROVED",
+      "badgeSet": [
+        "GENERATED",
+        "STANDARD"
+      ],
+      "updateTime": "2025-09-17T01:27:09.645Z"
+    },
+    "contentDocument": {
+      "name": "ULLMYS DE",
+      "contentType": "EBC",
+      "contentSubType": null,
+      "locale": "tr-TR",
+      "contentModuleList": [
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "RIGHT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/3444de6d-44c9-4a69-9567-9acaba9798ce.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 1377,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 1377,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 402,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "ULLMYS logolu İskandinav manzarası, konfor ve doğa değerlerini temsil eder."
+              },
+              "headline": {
+                "value": "ULLMYS – Ayaklarınız için İskandinav konforu",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "İskandinav rahatlık ve doğa sevgisinden ilham alan ULLMYS geleneksel el sanatını modern tasarımla birleştirir. Misyonumuz: Özellikle şeker hastaları için hassas ayaklar için sağlık ve rahatlık. %86 merinos yünü ile size her gün koruyan, bakım yapan ve şımartan çoraplar sunuyoruz.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "LEFT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/bfc5b331-1c01-46ad-9af4-085b4143ec7b.png",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 300,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 300,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 0,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "şeker hastaları çorap"
+              },
+              "headline": {
+                "value": "%86 merinos yünü sayesinde doğal koruma",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Merinos yünü doğanın bir mucizesidir: Nemi düzenler, ayaklarınızı kuru tutar ve lanolin sayesinde antibakteriyel etki eder. Bu enfeksiyon risklerini azaltır – şeker hastaları için önemlidir. Gününüz ne kadar uzun olursa olsun sağlıklı, taze ayakların tadını çıkarın.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": {
+            "headline": null,
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/e710368a-1734-4019-8123-d8cbd763eaea.png",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 1746,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 1080,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 174,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 0,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "şeker hastaları çorap"
+              },
+              "headline": null,
+              "body": {
+                "textList": [
+                  {
+                    "value": "",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": {
+            "headline": null,
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-l
+Dec 10, 2025, 9:24:50 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:50 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:50 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:50 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:50 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:50 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:50 PM	Info	Processing module type: STANDARD_COMPARISON_TABLE
+Dec 10, 2025, 9:24:51 PM	Info	Getting A+ Content document: 9093341f-8ddc-446c-bd36-342f2fb73fe8
+Dec 10, 2025, 9:24:51 PM	Info	Get Document Response Code: 200
+Dec 10, 2025, 9:24:51 PM	Info	Logging output too large. Truncating output. Get Document Response: {
+  "warnings": [],
+  "contentRecord": {
+    "contentReferenceKey": "9093341f-8ddc-446c-bd36-342f2fb73fe8",
+    "contentMetadata": {
+      "name": "Parent ASIN B0FNWJMPZX",
+      "marketplaceId": "A1PA6795UKMFR9",
+      "status": "DRAFT",
+      "badgeSet": [
+        "STANDARD"
+      ],
+      "updateTime": "2025-09-01T08:52:15.604Z"
+    },
+    "contentDocument": {
+      "name": "Parent ASIN B0FNWJMPZX",
+      "contentType": "EBC",
+      "contentSubType": null,
+      "locale": "en-GB",
+      "contentModuleList": [
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "RIGHT",
+            "block": {
+              "image": null,
+              "headline": {
+                "value": "Entdecken Sie Ullmys – Natürliche Wärme aus Finnland",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Ullmys, gegründet in Jakobstad, Finnland, widmet sich hochwertigen Socken aus natürlichen Materialien. Inspiriert vom nordischen Klima, kombinieren wir 80% Merino-Wolle mit Baumwolle für Komfort und Nachhaltigkeit.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "LEFT",
+            "block": {
+              "image": null,
+              "headline": {
+                "value": "Unsere Mission: Gesunde Füße für Alle",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Wir produzieren in der EU (Lettland), um Umweltschutz und Qualität zu gewährleisten. OEKO-TEX STANDARD 100 zertifiziert (23.HUS.59156) – frei von Schadstoffen für sensible Haut.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": {
+            "headline": {
+              "value": "Von der Natur für den Alltag",
+              "decoratorSet": []
+            },
+            "block": {
+              "image": null,
+              "headline": null,
+              "body": {
+                "textList": [
+                  {
+                    "value": "Mit 98% natürlichen Fasern (80% Merino-Wolle, 18% Baumwolle) berühren Ihre Füße nur Weiches. Ideal für kalte Nächte oder Zuhause.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": {
+            "headline": {
+              "value": "Tradition trifft Innovation",
+              "decoratorSet": []
+            },
+            "block": {
+              "image": null,
+              "headline": {
+                "value": "",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Unsere Socken regulieren Temperatur, leiten Feuchtigkeit ab und minimieren Gerüche – für langlebigen Komfort in jedem Schritt.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": {
+            "headline": {
+              "value": "Nachhaltigkeit im Fokus",
+              "decoratorSet": []
+            },
+            "block": {
+              "image": null,
+              "headline": null,
+              "body": {
+                "textList": [
+                  {
+                    "value": "Lokale Produktion reduziert CO2, natürliche Materialien schonen die Umwelt. Ullmys steht für langlebige Produkte, die Sie lieben werden.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText
+Dec 10, 2025, 9:24:51 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:51 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:51 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:51 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:51 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:51 PM	Info	Processing module type: STANDARD_COMPARISON_TABLE
+Dec 10, 2025, 9:24:52 PM	Info	Getting A+ Content document: 41f816aa-1936-46dd-ac0d-85fdf3ade4cd
+Dec 10, 2025, 9:24:53 PM	Info	Get Document Response Code: 200
+Dec 10, 2025, 9:24:53 PM	Info	Logging output too large. Truncating output. Get Document Response: {
+  "warnings": [],
+  "contentRecord": {
+    "contentReferenceKey": "41f816aa-1936-46dd-ac0d-85fdf3ade4cd",
+    "contentMetadata": {
+      "name": "ULLMYS DE (dupliziert)",
+      "marketplaceId": "A1PA6795UKMFR9",
+      "status": "DRAFT",
+      "badgeSet": [
+        "STANDARD"
+      ],
+      "updateTime": "2025-08-29T21:09:53.323Z"
+    },
+    "contentDocument": {
+      "name": "ULLMYS DE (dupliziert)",
+      "contentType": "EBC",
+      "contentSubType": null,
+      "locale": "de-DE",
+      "contentModuleList": [
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "RIGHT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/3444de6d-44c9-4a69-9567-9acaba9798ce.jpg",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 1377,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 1377,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 402,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Scandinavian landscape with ULLMYS logo, representing brand values of comfort and nature."
+              },
+              "headline": {
+                "value": "ULLMYS – Skandinavischer Komfort für Ihre Füße",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "Inspiriert von der skandinavischen Liebe zu Gemütlichkeit und Natur, vereint ULLMYS traditionelle Handwerkskunst mit modernem Design. Unsere Mission: Gesundheit und Wohlbefinden für empfindliche Füße, besonders für Diabetiker. Mit 86% Merinowolle bieten wir Ihnen Socken, die schützen, pflegen und verwöhnen – jeden Tag.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_SINGLE_SIDE_IMAGE",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": null,
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": {
+            "imagePositionType": "LEFT",
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/bfc5b331-1c01-46ad-9af4-085b4143ec7b.png",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 300,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 300,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 0,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 0,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Diabetikersocken"
+              },
+              "headline": {
+                "value": "Natürlicher Schutz durch 86% Merinowolle",
+                "decoratorSet": []
+              },
+              "body": {
+                "textList": [
+                  {
+                    "value": "ULLMYS Diabetikersocken aus 86% Merinowolle bieten natürlichen Komfort für empfindliche Füße. Die feuchtigkeitsregulierende Merinowolle mit Lanolin sorgt für trockene, frische Füße und unterstützt die Hygiene – ideal für Diabetiker. Mit nahtloser Verarbeitung und weichem Bund für ganztägiges Wohlbefinden.",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": {
+            "headline": null,
+            "block": {
+              "image": {
+                "uploadDestinationId": "aplus-media-library-service-media/e710368a-1734-4019-8123-d8cbd763eaea.png",
+                "imageCropSpecification": {
+                  "size": {
+                    "width": {
+                      "value": 1746,
+                      "units": "pixels"
+                    },
+                    "height": {
+                      "value": 1080,
+                      "units": "pixels"
+                    }
+                  },
+                  "offset": {
+                    "x": {
+                      "value": 174,
+                      "units": "pixels"
+                    },
+                    "y": {
+                      "value": 0,
+                      "units": "pixels"
+                    }
+                  }
+                },
+                "altText": "Diabetikersocken"
+              },
+              "headline": null,
+              "body": {
+                "textList": [
+                  {
+                    "value": "",
+                    "decoratorSet": []
+                  }
+                ]
+              }
+            }
+          },
+          "standardImageSidebar": null,
+          "standardImageTextOverlay": null,
+          "standardMultipleImageText": null,
+          "standardProductDescription": null,
+          "standardSingleImageHighlights": null,
+          "standardSingleImageSpecsDetail": null,
+          "standardSingleSideImage": null,
+          "standardTechSpecs": null,
+          "standardText": null,
+          "standardThreeImageText": null,
+          "premiumImageText": null,
+          "premiumText": null,
+          "premiumFullBackgroundText": null,
+          "premiumFullBackgroundImage": null,
+          "premiumImageCarousel": null
+        },
+        {
+          "contentModuleType": "STANDARD_HEADER_IMAGE_TEXT",
+          "standardCompanyLogo": null,
+          "standardComparisonTable": null,
+          "standardFourImageText": null,
+          "standardFourImageTextQuadrant": null,
+          "standardHeaderImageText": {
+            "headline": null,
+            
+Dec 10, 2025, 9:24:53 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:53 PM	Info	Processing module type: STANDARD_SINGLE_SIDE_IMAGE
+Dec 10, 2025, 9:24:53 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:53 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:53 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:53 PM	Info	Processing module type: STANDARD_HEADER_IMAGE_TEXT
+Dec 10, 2025, 9:24:53 PM	Info	Processing module type: STANDARD_COMPARISON_TABLE
+Dec 10, 2025, 9:24:53 PM	Info	Getting A+ Content document: a9a4100c-129c-43fe-abbc-f622a76b0521
+Dec 10, 2025, 9:24:54 PM	Info	Get Document Response Code: 400
+Dec 10, 2025, 9:24:54 PM	Info	Get Document Response: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [BRAND], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:54 PM	Info	Error processing a9a4100c-129c-43fe-abbc-f622a76b0521: Error: Failed to get content document: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [BRAND], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:55 PM	Info	Getting A+ Content document: 28769986-8f24-46c7-8a83-ab1f7281aac3
+Dec 10, 2025, 9:24:58 PM	Info	Get Document Response Code: 400
+Dec 10, 2025, 9:24:58 PM	Info	Get Document Response: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [BRAND], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:58 PM	Info	Error processing 28769986-8f24-46c7-8a83-ab1f7281aac3: Error: Failed to get content document: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [BRAND], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:24:58 PM	Info	Getting A+ Content document: c8d06389-7ebe-4b4d-b8c8-1ffc061c3a20
+Dec 10, 2025, 9:25:02 PM	Info	Get Document Response Code: 400
+Dec 10, 2025, 9:25:02 PM	Info	Get Document Response: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [BRAND], unable to proceed."
+    }
+  ]
+}
+Dec 10, 2025, 9:25:02 PM	Info	Error processing c8d06389-7ebe-4b4d-b8c8-1ffc061c3a20: Error: Failed to get content document: {
+  "errors": [
+    {
+      "code": "InvalidInput",
+      "message": "The request is not valid, please check the inputs and try again.",
+      "details": "Unsupported content type [BRAND], unable to proceed."
+    }
+  ]
+}
+Head	createImageLibrarySheet	Menu	Dec 10, 2025, 9:23:37 PM	13.974 s	
+Completed
+Cloud logs
+Dec 10, 2025, 9:23:39 PM	Info	Created new A+ Image Library sheet
+Head	onOpen	Simple Trigger	Dec 10, 2025, 9:23:26 PM	0.835 s	
+Completed
+Cloud logs
