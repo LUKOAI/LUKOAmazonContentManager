@@ -140,23 +140,25 @@ function getActiveClient() {
         lastUsed: data[i][11]
       };
 
-      // Validate required fields
+      // Validate only API-required fields
       const missing = [];
-      if (!client.clientName) missing.push('Client Name');
       if (!client.sellerId) missing.push('Seller ID');
-      if (!client.marketplace) missing.push('Marketplace');
-      if (!client.marketplaceId) missing.push('Marketplace ID');
       if (!client.refreshToken) missing.push('Refresh Token');
       if (!client.lwaClientId) missing.push('LWA Client ID');
       if (!client.lwaClientSecret) missing.push('LWA Client Secret');
 
       if (missing.length > 0) {
         throw new Error(
-          `Active client "${client.clientName}" is missing required fields:\n\n` +
+          `Active client is missing required API credentials:\n\n` +
           missing.join(', ') +
-          '\n\nPlease fill in all required fields in Client Settings sheet.'
+          '\n\nPlease fill in these fields in Client Settings sheet.'
         );
       }
+
+      // Set defaults for optional fields
+      if (!client.clientName) client.clientName = `Client-${client.sellerId}`;
+      if (!client.marketplace) client.marketplace = 'DE';
+      if (!client.marketplaceId) client.marketplaceId = 'A1PA6795UKMFR9'; // Default to DE
 
       // Update Last Used timestamp
       sheet.getRange(i + 1, 12).setValue(new Date());
