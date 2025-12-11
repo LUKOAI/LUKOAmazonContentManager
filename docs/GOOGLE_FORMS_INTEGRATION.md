@@ -27,6 +27,8 @@ Claude → Google Form → ClaudeAPlusQueue → Apps Script → APlusBasic
 
 ## JSON Format
 
+**CRITICAL: Use ONLY standard ASCII characters in JSON!**
+
 Claude submits JSON in this format:
 
 ```json
@@ -60,6 +62,36 @@ Claude submits JSON in this format:
   ]
 }
 ```
+
+### JSON Formatting Rules for Claude AI
+
+**NEVER use these characters in JSON string values:**
+- ❌ German quotes: `„` (U+201E), `"` (U+201C), `"` (U+201D)
+- ❌ Smart quotes: `'` (U+2018), `'` (U+2019)
+- ❌ Em dash: `—` (U+2014)
+- ❌ En dash: `–` (U+2013)
+
+**ALWAYS use these instead:**
+- ✅ Straight double quotes for JSON structure: `"`
+- ✅ Regular apostrophe for contractions: `'`
+- ✅ Regular hyphen for text: `-`
+
+**Example - WRONG:**
+```json
+{
+  "aplus_basic_m1_body_DE": "Das sagen Kunden: „Perfekt" – sehr gut"
+}
+```
+
+**Example - CORRECT:**
+```json
+{
+  "aplus_basic_m1_body_DE": "Das sagen Kunden: 'Perfekt' - sehr gut"
+}
+```
+
+**Why this matters:**
+Google Forms passes JSON as escaped string. Smart quotes break JSON parsing causing import failures. Use ONLY ASCII characters!
 
 **Notes:**
 - `row` is always `null` in input - script determines actual row numbers
