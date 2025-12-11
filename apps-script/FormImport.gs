@@ -34,11 +34,80 @@ function onFormSubmit(e) {
       throw new Error('Empty JSON payload - column B is empty');
     }
 
+    // Clean the JSON text before parsing
+    // Remove BOM if present
+    if (jsonText.charCodeAt(0) === 0xFEFF) {
+      jsonText = jsonText.substring(1);
+      Logger.log('Removed BOM from JSON');
+    }
+
+    // Replace smart quotes with straight quotes (but only outside of JSON strings)
+    // This is tricky because we don't want to replace quotes INSIDE the string values
+    // So we'll try parsing first, and only if it fails, try sanitization
     var data;
+    var parseAttempts = [];
+
+    // Attempt 1: Parse as-is
     try {
       data = JSON.parse(jsonText);
+      Logger.log('✅ JSON parsed successfully on first attempt');
     } catch (parseError) {
-      throw new Error('Invalid JSON format: ' + parseError.message);
+      parseAttempts.push('Attempt 1 failed: ' + parseError.message);
+
+      // Extract position info from error message
+      var posMatch = parseError.message.match(/position (\d+)/);
+      var errorPos = posMatch ? parseInt(posMatch[1]) : -1;
+
+      // Log context around error
+      if (errorPos > 0 && errorPos < jsonText.length) {
+        var start = Math.max(0, errorPos - 50);
+        var end = Math.min(jsonText.length, errorPos + 50);
+        var context = jsonText.substring(start, end);
+        var charAtError = jsonText.charAt(errorPos);
+
+        Logger.log('Parse error at position ' + errorPos);
+        Logger.log('Context: "' + context + '"');
+        Logger.log('Character at error: "' + charAtError + '" (code: ' + charAtError.charCodeAt(0) + ')');
+      }
+
+      // Attempt 2: Try to fix common issues
+      Logger.log('Attempting to sanitize JSON...');
+
+      // Check if the JSON might be double-escaped
+      if (jsonText.indexOf('\\"') > -1 || jsonText.indexOf('\\n') === -1) {
+        // Might be double-escaped - try unescaping once
+        try {
+          var unescaped = jsonText.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+          data = JSON.parse(unescaped);
+          Logger.log('✅ JSON parsed successfully after unescaping');
+        } catch (unescapeError) {
+          parseAttempts.push('Attempt 2 (unescape) failed: ' + unescapeError.message);
+        }
+      }
+
+      // Attempt 3: If still failed, try wrapping in try-catch and parsing as eval (DANGEROUS)
+      // Actually, DON'T do this - it's a security risk
+
+      // If all attempts failed, throw detailed error
+      if (!data) {
+        var debugInfo = 'Failed to parse JSON after ' + parseAttempts.length + ' attempts:\n\n';
+        debugInfo += parseAttempts.join('\n\n');
+
+        if (errorPos > 0 && errorPos < jsonText.length) {
+          var start = Math.max(0, errorPos - 50);
+          var end = Math.min(jsonText.length, errorPos + 50);
+          var context = jsonText.substring(start, end);
+          var charAtError = jsonText.charAt(errorPos);
+
+          debugInfo += '\n\nContext around error (position ' + errorPos + '):\n"' + context + '"';
+          debugInfo += '\n\nCharacter at error: "' + charAtError + '" (char code: ' + charAtError.charCodeAt(0) + ')';
+        }
+
+        debugInfo += '\n\nFirst 500 chars of JSON:\n' + jsonText.substring(0, 500);
+        debugInfo += '\n\nJSON length: ' + jsonText.length + ' characters';
+
+        throw new Error(debugInfo);
+      }
     }
 
     // 2. Validate structure
