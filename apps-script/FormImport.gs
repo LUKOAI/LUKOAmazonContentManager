@@ -54,15 +54,16 @@ function onFormSubmit(e) {
       var sanitized = jsonText;
 
       // Remove all German and smart quote variants (only in content, not structure)
-      sanitized = sanitized.replace(/„/g, '');   // DOUBLE LOW-9 QUOTATION MARK
-      sanitized = sanitized.replace(/"/g, '');   // LEFT DOUBLE QUOTATION MARK
-      sanitized = sanitized.replace(/"/g, '');   // RIGHT DOUBLE QUOTATION MARK
-      sanitized = sanitized.replace(/'/g, "'");  // LEFT SINGLE QUOTATION MARK → apostrophe
-      sanitized = sanitized.replace(/'/g, "'");  // RIGHT SINGLE QUOTATION MARK → apostrophe
+      // IMPORTANT: Use Unicode escape sequences to avoid editor interpretation issues
+      sanitized = sanitized.replace(/\u201E/g, '');   // „ DOUBLE LOW-9 QUOTATION MARK
+      sanitized = sanitized.replace(/\u201C/g, '');   // " LEFT DOUBLE QUOTATION MARK
+      sanitized = sanitized.replace(/\u201D/g, '');   // " RIGHT DOUBLE QUOTATION MARK
+      sanitized = sanitized.replace(/\u2018/g, "'");  // ' LEFT SINGLE QUOTATION MARK → apostrophe
+      sanitized = sanitized.replace(/\u2019/g, "'");  // ' RIGHT SINGLE QUOTATION MARK → apostrophe
 
-      // Convert dashes to ASCII
-      sanitized = sanitized.replace(/–/g, '-');  // EN DASH → -
-      sanitized = sanitized.replace(/—/g, '-');  // EM DASH → -
+      // Convert dashes to ASCII (using Unicode escapes for safety)
+      sanitized = sanitized.replace(/\u2013/g, '-');  // – EN DASH → -
+      sanitized = sanitized.replace(/\u2014/g, '-');  // — EM DASH → -
 
       Logger.log('Removed German/smart quotes from text');
 
@@ -109,17 +110,17 @@ function onFormSubmit(e) {
       } catch (parseError) {
         parseAttempts.push('Attempt 2 (parse as-is) failed: ' + parseError.message);
 
-        // Attempt 3: Try ASCII replacement instead of Unicode escape
+        // Attempt 3: Try ASCII replacement (using Unicode escapes for safety)
         Logger.log('Attempting ASCII character replacement...');
         try {
           var asciiSanitized = jsonText;
-          asciiSanitized = asciiSanitized.replace(/„/g, '"');  // DOUBLE LOW-9 QUOTATION MARK → ASCII quote
-          asciiSanitized = asciiSanitized.replace(/"/g, '"');  // LEFT DOUBLE QUOTATION MARK → ASCII quote
-          asciiSanitized = asciiSanitized.replace(/"/g, '"');  // RIGHT DOUBLE QUOTATION MARK → ASCII quote
-          asciiSanitized = asciiSanitized.replace(/'/g, "'");  // LEFT SINGLE QUOTATION MARK → ASCII apostrophe
-          asciiSanitized = asciiSanitized.replace(/'/g, "'");  // RIGHT SINGLE QUOTATION MARK → ASCII apostrophe
-          asciiSanitized = asciiSanitized.replace(/–/g, '-');  // EN DASH → ASCII hyphen
-          asciiSanitized = asciiSanitized.replace(/—/g, '-');  // EM DASH → ASCII hyphen
+          asciiSanitized = asciiSanitized.replace(/\u201E/g, '"');  // „ DOUBLE LOW-9 QUOTATION MARK → ASCII quote
+          asciiSanitized = asciiSanitized.replace(/\u201C/g, '"');  // " LEFT DOUBLE QUOTATION MARK → ASCII quote
+          asciiSanitized = asciiSanitized.replace(/\u201D/g, '"');  // " RIGHT DOUBLE QUOTATION MARK → ASCII quote
+          asciiSanitized = asciiSanitized.replace(/\u2018/g, "'");  // ' LEFT SINGLE QUOTATION MARK → ASCII apostrophe
+          asciiSanitized = asciiSanitized.replace(/\u2019/g, "'");  // ' RIGHT SINGLE QUOTATION MARK → ASCII apostrophe
+          asciiSanitized = asciiSanitized.replace(/\u2013/g, '-');  // – EN DASH → ASCII hyphen
+          asciiSanitized = asciiSanitized.replace(/\u2014/g, '-');  // — EM DASH → ASCII hyphen
 
           data = JSON.parse(asciiSanitized);
           Logger.log('✅ JSON parsed successfully after ASCII sanitization');
