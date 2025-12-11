@@ -238,7 +238,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     if (headline) module.standardFourImageText.headline = headline;
 
     // Add 4 blocks with images and text
-    const blocks = [];
+    // IMPORTANT: Amazon expects block1, block2, block3, block4 as separate fields, NOT an array
     for (let i = 1; i <= 4; i++) {
       const block = {};
 
@@ -255,12 +255,10 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       const blockBody = addParagraphComponent(`block${i}_body`, content[`block${i}_body`]);
       if (blockBody) block.body = blockBody;
 
+      // Only add block if it has content
       if (Object.keys(block).length > 0) {
-        blocks.push(block);
+        module.standardFourImageText[`block${i}`] = block;
       }
-    }
-    if (blocks.length > 0) {
-      module.standardFourImageText.block = blocks;
     }
   }
 
@@ -272,7 +270,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     if (headline) module.standardFourImageTextQuadrant.headline = headline;
 
     // Add 4 quadrants with images and text
-    const blocks = [];
+    // IMPORTANT: Amazon expects block1, block2, block3, block4 as separate fields, NOT an array
     for (let i = 1; i <= 4; i++) {
       const block = {};
 
@@ -289,12 +287,10 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       const blockBody = addParagraphComponent(`block${i}_body`, content[`block${i}_body`]);
       if (blockBody) block.body = blockBody;
 
+      // Only add block if it has content
       if (Object.keys(block).length > 0) {
-        blocks.push(block);
+        module.standardFourImageTextQuadrant[`block${i}`] = block;
       }
-    }
-    if (blocks.length > 0) {
-      module.standardFourImageTextQuadrant.block = blocks;
     }
   }
 
@@ -306,7 +302,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     if (headline) module.standardThreeImageText.headline = headline;
 
     // Add 3 blocks with images and text
-    const blocks = [];
+    // IMPORTANT: Amazon expects block1, block2, block3 as separate fields, NOT an array
     for (let i = 1; i <= 3; i++) {
       const block = {};
 
@@ -323,12 +319,10 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       const blockBody = addParagraphComponent(`block${i}_body`, content[`block${i}_body`]);
       if (blockBody) block.body = blockBody;
 
+      // Only add block if it has content
       if (Object.keys(block).length > 0) {
-        blocks.push(block);
+        module.standardThreeImageText[`block${i}`] = block;
       }
-    }
-    if (blocks.length > 0) {
-      module.standardThreeImageText.block = blocks;
     }
   }
 
