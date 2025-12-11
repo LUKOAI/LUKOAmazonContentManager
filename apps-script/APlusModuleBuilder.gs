@@ -380,11 +380,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   }
 
   // 12. STANDARD_PRODUCT_DESCRIPTION
+  // NOTE: This module type only accepts 'body' field, NO headline
   else if (aplusData.moduleType === 'STANDARD_PRODUCT_DESCRIPTION') {
     module.standardProductDescription = {};
-
-    const headline = addTextComponent('headline', content.headline);
-    if (headline) module.standardProductDescription.headline = headline;
 
     const body = addParagraphComponent('body', content.body);
     if (body) module.standardProductDescription.body = body;
