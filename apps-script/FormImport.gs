@@ -65,6 +65,11 @@ function onFormSubmit(e) {
       sanitized = sanitized.replace(/—/g, '-');  // EM DASH → -
 
       Logger.log('Removed German/smart quotes from text');
+
+      // Debug: Show sanitized JSON before parsing
+      Logger.log('Sanitized JSON (first 300 chars): ' + sanitized.substring(0, 300));
+      Logger.log('Sanitized JSON (chars around position 1308): ' + sanitized.substring(1250, 1350));
+
       data = JSON.parse(sanitized);
       Logger.log('✅ JSON parsed successfully after removing quotes');
 
