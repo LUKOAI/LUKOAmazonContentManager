@@ -70,23 +70,38 @@ function onFormSubmit(e) {
         Logger.log('Character at error: "' + charAtError + '" (code: ' + charAtError.charCodeAt(0) + ')');
       }
 
-      // Attempt 2: Try to fix common issues
-      Logger.log('Attempting to sanitize JSON...');
+      // Attempt 2: Sanitize special characters (German quotes, smart quotes, etc.)
+      Logger.log('Attempting to sanitize special characters...');
 
-      // Check if the JSON might be double-escaped
-      if (jsonText.indexOf('\\"') > -1 || jsonText.indexOf('\\n') === -1) {
-        // Might be double-escaped - try unescaping once
+      try {
+        var sanitized = jsonText;
+
+        // Replace German/smart quotes with regular ASCII quotes (only inside JSON strings)
+        // This won't break JSON structure since these chars only appear in string values
+        sanitized = sanitized.replace(/„/g, '"');  // DOUBLE LOW-9 QUOTATION MARK → ASCII quote
+        sanitized = sanitized.replace(/"/g, '"');  // LEFT DOUBLE QUOTATION MARK → ASCII quote
+        sanitized = sanitized.replace(/"/g, '"');  // RIGHT DOUBLE QUOTATION MARK → ASCII quote
+        sanitized = sanitized.replace(/'/g, "'");  // LEFT SINGLE QUOTATION MARK → ASCII apostrophe
+        sanitized = sanitized.replace(/'/g, "'");  // RIGHT SINGLE QUOTATION MARK → ASCII apostrophe
+        sanitized = sanitized.replace(/–/g, '-');  // EN DASH → ASCII hyphen
+        sanitized = sanitized.replace(/—/g, '-');  // EM DASH → ASCII hyphen
+
+        Logger.log('Sanitized special characters');
+        data = JSON.parse(sanitized);
+        Logger.log('✅ JSON parsed successfully after sanitization');
+      } catch (sanitizeError) {
+        parseAttempts.push('Attempt 2 (sanitization) failed: ' + sanitizeError.message);
+
+        // Attempt 3: Try double-escape fix
+        Logger.log('Attempting to fix double-escaped JSON...');
         try {
           var unescaped = jsonText.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
           data = JSON.parse(unescaped);
           Logger.log('✅ JSON parsed successfully after unescaping');
         } catch (unescapeError) {
-          parseAttempts.push('Attempt 2 (unescape) failed: ' + unescapeError.message);
+          parseAttempts.push('Attempt 3 (unescape) failed: ' + unescapeError.message);
         }
       }
-
-      // Attempt 3: If still failed, try wrapping in try-catch and parsing as eval (DANGEROUS)
-      // Actually, DON'T do this - it's a security risk
 
       // If all attempts failed, throw detailed error
       if (!data) {
