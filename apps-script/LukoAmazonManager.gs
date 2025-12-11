@@ -993,19 +993,67 @@ function lukoPublishAPlus() {
       return;
     }
 
-    showProgress(`Publishing ${selectedRows.length} A+ ${contentType} modules...`);
+    // GROUP MODULES BY ASIN
+    // Each ASIN gets ONE A+ Content document with MULTIPLE modules
+    const modulesByAsin = {};
 
-    const results = [];
+    Logger.log('=== Grouping modules by ASIN ===');
+
     for (const row of selectedRows) {
       const aplusData = extractAPlusData(sheet, row, contentType);
-      const result = publishAPlusContent(aplusData, contentType);
+
+      if (!modulesByAsin[aplusData.asin]) {
+        modulesByAsin[aplusData.asin] = [];
+        Logger.log(`Created group for ASIN: ${aplusData.asin}`);
+      }
+
+      modulesByAsin[aplusData.asin].push({
+        row: row,
+        data: aplusData
+      });
+
+      Logger.log(`  Added module ${aplusData.moduleNumber} (${aplusData.moduleType}) to ${aplusData.asin}`);
+    }
+
+    const asinCount = Object.keys(modulesByAsin).length;
+    Logger.log(`Total ASINs: ${asinCount}`);
+
+    showProgress(`Publishing ${asinCount} A+ Content document(s) with ${selectedRows.length} total modules...`);
+
+    // PUBLISH EACH ASIN AS ONE A+ CONTENT WITH MULTIPLE MODULES
+    const results = [];
+
+    for (const asin in modulesByAsin) {
+      const modules = modulesByAsin[asin];
+
+      Logger.log(`\n=== Publishing ${asin} with ${modules.length} modules ===`);
+
+      // Publish all modules for this ASIN as ONE A+ Content
+      const result = publishMultiModuleAPlusContent(modules, contentType);
+
       results.push(result);
-      updateRowStatus(sheet, row, result);
+
+      // Update status for ALL rows of this ASIN
+      for (const module of modules) {
+        updateRowStatus(sheet, module.row, result);
+      }
     }
 
     logOperations(results, 'ALL', `PUBLISH_APLUS_${contentType}`);
     hideProgress();
-    showSummary(results);
+
+    // Enhanced summary
+    let summary = `A+ Content Publishing Results\n\n`;
+    summary += `✅ Published: ${asinCount} A+ Content document(s)\n`;
+    summary += `📦 Total modules: ${selectedRows.length}\n\n`;
+    summary += `Breakdown by ASIN:\n`;
+
+    for (const asin in modulesByAsin) {
+      const modules = modulesByAsin[asin];
+      summary += `  ${asin}: ${modules.length} module(s)\n`;
+    }
+
+    ui.alert('Publishing Complete', summary, ui.ButtonSet.OK);
 
   } catch (error) {
     hideProgress();
@@ -1099,6 +1147,102 @@ function extractAPlusData(sheet, rowNumber, contentType) {
   };
 }
 
+/**
+ * Publish MULTIPLE modules for ONE ASIN as a SINGLE A+ Content document
+ * @param {Array} modules - Array of {row, data} objects for same ASIN
+ * @param {string} contentType - 'BASIC' or 'PREMIUM'
+ * @returns {Object} - Result object
+ */
+function publishMultiModuleAPlusContent(modules, contentType) {
+  try {
+    const client = getActiveClient();
+    const marketplace = client.marketplace || 'DE';
+    const marketplaceConfig = getMarketplaceConfig(marketplace);
+
+    if (!marketplaceConfig) {
+      throw new Error(`Invalid marketplace: ${marketplace}`);
+    }
+
+    if (!modules || modules.length === 0) {
+      throw new Error('No modules provided');
+    }
+
+    // All modules are for the same ASIN
+    const asin = modules[0].data.asin;
+    const moduleCount = modules.length;
+
+    Logger.log(`Building multi-module A+ Content for ${asin} with ${moduleCount} modules`);
+
+    const accessToken = getActiveAccessToken();
+
+    // Get first language to determine locale (all modules should use same language)
+    const firstModule = modules[0].data;
+    const firstLang = Object.keys(firstModule.moduleContent)[0];
+    const locale = convertMarketplaceToLocale(marketplace);
+
+    // Build content document with ALL modules
+    const contentRefKey = `${asin}_complete_${Date.now()}`;
+
+    const contentDocument = {
+      name: contentRefKey,
+      contentType: 'EBC',  // Enhanced Brand Content
+      contentSubType: 'STANDARD',
+      locale: locale,
+      contentModuleList: []
+    };
+
+    // Build each module and add to contentModuleList
+    for (let i = 0; i < modules.length; i++) {
+      const moduleData = modules[i].data;
+
+      Logger.log(`  Building module ${moduleData.moduleNumber}: ${moduleData.moduleType}`);
+
+      // Use existing buildAPlusContentDocumentComplete from APlusModuleBuilder.gs
+      const moduleDoc = buildAPlusContentDocumentComplete(moduleData, marketplace);
+
+      // Extract the module from the built document
+      if (moduleDoc.contentModuleList && moduleDoc.contentModuleList.length > 0) {
+        const module = moduleDoc.contentModuleList[0];
+        contentDocument.contentModuleList.push(module);
+        Logger.log(`    ✅ Added ${moduleData.moduleType} to content document`);
+      } else {
+        Logger.log(`    ⚠️ WARNING: Module ${moduleData.moduleNumber} produced empty contentModuleList`);
+      }
+    }
+
+    Logger.log(`Content document has ${contentDocument.contentModuleList.length} modules`);
+
+    // Create A+ Content
+    const result = createAPlusContent(contentDocument, contentRefKey, marketplaceConfig, accessToken);
+
+    return {
+      asin: asin,
+      moduleNumbers: modules.map(m => m.data.moduleNumber).join(', '),
+      moduleCount: moduleCount,
+      contentReferenceKey: contentRefKey,
+      status: 'SUCCESS',
+      message: `A+ Content with ${moduleCount} modules submitted successfully`,
+      timestamp: new Date()
+    };
+
+  } catch (error) {
+    Logger.log(`ERROR in publishMultiModuleAPlusContent: ${error.toString()}`);
+    Logger.log(`Stack: ${error.stack}`);
+
+    return {
+      asin: modules[0].data.asin,
+      moduleNumbers: modules.map(m => m.data.moduleNumber).join(', '),
+      moduleCount: modules.length,
+      status: 'ERROR',
+      message: error.toString(),
+      timestamp: new Date()
+    };
+  }
+}
+
+/**
+ * Publish SINGLE module (legacy function - kept for compatibility)
+ */
 function publishAPlusContent(aplusData, contentType) {
   try {
     const client = getActiveClient();
