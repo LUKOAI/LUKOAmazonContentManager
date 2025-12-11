@@ -222,49 +222,61 @@ Examples:
 
 ---
 
-# PREMIUM A+ CONTENT MODULES
+# PREMIUM A+ CONTENT MODULES (19 modules)
 
-## 16. PREMIUM_TEXT
+## 1. PREMIUM_TEXT (AI Ready)
 **Images:** None (text-only module with premium formatting)
+
+**Text Fields:**
+- `headline_[LANG]` - 80 characters max
+- `body_[LANG]` - 300 characters max
 
 ---
 
-## 17. PREMIUM_IMAGE_TEXT
+## 2. PREMIUM_SINGLE_IMAGE_TEXT (Premium Single Image with Text) (AI Ready)
 
 ### Image Fields:
 | Field Name | Dimensions | Placeholder Filename | Notes |
 |------------|------------|---------------------|-------|
-| `image` | 650 x 350 px | `aplus_placeholder_premium_img_650x350.jpg` | Premium image with enhanced layout |
+| `image` | 650 x 350 px | `aplus_placeholder_premium_single_650x350.jpg` | Premium image with enhanced text layout |
 
 **Sheet columns:**
 - `aplus_premium_m[N]_image_url`
 - `aplus_premium_m[N]_image_id`
 
+**Text Fields:**
+- `headline_[LANG]` - 80 characters
+- `body_[LANG]` - 300 characters
+
 ---
 
-## 18. PREMIUM_FULL_BACKGROUND_TEXT
+## 3. PREMIUM_BACKGROUND_IMAGE_TEXT (Premium Background Image with Text) (AI Ready)
 
 ### Image Fields:
 | Field Name | Dimensions | Placeholder Filename | Notes |
 |------------|------------|---------------------|-------|
-| `backgroundImage` (Desktop) | 1940 x 600 px | `aplus_placeholder_premium_bg_desktop_1940x600.jpg` | Desktop background |
-| `backgroundImage` (Mobile) | 600 x 450 px | `aplus_placeholder_premium_bg_mobile_600x450.jpg` | Mobile background |
+| `backgroundImage` (Desktop) | 1940 x 600 px | `aplus_placeholder_premium_bg_text_desktop_1940x600.jpg` | Desktop background |
+| `backgroundImage` (Mobile) | 600 x 450 px | `aplus_placeholder_premium_bg_text_mobile_600x450.jpg` | Mobile background |
 
 **Sheet columns:**
 - `aplus_premium_m[N]_backgroundImage_url`
 - `aplus_premium_m[N]_backgroundImage_id`
 
-**Note:** Amazon may accept single image and auto-crop, but best practice is desktop size (1940x600)
+**Text Fields:**
+- `headline_[LANG]` - 80 characters
+- `body_[LANG]` - 300 characters
+
+**Note:** Text overlay on full background image
 
 ---
 
-## 19. PREMIUM_FULL_BACKGROUND_IMAGE
+## 4. PREMIUM_FULL_IMAGE (Premium Full Image) (AI Ready)
 
 ### Image Fields:
 | Field Name | Dimensions | Placeholder Filename | Notes |
 |------------|------------|---------------------|-------|
-| `backgroundImage` (Desktop) | 1464 x 600 px | `aplus_placeholder_premium_fullbg_desktop_1464x600.jpg` | Full-page background desktop |
-| `backgroundImage` (Mobile) | 600 x 450 px | `aplus_placeholder_premium_fullbg_mobile_600x450.jpg` | Full-page background mobile |
+| `backgroundImage` (Desktop) | 1464 x 600 px | `aplus_placeholder_premium_fullimg_desktop_1464x600.jpg` | Full-page image desktop |
+| `backgroundImage` (Mobile) | 600 x 450 px | `aplus_placeholder_premium_fullimg_mobile_600x450.jpg` | Full-page image mobile |
 
 **Sheet columns:**
 - `aplus_premium_m[N]_backgroundImage_url`
@@ -274,49 +286,307 @@ Examples:
 
 ---
 
-## 20. PREMIUM_IMAGE_CAROUSEL
+## 5. PREMIUM_DUAL_IMAGES_TEXT (Premium Dual Images with Text)
 
 ### Image Fields:
 | Field Name | Dimensions | Placeholder Filename | Notes |
 |------------|------------|---------------------|-------|
-| `image1` | 300 x 300 px | `aplus_placeholder_carousel_img1_300x300.jpg` | Carousel slide 1 |
-| `image2` | 300 x 300 px | `aplus_placeholder_carousel_img2_300x300.jpg` | Carousel slide 2 |
-| `image3` | 300 x 300 px | `aplus_placeholder_carousel_img3_300x300.jpg` | Carousel slide 3 |
-| `image4` | 300 x 300 px | `aplus_placeholder_carousel_img4_300x300.jpg` | Carousel slide 4 |
-| `image5` | 300 x 300 px | `aplus_placeholder_carousel_img5_300x300.jpg` | Carousel slide 5 |
-| `image6` | 300 x 300 px | `aplus_placeholder_carousel_img6_300x300.jpg` | Carousel slide 6 |
-| `image7` | 300 x 300 px | `aplus_placeholder_carousel_img7_300x300.jpg` | Carousel slide 7 |
-| `image8` | 300 x 300 px | `aplus_placeholder_carousel_img8_300x300.jpg` | Carousel slide 8 |
+| `image1` | 650 x 350 px | `aplus_placeholder_premium_dual_img1_650x350.jpg` | First image |
+| `image2` | 650 x 350 px | `aplus_placeholder_premium_dual_img2_650x350.jpg` | Second image |
+
+**Sheet columns:**
+- `aplus_premium_m[N]_image1_url`, `image2_url`
+- `aplus_premium_m[N]_image1_id`, `image2_id`
+
+**Text Fields:**
+- `headline_[LANG]` - Module headline
+- `block1_headline_[LANG]`, `block1_body_[LANG]`
+- `block2_headline_[LANG]`, `block2_body_[LANG]`
+
+---
+
+## 6. PREMIUM_FOUR_IMAGES_TEXT (Premium Four Images & Text)
+
+### Image Fields:
+| Field Name | Dimensions | Placeholder Filename | Notes |
+|------------|------------|---------------------|-------|
+| `image1` | 300 x 225 px | `aplus_placeholder_premium_four_img1_300x225.jpg` | Image 1 |
+| `image2` | 300 x 225 px | `aplus_placeholder_premium_four_img2_300x225.jpg` | Image 2 |
+| `image3` | 300 x 225 px | `aplus_placeholder_premium_four_img3_300x225.jpg` | Image 3 |
+| `image4` | 300 x 225 px | `aplus_placeholder_premium_four_img4_300x225.jpg` | Image 4 |
+
+**Sheet columns:**
+- `aplus_premium_m[N]_image1_url` through `image4_url`
+- `aplus_premium_m[N]_image1_id` through `image4_id`
+
+---
+
+## 7. PREMIUM_COMPARISON_TABLE_1
+
+### Image Fields:
+| Field Name | Dimensions | Placeholder Filename | Notes |
+|------------|------------|---------------------|-------|
+| `productImage1` | 200 x 225 px | `aplus_placeholder_premium_comp1_prod1_200x225.jpg` | Product 1 |
+| `productImage2` | 200 x 225 px | `aplus_placeholder_premium_comp1_prod2_200x225.jpg` | Product 2 |
+| `productImage3` | 200 x 225 px | `aplus_placeholder_premium_comp1_prod3_200x225.jpg` | Product 3 |
+| `productImage4` | 200 x 225 px | `aplus_placeholder_premium_comp1_prod4_200x225.jpg` | Product 4 |
+| `productImage5` | 200 x 225 px | `aplus_placeholder_premium_comp1_prod5_200x225.jpg` | Product 5 (optional) |
+| `productImage6` | 200 x 225 px | `aplus_placeholder_premium_comp1_prod6_200x225.jpg` | Product 6 (optional) |
+| `productImage7` | 200 x 225 px | `aplus_placeholder_premium_comp1_prod7_200x225.jpg` | Product 7 (optional) |
+
+**Sheet columns:**
+- `aplus_premium_m[N]_productImage1_url` through `productImage7_url`
+- `aplus_premium_m[N]_productImage1_id` through `productImage7_id`
+
+**Specifications:**
+- Products: 4 minimum - 7 maximum
+- Features: 5 minimum - 12 maximum
+- Module headline: 80 characters
+- Image headline: 25 characters per product
+- Includes "Add to Cart" buttons
+
+---
+
+## 8. PREMIUM_COMPARISON_TABLE_2
+
+### Image Fields:
+| Field Name | Dimensions | Placeholder Filename | Notes |
+|------------|------------|---------------------|-------|
+| `productImage1` | 300 x 225 px | `aplus_placeholder_premium_comp2_prod1_300x225.jpg` | Product 1 |
+| `productImage2` | 300 x 225 px | `aplus_placeholder_premium_comp2_prod2_300x225.jpg` | Product 2 |
+| `productImage3` | 300 x 225 px | `aplus_placeholder_premium_comp2_prod3_300x225.jpg` | Product 3 (optional) |
+
+**Sheet columns:**
+- `aplus_premium_m[N]_productImage1_url` through `productImage3_url`
+- `aplus_premium_m[N]_productImage1_id` through `productImage3_id`
+
+**Specifications:**
+- Products: 2 minimum - 3 maximum
+- Features: 2 minimum - 5 maximum
+- Larger images than Table 1
+- Module headline: 80 characters
+- Image headline: 30 characters per product
+
+---
+
+## 9. PREMIUM_COMPARISON_TABLE_3
+
+### Image Fields:
+| Field Name | Dimensions | Placeholder Filename | Notes |
+|------------|------------|---------------------|-------|
+| `productImage1` | 300 x 225 px | `aplus_placeholder_premium_comp3_prod1_300x225.jpg` | Product 1 |
+| `productImage2` | 300 x 225 px | `aplus_placeholder_premium_comp3_prod2_300x225.jpg` | Product 2 |
+| `productImage3` | 300 x 225 px | `aplus_placeholder_premium_comp3_prod3_300x225.jpg` | Product 3 |
+
+**Sheet columns:**
+- `aplus_premium_m[N]_productImage1_url` through `productImage3_url`
+- `aplus_premium_m[N]_productImage1_id` through `productImage3_id`
+
+**Specifications:**
+- Products: Exactly 3 products
+- Features: 2 minimum - 5 maximum
+- Chart headline: 25 characters
+
+---
+
+## 10. PREMIUM_HOTSPOTS_1
+
+### Image Fields:
+| Field Name | Dimensions | Placeholder Filename | Notes |
+|------------|------------|---------------------|-------|
+| `backgroundImage` (Desktop) | 1464 x 600 px | `aplus_placeholder_premium_hotspots1_desktop_1464x600.jpg` | Desktop background |
+| `backgroundImage` (Mobile) | 600 x 450 px | `aplus_placeholder_premium_hotspots1_mobile_600x450.jpg` | Mobile background |
+
+**Sheet columns:**
+- `aplus_premium_m[N]_backgroundImage_url`
+- `aplus_premium_m[N]_backgroundImage_id`
+
+**Specifications:**
+- Up to 6 hotspots (clickable points on image)
+- Hotspot headline: 50 characters each
+- Hotspot body: 200 characters each
+- NO module headline (use Hotspots 2 for that)
+
+---
+
+## 11. PREMIUM_HOTSPOTS_2
+
+### Image Fields:
+| Field Name | Dimensions | Placeholder Filename | Notes |
+|------------|------------|---------------------|-------|
+| `backgroundImage` (Desktop) | 1464 x 600 px | `aplus_placeholder_premium_hotspots2_desktop_1464x600.jpg` | Desktop background |
+| `backgroundImage` (Mobile) | 600 x 450 px | `aplus_placeholder_premium_hotspots2_mobile_600x450.jpg` | Mobile background |
+
+**Sheet columns:**
+- `aplus_premium_m[N]_backgroundImage_url`
+- `aplus_premium_m[N]_backgroundImage_id`
+
+**Specifications:**
+- Same as Hotspots 1 BUT with module headline and body text
+- Up to 6 hotspots
+- Module headline: 80 characters
+- Module body: 300 characters
+
+---
+
+## 12. PREMIUM_NAVIGATION_CAROUSEL
+
+### Image Fields:
+| Field Name | Dimensions | Placeholder Filename | Notes |
+|------------|------------|---------------------|-------|
+| `image1` (Desktop) | 1464 x 600 px | `aplus_placeholder_premium_navcarousel_img1_desktop_1464x600.jpg` | Panel 1 desktop |
+| `image1` (Mobile) | 600 x 450 px | `aplus_placeholder_premium_navcarousel_img1_mobile_600x450.jpg` | Panel 1 mobile |
+| `image2` (Desktop) | 1464 x 600 px | `aplus_placeholder_premium_navcarousel_img2_desktop_1464x600.jpg` | Panel 2 desktop |
+| `image2` (Mobile) | 600 x 450 px | `aplus_placeholder_premium_navcarousel_img2_mobile_600x450.jpg` | Panel 2 mobile |
+| ... up to 5 panels | | | |
+
+**Sheet columns:**
+- `aplus_premium_m[N]_image1_url` through `image5_url`
+- `aplus_premium_m[N]_image1_id` through `image5_id`
+
+**Specifications:**
+- Panels: 2 minimum - 5 maximum
+- Navigation text: 20 characters per panel (horizontal navigation bar)
+- Headline: 80 characters per panel
+- Body: 300 characters per panel
+
+---
+
+## 13. PREMIUM_REGIMEN_CAROUSEL
+
+### Image Fields:
+| Field Name | Dimensions | Placeholder Filename | Notes |
+|------------|------------|---------------------|-------|
+| `image1` (Desktop) | 1464 x 600 px | `aplus_placeholder_premium_regimen_img1_desktop_1464x600.jpg` | Step 1 desktop |
+| `image1` (Mobile) | 600 x 450 px | `aplus_placeholder_premium_regimen_img1_mobile_600x450.jpg` | Step 1 mobile |
+| ... up to 5 steps | | | |
+
+**Sheet columns:**
+- `aplus_premium_m[N]_image1_url` through `image5_url`
+- `aplus_premium_m[N]_image1_id` through `image5_id`
+
+**Specifications:**
+- Panels: 2 minimum - 5 maximum
+- VERTICAL navigation (steps/regimen format)
+- Perfect for skincare routines, setup instructions
+- Headline: 80 characters per step
+- Body: 300 characters per step
+
+---
+
+## 14. PREMIUM_SIMPLE_IMAGE_CAROUSEL
+
+### Image Fields:
+| Field Name | Dimensions | Placeholder Filename | Notes |
+|------------|------------|---------------------|-------|
+| `image1` | 1464 x 600 px | `aplus_placeholder_premium_simplecarousel_img1_1464x600.jpg` | Carousel image 1 |
+| `image2` | 1464 x 600 px | `aplus_placeholder_premium_simplecarousel_img2_1464x600.jpg` | Carousel image 2 |
+| ... up to 8 images | | | |
 
 **Sheet columns:**
 - `aplus_premium_m[N]_image1_url` through `image8_url`
 - `aplus_premium_m[N]_image1_id` through `image8_id`
 
-**Note:** Up to 8 carousel images supported
+**Specifications:**
+- Images: Up to 8 images
+- Simple carousel without text overlays
+- Auto-rotating slideshow
 
 ---
 
-# PREMIUM VIDEO MODULES
+## 15. PREMIUM_VIDEO_IMAGE_CAROUSEL
 
-## PREMIUM_FULL_VIDEO
+### Image/Video Fields:
+| Field Name | Specifications | Placeholder Filename | Notes |
+|------------|---------------|---------------------|-------|
+| `panel1_video` | 960 x 540 px minimum, MP4 | `aplus_placeholder_premium_vidcarousel_vid1.mp4` | Panel 1 video |
+| `panel1_image` | 1464 x 600 px | `aplus_placeholder_premium_vidcarousel_img1_1464x600.jpg` | OR image instead |
+| ... up to 6 panels | | | |
+
+**Sheet columns:**
+- `aplus_premium_m[N]_panel1_video_url` through `panel6_video_url`
+- `aplus_premium_m[N]_panel1_image_url` through `panel6_image_url`
+
+**Specifications:**
+- Panels: Up to 6 panels
+- Each panel can be video OR image
+- Headline: 80 characters per panel
+- Subheadline: 50 characters per panel
+- Body: 300 characters per panel
+
+---
+
+## 16. PREMIUM_FULL_VIDEO
 
 ### Video Fields:
 | Field Name | Specifications | Placeholder Filename | Notes |
 |------------|---------------|---------------------|-------|
-| `video` | **Resolution:** 1920 x 1080 px (1080p HD)<br>**Alternative:** 1280 x 720 px (720p HD)<br>**Format:** MP4 or MOV<br>**Codec:** H.264<br>**Max file size:** 5 GB<br>**Duration:** 15 seconds to 3 minutes<br>**Frame rate:** 23.976, 24, 25, or 29.97 fps | `aplus_placeholder_video_1920x1080.mp4` | Premium video with thumbnail |
-| `video_thumbnail` | 1920 x 1080 px (JPEG/PNG) | `aplus_placeholder_video_thumb_1920x1080.jpg` | Video thumbnail image |
+| `video` | **Resolution:** 1920 x 1080 px (1080p HD)<br>**Alternative:** 1280 x 720 px (720p HD)<br>**Format:** MP4 or MOV<br>**Codec:** H.264<br>**Max file size:** 5 GB<br>**Duration:** 15 seconds to 3 minutes<br>**Frame rate:** 23.976, 24, 25, or 29.97 fps | `aplus_placeholder_premium_fullvideo_1920x1080.mp4` | Full-width video |
+| `video_thumbnail` | 1920 x 1080 px (JPEG/PNG) | `aplus_placeholder_premium_fullvideo_thumb_1920x1080.jpg` | Video thumbnail |
 
 **Sheet columns:**
-- `aplus_premium_m[N]_video_url` (video file URL)
-- `aplus_premium_m[N]_video_id` (uploadDestinationId for video)
+- `aplus_premium_m[N]_video_url`
+- `aplus_premium_m[N]_video_id`
 - `aplus_premium_m[N]_video_thumbnail_url`
 - `aplus_premium_m[N]_video_thumbnail_id`
 
 **Video Requirements:**
 - Audio: AAC codec, 128 kbps minimum
 - Bitrate: 5-10 Mbps recommended
-- Must include captions/subtitles for accessibility
-- No third-party branding or logos (only your brand)
+- Minimum resolution: 960 x 540 px
+
+---
+
+## 17. PREMIUM_VIDEO_WITH_TEXT
+
+### Video Fields:
+| Field Name | Specifications | Placeholder Filename | Notes |
+|------------|---------------|---------------------|-------|
+| `video` | **Resolution:** 800 x 600 px minimum<br>**Format:** MP4<br>**Duration:** 15 seconds to 3 minutes | `aplus_placeholder_premium_vidtext_800x600.mp4` | Video with text beside |
+| `video_thumbnail` | 800 x 600 px | `aplus_placeholder_premium_vidtext_thumb_800x600.jpg` | Video thumbnail |
+
+**Sheet columns:**
+- `aplus_premium_m[N]_video_url`
+- `aplus_premium_m[N]_video_id`
+- `aplus_premium_m[N]_video_thumbnail_url`
+- `aplus_premium_m[N]_video_thumbnail_id`
+
+**Text Fields:**
+- `headline_[LANG]` - 80 characters
+- `body_[LANG]` - 300 characters (displayed beside video)
+
+---
+
+## 18. PREMIUM_QA (Premium Q&A)
+
+### Image Fields (Optional):
+| Field Name | Dimensions | Placeholder Filename | Notes |
+|------------|------------|---------------------|-------|
+| `qa1_image` | 300 x 300 px | `aplus_placeholder_premium_qa_img1_300x300.jpg` | Image for Q&A pair 1 |
+| `qa2_image` | 300 x 300 px | `aplus_placeholder_premium_qa_img2_300x300.jpg` | Image for Q&A pair 2 |
+| ... up to 6 Q&A pairs | | | |
+
+**Sheet columns:**
+- `aplus_premium_m[N]_qa1_image_url` through `qa6_image_url`
+- `aplus_premium_m[N]_qa1_image_id` through `qa6_image_id`
+
+**Text Fields:**
+- `qa1_question_[LANG]`, `qa1_answer_[LANG]`
+- Up to 6 Q&A pairs
+- Unlike Basic Q&A, can include images with answers
+
+---
+
+## 19. PREMIUM_TECHNICAL_SPECIFICATIONS
+
+**Images:** None (specifications table only)
+
+**Text Fields:**
+- `headline_[LANG]` - Table headline
+- `spec1_name_[LANG]` through `spec15_name_[LANG]`
+- `spec1_value_[LANG]` through `spec15_value_[LANG]`
+
+**Note:** More specs supported than Standard Tech Specs (15 vs 12)
 
 ---
 
@@ -325,22 +595,27 @@ Examples:
 Create one placeholder for each unique size below:
 
 ## Standard Sizes (Basic Modules)
-1. **135 x 135 px** - Quadrant images (4 needed)
-2. **150 x 300 px** - Comparison table products (6 needed)
-3. **300 x 300 px** - Square images (most common, ~20+ uses)
-4. **300 x 400 px** - Vertical images (highlights, specs)
-5. **600 x 180 px** - Company logo
-6. **970 x 300 px** - Overlay banner
-7. **970 x 600 px** - Header image
+1. **135 x 135 px** - Quadrant images (4 needed for STANDARD_FOUR_IMAGE_TEXT_QUADRANT)
+2. **150 x 300 px** - Comparison table products (6 needed for STANDARD_COMPARISON_TABLE)
+3. **300 x 300 px** - Square images (most common, ~20+ uses across multiple modules)
+4. **300 x 400 px** - Vertical images (STANDARD_SINGLE_IMAGE_HIGHLIGHTS, STANDARD_SINGLE_IMAGE_SPECS_DETAIL)
+5. **600 x 180 px** - Company logo (STANDARD_COMPANY_LOGO)
+6. **970 x 300 px** - Overlay banner (STANDARD_IMAGE_TEXT_OVERLAY)
+7. **970 x 600 px** - Header image (STANDARD_HEADER_IMAGE_TEXT)
 
 ## Premium Sizes (Premium Modules)
-8. **650 x 350 px** - Premium image text
-9. **1464 x 600 px** - Premium full background (desktop)
-10. **1940 x 600 px** - Premium background text (desktop)
-11. **600 x 450 px** - Premium mobile backgrounds
-12. **1920 x 1080 px** - Video thumbnail
+8. **200 x 225 px** - Premium Comparison Table 1 products (up to 7 products)
+9. **300 x 225 px** - Premium Comparison Table 2 & 3, Premium Four Images & Text
+10. **650 x 350 px** - Premium Single Image with Text, Premium Dual Images
+11. **1464 x 600 px** - Premium desktop images (Hotspots, Navigation Carousel, Regimen, Full Image, Simple Carousel)
+12. **1940 x 600 px** - Premium Background Image with Text (desktop)
+13. **600 x 450 px** - Premium mobile backgrounds (all carousel/hotspot modules)
+14. **800 x 600 px** - Premium Video with Text thumbnail
+15. **1920 x 1080 px** - Premium Full Video thumbnail
+16. **960 x 540 px** - Premium Video Image Carousel (minimum video resolution)
 
-**Total unique placeholder images needed: 12**
+**Total unique placeholder images needed: 16**
+**Total unique placeholder videos needed: 3** (Full Video, Video with Text, Video Carousel)
 
 ---
 
@@ -361,7 +636,7 @@ For each size above, create a placeholder with:
 2. Create or edit any A+ Content document
 3. Select a module that supports images
 4. Click "Upload from computer"
-5. Upload all 12 placeholder images
+5. Upload all 16 placeholder images (+ 3 video placeholders)
 6. Amazon assigns each an `uploadDestinationId`
 
 ## Step 3: Extract uploadDestinationIds
