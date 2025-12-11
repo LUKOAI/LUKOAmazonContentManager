@@ -53,13 +53,24 @@ function onFormSubmit(e) {
     try {
       var sanitized = jsonText;
 
-      // Remove all German and smart quote variants (only in content, not structure)
-      // IMPORTANT: Use Unicode escape sequences to avoid editor interpretation issues
+      // Remove all German and smart quote variants AND their ASCII closing pairs
+      // Claude generates MIXED quotes: „text" (German opening + ASCII closing)
+      // We need to remove BOTH to avoid unpaired quotes
+
+      // Strategy: Replace ALL quote-like characters with empty string
+      // This includes both German quotes AND any stray ASCII quotes in content
       sanitized = sanitized.replace(/\u201E/g, '');   // „ DOUBLE LOW-9 QUOTATION MARK
       sanitized = sanitized.replace(/\u201C/g, '');   // " LEFT DOUBLE QUOTATION MARK
       sanitized = sanitized.replace(/\u201D/g, '');   // " RIGHT DOUBLE QUOTATION MARK
-      sanitized = sanitized.replace(/\u2018/g, "'");  // ' LEFT SINGLE QUOTATION MARK → apostrophe
-      sanitized = sanitized.replace(/\u2019/g, "'");  // ' RIGHT SINGLE QUOTATION MARK → apostrophe
+      sanitized = sanitized.replace(/\u2018/g, '');   // ' LEFT SINGLE QUOTATION MARK
+      sanitized = sanitized.replace(/\u2019/g, '');   // ' RIGHT SINGLE QUOTATION MARK
+
+      // CRITICAL: Also remove standalone ASCII quotes that were paired with German quotes
+      // Pattern: find quotes that appear in German quote context
+      // This is safe because JSON structural quotes are always at key:value boundaries
+      // and won't be preceded by German text patterns
+      sanitized = sanitized.replace(/([a-zA-ZäöüßÄÖÜ])\s*"\s*-\s*/g, '$1 - ');  // „text" – pattern
+      sanitized = sanitized.replace(/\s+"\s+/g, ' ');  // Remove quotes surrounded by spaces
 
       // Convert dashes to ASCII (using Unicode escapes for safety)
       sanitized = sanitized.replace(/\u2013/g, '-');  // – EN DASH → -
