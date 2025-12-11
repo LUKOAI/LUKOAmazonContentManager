@@ -47,15 +47,29 @@ function onFormSubmit(e) {
     var data;
     var parseAttempts = [];
 
-    // Attempt 1: Parse as-is
+    // Attempt 1: Sanitize FIRST (before any parsing)
+    // German quotes and special chars seem to confuse the JSON parser
     try {
-      data = JSON.parse(jsonText);
-      Logger.log('✅ JSON parsed successfully on first attempt');
-    } catch (parseError) {
-      parseAttempts.push('Attempt 1 failed: ' + parseError.message);
+      var sanitized = jsonText;
+
+      // Escape German/smart quotes that appear inside JSON string values
+      // We need to escape them as Unicode so JSON parser won't confuse them with structural quotes
+      sanitized = sanitized.replace(/„/g, '\\u201E');  // DOUBLE LOW-9 QUOTATION MARK
+      sanitized = sanitized.replace(/"/g, '\\u201C');  // LEFT DOUBLE QUOTATION MARK
+      sanitized = sanitized.replace(/"/g, '\\u201D');  // RIGHT DOUBLE QUOTATION MARK
+      sanitized = sanitized.replace(/'/g, '\\u2018');  // LEFT SINGLE QUOTATION MARK
+      sanitized = sanitized.replace(/'/g, '\\u2019');  // RIGHT SINGLE QUOTATION MARK
+      sanitized = sanitized.replace(/–/g, '\\u2013');  // EN DASH
+      sanitized = sanitized.replace(/—/g, '\\u2014');  // EM DASH
+
+      Logger.log('Converted special characters to Unicode escapes');
+      data = JSON.parse(sanitized);
+      Logger.log('✅ JSON parsed successfully after Unicode escaping');
+    } catch (unicodeError) {
+      parseAttempts.push('Attempt 1 (Unicode escape) failed: ' + unicodeError.message);
 
       // Extract position info from error message
-      var posMatch = parseError.message.match(/position (\d+)/);
+      var posMatch = unicodeError.message.match(/position (\d+)/);
       var errorPos = posMatch ? parseInt(posMatch[1]) : -1;
 
       // Log context around error
@@ -70,36 +84,30 @@ function onFormSubmit(e) {
         Logger.log('Character at error: "' + charAtError + '" (code: ' + charAtError.charCodeAt(0) + ')');
       }
 
-      // Attempt 2: Sanitize special characters (German quotes, smart quotes, etc.)
-      Logger.log('Attempting to sanitize special characters...');
-
+      // Attempt 2: Try parsing as-is (maybe the original is fine?)
+      Logger.log('Attempting to parse original JSON as-is...');
       try {
-        var sanitized = jsonText;
+        data = JSON.parse(jsonText);
+        Logger.log('✅ JSON parsed successfully as-is');
+      } catch (parseError) {
+        parseAttempts.push('Attempt 2 (parse as-is) failed: ' + parseError.message);
 
-        // Replace German/smart quotes with regular ASCII quotes (only inside JSON strings)
-        // This won't break JSON structure since these chars only appear in string values
-        sanitized = sanitized.replace(/„/g, '"');  // DOUBLE LOW-9 QUOTATION MARK → ASCII quote
-        sanitized = sanitized.replace(/"/g, '"');  // LEFT DOUBLE QUOTATION MARK → ASCII quote
-        sanitized = sanitized.replace(/"/g, '"');  // RIGHT DOUBLE QUOTATION MARK → ASCII quote
-        sanitized = sanitized.replace(/'/g, "'");  // LEFT SINGLE QUOTATION MARK → ASCII apostrophe
-        sanitized = sanitized.replace(/'/g, "'");  // RIGHT SINGLE QUOTATION MARK → ASCII apostrophe
-        sanitized = sanitized.replace(/–/g, '-');  // EN DASH → ASCII hyphen
-        sanitized = sanitized.replace(/—/g, '-');  // EM DASH → ASCII hyphen
-
-        Logger.log('Sanitized special characters');
-        data = JSON.parse(sanitized);
-        Logger.log('✅ JSON parsed successfully after sanitization');
-      } catch (sanitizeError) {
-        parseAttempts.push('Attempt 2 (sanitization) failed: ' + sanitizeError.message);
-
-        // Attempt 3: Try double-escape fix
-        Logger.log('Attempting to fix double-escaped JSON...');
+        // Attempt 3: Try ASCII replacement instead of Unicode escape
+        Logger.log('Attempting ASCII character replacement...');
         try {
-          var unescaped = jsonText.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-          data = JSON.parse(unescaped);
-          Logger.log('✅ JSON parsed successfully after unescaping');
-        } catch (unescapeError) {
-          parseAttempts.push('Attempt 3 (unescape) failed: ' + unescapeError.message);
+          var asciiSanitized = jsonText;
+          asciiSanitized = asciiSanitized.replace(/„/g, '"');  // DOUBLE LOW-9 QUOTATION MARK → ASCII quote
+          asciiSanitized = asciiSanitized.replace(/"/g, '"');  // LEFT DOUBLE QUOTATION MARK → ASCII quote
+          asciiSanitized = asciiSanitized.replace(/"/g, '"');  // RIGHT DOUBLE QUOTATION MARK → ASCII quote
+          asciiSanitized = asciiSanitized.replace(/'/g, "'");  // LEFT SINGLE QUOTATION MARK → ASCII apostrophe
+          asciiSanitized = asciiSanitized.replace(/'/g, "'");  // RIGHT SINGLE QUOTATION MARK → ASCII apostrophe
+          asciiSanitized = asciiSanitized.replace(/–/g, '-');  // EN DASH → ASCII hyphen
+          asciiSanitized = asciiSanitized.replace(/—/g, '-');  // EM DASH → ASCII hyphen
+
+          data = JSON.parse(asciiSanitized);
+          Logger.log('✅ JSON parsed successfully after ASCII sanitization');
+        } catch (asciiError) {
+          parseAttempts.push('Attempt 3 (ASCII sanitization) failed: ' + asciiError.message);
         }
       }
 
