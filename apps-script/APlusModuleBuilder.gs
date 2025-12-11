@@ -135,8 +135,8 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       };
     }
 
-    const heading = addTextComponent('headline', content.headline);
-    if (heading) module.standardHeaderImageText.heading = heading;
+    const headline = addTextComponent('headline', content.headline);
+    if (headline) module.standardHeaderImageText.headline = headline;
 
     const body = addParagraphComponent('body', content.body);
     if (body) module.standardHeaderImageText.block.body = body;
