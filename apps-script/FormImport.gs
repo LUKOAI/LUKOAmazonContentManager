@@ -47,29 +47,31 @@ function onFormSubmit(e) {
     var data;
     var parseAttempts = [];
 
-    // Attempt 1: Sanitize FIRST (before any parsing)
-    // German quotes and special chars seem to confuse the JSON parser
+    // Attempt 1: Escape German quotes as \" (JSON-safe escape)
+    // German quotes inside JSON strings need to be escaped, not replaced
     try {
       var sanitized = jsonText;
 
-      // Escape German/smart quotes that appear inside JSON string values
-      // We need to escape them as Unicode so JSON parser won't confuse them with structural quotes
-      sanitized = sanitized.replace(/„/g, '\\u201E');  // DOUBLE LOW-9 QUOTATION MARK
-      sanitized = sanitized.replace(/"/g, '\\u201C');  // LEFT DOUBLE QUOTATION MARK
-      sanitized = sanitized.replace(/"/g, '\\u201D');  // RIGHT DOUBLE QUOTATION MARK
-      sanitized = sanitized.replace(/'/g, '\\u2018');  // LEFT SINGLE QUOTATION MARK
-      sanitized = sanitized.replace(/'/g, '\\u2019');  // RIGHT SINGLE QUOTATION MARK
-      sanitized = sanitized.replace(/–/g, '\\u2013');  // EN DASH
-      sanitized = sanitized.replace(/—/g, '\\u2014');  // EM DASH
+      // Escape German/smart quotes so they don't break JSON string delimiters
+      // We replace them with \" which is valid inside JSON strings
+      sanitized = sanitized.replace(/„/g, '\\"');  // DOUBLE LOW-9 QUOTATION MARK → \"
+      sanitized = sanitized.replace(/"/g, '\\"');  // LEFT DOUBLE QUOTATION MARK → \"
+      sanitized = sanitized.replace(/"/g, '\\"');  // RIGHT DOUBLE QUOTATION MARK → \"
 
-      Logger.log('Converted special characters to Unicode escapes');
+      // Single quotes and dashes can stay as-is or convert to safe chars
+      sanitized = sanitized.replace(/'/g, "'");    // LEFT SINGLE QUOTATION MARK → '
+      sanitized = sanitized.replace(/'/g, "'");    // RIGHT SINGLE QUOTATION MARK → '
+      sanitized = sanitized.replace(/–/g, '-');    // EN DASH → -
+      sanitized = sanitized.replace(/—/g, '-');    // EM DASH → -
+
+      Logger.log('Escaped German quotes as \\"');
       data = JSON.parse(sanitized);
-      Logger.log('✅ JSON parsed successfully after Unicode escaping');
-    } catch (unicodeError) {
-      parseAttempts.push('Attempt 1 (Unicode escape) failed: ' + unicodeError.message);
+      Logger.log('✅ JSON parsed successfully after escaping quotes');
+    } catch (escapeError) {
+      parseAttempts.push('Attempt 1 (escape quotes) failed: ' + escapeError.message);
 
       // Extract position info from error message
-      var posMatch = unicodeError.message.match(/position (\d+)/);
+      var posMatch = escapeError.message.match(/position (\d+)/);
       var errorPos = posMatch ? parseInt(posMatch[1]) : -1;
 
       // Log context around error
