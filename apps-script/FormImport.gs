@@ -47,31 +47,35 @@ function onFormSubmit(e) {
     var data;
     var parseAttempts = [];
 
-    // Attempt 1: Escape German quotes as \" (JSON-safe escape)
-    // German quotes inside JSON strings need to be escaped, not replaced
+    // Attempt 1: Fix mixed quotation marks (German opening + ASCII closing)
+    // Claude AI generates patterns like: „text" which breaks JSON parsing
+    // because the ASCII " is interpreted as closing the JSON string prematurely
     try {
       var sanitized = jsonText;
 
-      // Escape German/smart quotes so they don't break JSON string delimiters
-      // We replace them with \" which is valid inside JSON strings
-      sanitized = sanitized.replace(/„/g, '\\"');  // DOUBLE LOW-9 QUOTATION MARK → \"
-      sanitized = sanitized.replace(/"/g, '\\"');  // LEFT DOUBLE QUOTATION MARK → \"
-      sanitized = sanitized.replace(/"/g, '\\"');  // RIGHT DOUBLE QUOTATION MARK → \"
+      // Pattern 1: „...content..." → „...content\..."
+      // Find German low quote followed by content and ASCII quote
+      // The ASCII closing quote needs to be escaped
+      sanitized = sanitized.replace(/„([^"]*?)"/g, '„$1\\"');
 
-      // Single quotes and dashes can stay as-is or convert to safe chars
-      sanitized = sanitized.replace(/'/g, "'");    // LEFT SINGLE QUOTATION MARK → '
-      sanitized = sanitized.replace(/'/g, "'");    // RIGHT SINGLE QUOTATION MARK → '
-      sanitized = sanitized.replace(/–/g, '-');    // EN DASH → -
-      sanitized = sanitized.replace(/—/g, '-');    // EM DASH → -
+      // Pattern 2: "...content..." (German left quote + ASCII closing)
+      sanitized = sanitized.replace(/"([^"]*?)"/g, '"$1\\"');
 
-      Logger.log('Escaped German quotes as \\"');
+      // Pattern 3: "...content..." (German right quote + ASCII closing)
+      sanitized = sanitized.replace(/"([^"]*?)"/g, '"$1\\"');
+
+      // Convert dashes to ASCII
+      sanitized = sanitized.replace(/–/g, '-');  // EN DASH → -
+      sanitized = sanitized.replace(/—/g, '-');  // EM DASH → -
+
+      Logger.log('Fixed mixed quotation marks');
       data = JSON.parse(sanitized);
-      Logger.log('✅ JSON parsed successfully after escaping quotes');
-    } catch (escapeError) {
-      parseAttempts.push('Attempt 1 (escape quotes) failed: ' + escapeError.message);
+      Logger.log('✅ JSON parsed successfully after fixing quotes');
+    } catch (quoteError) {
+      parseAttempts.push('Attempt 1 (fix mixed quotes) failed: ' + quoteError.message);
 
       // Extract position info from error message
-      var posMatch = escapeError.message.match(/position (\d+)/);
+      var posMatch = quoteError.message.match(/position (\d+)/);
       var errorPos = posMatch ? parseInt(posMatch[1]) : -1;
 
       // Log context around error
