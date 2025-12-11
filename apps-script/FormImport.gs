@@ -60,13 +60,17 @@ function onFormSubmit(e) {
       throw new Error('APlusBasic sheet not found - please create it first');
     }
 
-    // 4. Find first empty row
+    // 4. Build header mapping (column name → column letter)
+    var headerMap = buildHeaderMap(aplusSheet);
+    Logger.log('Header map created with ' + Object.keys(headerMap).length + ' columns');
+
+    // 5. Find first empty row
     var targetRow = findFirstEmptyRow(aplusSheet);
     Logger.log('First empty row: ' + targetRow);
 
     var startRow = targetRow;
 
-    // 5. Write each module
+    // 6. Write each module
     var modulesWritten = 0;
     data.modules.forEach(function(module, index) {
       Logger.log('Processing module ' + (index + 1) + '/' + data.modules.length);
@@ -77,10 +81,26 @@ function onFormSubmit(e) {
       }
 
       // Write each column value
-      for (var colLetter in module.columns) {
-        var colNumber = columnLetterToNumber(colLetter);
-        var value = module.columns[colLetter];
+      for (var colKey in module.columns) {
+        var value = module.columns[colKey];
 
+        // Check if colKey is already a letter (A, B, C) or a name (☑️ Export, ASIN)
+        var colLetter;
+        if (colKey.length <= 2 && /^[A-Z]+$/.test(colKey)) {
+          // Already a letter (A, B, AA, etc.)
+          colLetter = colKey;
+          Logger.log('  Using column letter directly: ' + colLetter);
+        } else {
+          // It's a column name - look up in header map
+          colLetter = headerMap[colKey];
+          if (!colLetter) {
+            Logger.log('  WARNING: Column name "' + colKey + '" not found in headers - skipping');
+            continue;
+          }
+          Logger.log('  Mapped "' + colKey + '" → ' + colLetter);
+        }
+
+        var colNumber = columnLetterToNumber(colLetter);
         Logger.log('  Writing to ' + colLetter + ' (col ' + colNumber + '): ' + value);
         aplusSheet.getRange(targetRow, colNumber).setValue(value);
       }
@@ -93,39 +113,113 @@ function onFormSubmit(e) {
     Logger.log('Modules written: ' + modulesWritten);
     Logger.log('Rows: ' + startRow + ' to ' + (targetRow - 1));
 
-    // 6. Success notification
-    var ui = SpreadsheetApp.getUi();
-    ui.alert(
-      '✅ A+ Content Import Success',
-      modulesWritten + ' module(s) imported to APlusBasic.\n\n' +
-      'Starting at row ' + startRow + '\n' +
-      'Ending at row ' + (targetRow - 1) + '\n\n' +
-      'You can now publish these modules using:\n' +
-      'Export to Amazon → 📤 Publish A+ Content',
-      ui.ButtonSet.OK
-    );
-
-    // 7. Log success
+    // 6. Log success
     logOperation('FORM_IMPORT', 'SUCCESS', modulesWritten + ' modules imported (rows ' + startRow + '-' + (targetRow - 1) + ')');
+
+    // 7. Success notification (only if running manually, not from trigger)
+    try {
+      var ui = SpreadsheetApp.getUi();
+      ui.alert(
+        '✅ A+ Content Import Success',
+        modulesWritten + ' module(s) imported to APlusBasic.\n\n' +
+        'Starting at row ' + startRow + '\n' +
+        'Ending at row ' + (targetRow - 1) + '\n\n' +
+        'You can now publish these modules using:\n' +
+        'Export to Amazon → 📤 Publish A+ Content',
+        ui.ButtonSet.OK
+      );
+    } catch (uiError) {
+      // Running from trigger - UI not available, that's OK
+      Logger.log('Success notification skipped (running from trigger)');
+    }
 
   } catch (error) {
     // Error handling
     Logger.log('ERROR: ' + error.message);
     Logger.log('Stack: ' + error.stack);
 
-    SpreadsheetApp.getUi().alert(
-      '❌ A+ Content Import Failed',
-      'Error: ' + error.message + '\n\n' +
-      'Check Extensions → Apps Script → Executions for details.\n\n' +
-      'Common issues:\n' +
-      '• Invalid JSON format\n' +
-      '• Missing "modules" array in JSON\n' +
-      '• APlusBasic sheet not found',
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
-
+    // Log error
     logOperation('FORM_IMPORT', 'ERROR', error.message + ' | Stack: ' + error.stack);
+
+    // Try to show alert (only works if running manually)
+    try {
+      SpreadsheetApp.getUi().alert(
+        '❌ A+ Content Import Failed',
+        'Error: ' + error.message + '\n\n' +
+        'Check Extensions → Apps Script → Executions for details.\n\n' +
+        'Common issues:\n' +
+        '• Invalid JSON format\n' +
+        '• Missing "modules" array in JSON\n' +
+        '• APlusBasic sheet not found',
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+    } catch (uiError) {
+      // Running from trigger - UI not available
+      Logger.log('Error notification skipped (running from trigger)');
+    }
   }
+}
+
+/**
+ * Builds a mapping of column names to column letters
+ * Reads row 3 (headers) from APlusBasic sheet
+ *
+ * @param {Sheet} sheet - Google Sheets sheet object
+ * @returns {Object} - Map of column names to letters
+ *
+ * Example:
+ *   {"☑️ Export": "A", "ASIN": "B", "Module Number": "C"}
+ */
+function buildHeaderMap(sheet) {
+  var headerRow = 3; // Headers are in row 3 of APlusBasic
+  var lastCol = sheet.getLastColumn();
+
+  // Get all headers from row 3
+  var headers = sheet.getRange(headerRow, 1, 1, lastCol).getValues()[0];
+
+  var map = {};
+
+  for (var i = 0; i < headers.length; i++) {
+    var headerName = headers[i];
+
+    // Skip empty headers
+    if (headerName === '' || headerName === null || headerName === undefined) {
+      continue;
+    }
+
+    // Convert column index to letter (0 → A, 1 → B, etc.)
+    var colLetter = columnNumberToLetter(i + 1);
+
+    map[headerName] = colLetter;
+  }
+
+  Logger.log('Built header map: ' + JSON.stringify(map).substring(0, 200) + '...');
+
+  return map;
+}
+
+/**
+ * Converts column number to column letter
+ * @param {number} column - Column number (1-based)
+ * @returns {string} - Column letter (A, B, AA, BB, etc.)
+ *
+ * Examples:
+ *   1 → A
+ *   2 → B
+ *   26 → Z
+ *   27 → AA
+ *   54 → BB
+ */
+function columnNumberToLetter(column) {
+  var letter = '';
+
+  while (column > 0) {
+    var remainder = (column - 1) % 26;
+    letter = String.fromCharCode(65 + remainder) + letter;
+    column = Math.floor((column - 1) / 26);
+  }
+
+  return letter;
 }
 
 /**
@@ -315,7 +409,9 @@ function testFormImportMissingModules() {
  * Utility function - test column letter conversion
  */
 function testColumnLetterConversion() {
-  var tests = [
+  Logger.log('=== Testing Column Letter ↔ Number Conversion ===');
+
+  var letterTests = [
     {letter: 'A', expected: 1},
     {letter: 'B', expected: 2},
     {letter: 'Z', expected: 26},
@@ -327,12 +423,66 @@ function testColumnLetterConversion() {
     {letter: 'ZZ', expected: 702}
   ];
 
-  Logger.log('Testing column letter to number conversion:');
-  tests.forEach(function(test) {
+  Logger.log('\n--- Letter → Number ---');
+  letterTests.forEach(function(test) {
     var result = columnLetterToNumber(test.letter);
     var status = result === test.expected ? '✅' : '❌';
     Logger.log(status + ' ' + test.letter + ' → ' + result + ' (expected ' + test.expected + ')');
   });
+
+  var numberTests = [
+    {number: 1, expected: 'A'},
+    {number: 2, expected: 'B'},
+    {number: 26, expected: 'Z'},
+    {number: 27, expected: 'AA'},
+    {number: 28, expected: 'AB'},
+    {number: 52, expected: 'AZ'},
+    {number: 53, expected: 'BA'},
+    {number: 54, expected: 'BB'},
+    {number: 702, expected: 'ZZ'}
+  ];
+
+  Logger.log('\n--- Number → Letter ---');
+  numberTests.forEach(function(test) {
+    var result = columnNumberToLetter(test.number);
+    var status = result === test.expected ? '✅' : '❌';
+    Logger.log(status + ' ' + test.number + ' → ' + result + ' (expected ' + test.expected + ')');
+  });
+
+  Logger.log('\n=== Tests Complete ===');
+}
+
+/**
+ * Test function - test header mapping
+ */
+function testHeaderMapping() {
+  try {
+    Logger.log('=== Testing Header Mapping ===');
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var aplusSheet = ss.getSheetByName('APlusBasic');
+
+    if (!aplusSheet) {
+      Logger.log('❌ APlusBasic sheet not found');
+      return;
+    }
+
+    var headerMap = buildHeaderMap(aplusSheet);
+
+    Logger.log('\n--- Header Map (first 10 entries) ---');
+    var count = 0;
+    for (var key in headerMap) {
+      Logger.log('"' + key + '" → ' + headerMap[key]);
+      count++;
+      if (count >= 10) break;
+    }
+
+    Logger.log('\nTotal headers mapped: ' + Object.keys(headerMap).length);
+    Logger.log('=== Test Complete ===');
+
+  } catch (error) {
+    Logger.log('❌ Error: ' + error.message);
+  }
 }
 
 /**
