@@ -47,30 +47,26 @@ function onFormSubmit(e) {
     var data;
     var parseAttempts = [];
 
-    // Attempt 1: Fix mixed quotation marks (German opening + ASCII closing)
-    // Claude AI generates patterns like: „text" which breaks JSON parsing
-    // because the ASCII " is interpreted as closing the JSON string prematurely
+    // Attempt 1: Simply remove German/smart quotes that confuse JSON parser
+    // These quotes only appear in text content, not in JSON structure
+    // Removing them is safer than trying complex regex replacements
     try {
       var sanitized = jsonText;
 
-      // Pattern 1: „...content..." → „...content\..."
-      // Find German low quote followed by content and ASCII quote
-      // The ASCII closing quote needs to be escaped
-      sanitized = sanitized.replace(/„([^"]*?)"/g, '„$1\\"');
-
-      // Pattern 2: "...content..." (German left quote + ASCII closing)
-      sanitized = sanitized.replace(/"([^"]*?)"/g, '"$1\\"');
-
-      // Pattern 3: "...content..." (German right quote + ASCII closing)
-      sanitized = sanitized.replace(/"([^"]*?)"/g, '"$1\\"');
+      // Remove all German and smart quote variants (only in content, not structure)
+      sanitized = sanitized.replace(/„/g, '');   // DOUBLE LOW-9 QUOTATION MARK
+      sanitized = sanitized.replace(/"/g, '');   // LEFT DOUBLE QUOTATION MARK
+      sanitized = sanitized.replace(/"/g, '');   // RIGHT DOUBLE QUOTATION MARK
+      sanitized = sanitized.replace(/'/g, "'");  // LEFT SINGLE QUOTATION MARK → apostrophe
+      sanitized = sanitized.replace(/'/g, "'");  // RIGHT SINGLE QUOTATION MARK → apostrophe
 
       // Convert dashes to ASCII
       sanitized = sanitized.replace(/–/g, '-');  // EN DASH → -
       sanitized = sanitized.replace(/—/g, '-');  // EM DASH → -
 
-      Logger.log('Fixed mixed quotation marks');
+      Logger.log('Removed German/smart quotes from text');
       data = JSON.parse(sanitized);
-      Logger.log('✅ JSON parsed successfully after fixing quotes');
+      Logger.log('✅ JSON parsed successfully after removing quotes');
 
       // Debug: Log what we got
       Logger.log('Parsed data type: ' + typeof data);
@@ -79,7 +75,7 @@ function onFormSubmit(e) {
         Logger.log('Modules found: ' + data.modules.length);
       } else {
         Logger.log('⚠️ NO modules key found in parsed data!');
-        Logger.log('Sanitized JSON (first 1000 chars): ' + sanitized.substring(0, 1000));
+        Logger.log('Sanitized JSON (first 200 chars): ' + sanitized.substring(0, 200));
       }
     } catch (quoteError) {
       parseAttempts.push('Attempt 1 (fix mixed quotes) failed: ' + quoteError.message);
