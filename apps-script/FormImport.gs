@@ -71,6 +71,16 @@ function onFormSubmit(e) {
       Logger.log('Fixed mixed quotation marks');
       data = JSON.parse(sanitized);
       Logger.log('✅ JSON parsed successfully after fixing quotes');
+
+      // Debug: Log what we got
+      Logger.log('Parsed data type: ' + typeof data);
+      Logger.log('Parsed data keys: ' + (data ? Object.keys(data).join(', ') : 'null'));
+      if (data && data.modules) {
+        Logger.log('Modules found: ' + data.modules.length);
+      } else {
+        Logger.log('⚠️ NO modules key found in parsed data!');
+        Logger.log('Sanitized JSON (first 1000 chars): ' + sanitized.substring(0, 1000));
+      }
     } catch (quoteError) {
       parseAttempts.push('Attempt 1 (fix mixed quotes) failed: ' + quoteError.message);
 
