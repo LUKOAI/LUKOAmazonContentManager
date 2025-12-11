@@ -524,23 +524,79 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     }
   }
 
-  // 20. PREMIUM_IMAGE_CAROUSEL
-  else if (aplusData.moduleType === 'PREMIUM_IMAGE_CAROUSEL') {
-    module.premiumImageCarousel = {};
+  // 20. PREMIUM_IMAGE_CAROUSEL (kept for backwards compatibility - now SIMPLE_IMAGE_CAROUSEL)
+  else if (aplusData.moduleType === 'PREMIUM_IMAGE_CAROUSEL' || aplusData.moduleType === 'PREMIUM_SIMPLE_IMAGE_CAROUSEL') {
+    buildPremiumSimpleImageCarousel(aplusData, content, module);
+  }
 
-    // Add up to 8 carousel images
-    const carouselImages = [];
-    for (let i = 1; i <= 8; i++) {
-      const imageId = getImageId(`image${i}`);
-      if (imageId) {
-        carouselImages.push({
-          uploadDestinationId: imageId
-        });
-      }
-    }
-    if (carouselImages.length > 0) {
-      module.premiumImageCarousel.carouselImages = carouselImages;
-    }
+  // Additional Premium modules from APlusPremiumModules.gs
+
+  else if (aplusData.moduleType === 'PREMIUM_SINGLE_IMAGE_TEXT') {
+    buildPremiumSingleImageText(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_BACKGROUND_IMAGE_TEXT') {
+    buildPremiumBackgroundImageText(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_FULL_IMAGE') {
+    buildPremiumFullImage(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_DUAL_IMAGES_TEXT') {
+    buildPremiumDualImagesText(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_FOUR_IMAGES_TEXT') {
+    buildPremiumFourImagesText(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_COMPARISON_TABLE_1') {
+    buildPremiumComparisonTable1(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_COMPARISON_TABLE_2') {
+    buildPremiumComparisonTable2(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_COMPARISON_TABLE_3') {
+    buildPremiumComparisonTable3(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_HOTSPOTS_1') {
+    buildPremiumHotspots1(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_HOTSPOTS_2') {
+    buildPremiumHotspots2(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_NAVIGATION_CAROUSEL') {
+    buildPremiumNavigationCarousel(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_REGIMEN_CAROUSEL') {
+    buildPremiumRegimenCarousel(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_VIDEO_IMAGE_CAROUSEL') {
+    buildPremiumVideoImageCarousel(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_FULL_VIDEO') {
+    buildPremiumFullVideo(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_VIDEO_WITH_TEXT') {
+    buildPremiumVideoWithText(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_QA') {
+    buildPremiumQA(aplusData, content, module);
+  }
+
+  else if (aplusData.moduleType === 'PREMIUM_TECHNICAL_SPECIFICATIONS') {
+    buildPremiumTechnicalSpecifications(aplusData, content, module);
   }
 
   contentDocument.contentModuleList.push(module);
