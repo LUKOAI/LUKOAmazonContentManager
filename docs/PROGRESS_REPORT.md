@@ -14,7 +14,7 @@
   - Specyfikacje wideo (3 typy)
   - Nazwy plików atrap
   - Workflow tworzenia i uploadowania atrap
-  - **Podsumowanie:** 16 unikalnych rozmiarów zdjęć + 3 wideo
+  - **Podsumowanie:** 18 unikalnych rozmiarów zdjęć + 3 wideo
 
 ### 2. **Kolumny dla WSZYSTKICH modułów A+** ✅
 - **Plik:** `apps-script/APlusColumnGenerator.gs`
@@ -134,7 +134,7 @@
   - German date format (DD.MM.YYYY HH:mm:ss)
   - contentReferenceKey auto-generation
 - Sekcja "Placeholder Images System"
-  - 16 rozmiarów zdjęć + 3 wideo
+  - 18 rozmiarów zdjęć + 3 wideo
   - Workflow tworzenia atrap
   - Link do dokumentacji
 

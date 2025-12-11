@@ -597,24 +597,26 @@ Create one placeholder for each unique size below:
 ## Standard Sizes (Basic Modules)
 1. **135 x 135 px** - Quadrant images (4 needed for STANDARD_FOUR_IMAGE_TEXT_QUADRANT)
 2. **150 x 300 px** - Comparison table products (6 needed for STANDARD_COMPARISON_TABLE)
-3. **300 x 300 px** - Square images (most common, ~20+ uses across multiple modules)
-4. **300 x 400 px** - Vertical images (STANDARD_SINGLE_IMAGE_HIGHLIGHTS, STANDARD_SINGLE_IMAGE_SPECS_DETAIL)
-5. **600 x 180 px** - Company logo (STANDARD_COMPANY_LOGO)
-6. **970 x 300 px** - Overlay banner (STANDARD_IMAGE_TEXT_OVERLAY)
-7. **970 x 600 px** - Header image (STANDARD_HEADER_IMAGE_TEXT)
+3. **220 x 220 px** - Additional square image (minimum)
+4. **300 x 300 px** - Square images (most common, ~20+ uses across multiple modules)
+5. **300 x 400 px** - Vertical images (STANDARD_SINGLE_IMAGE_HIGHLIGHTS, STANDARD_SINGLE_IMAGE_SPECS_DETAIL)
+6. **350 x 175 px** - Additional horizontal image (minimum)
+7. **600 x 180 px** - Company logo (STANDARD_COMPANY_LOGO)
+8. **970 x 300 px** - Overlay banner (STANDARD_IMAGE_TEXT_OVERLAY)
+9. **970 x 600 px** - Header image (STANDARD_HEADER_IMAGE_TEXT)
 
 ## Premium Sizes (Premium Modules)
-8. **200 x 225 px** - Premium Comparison Table 1 products (up to 7 products)
-9. **300 x 225 px** - Premium Comparison Table 2 & 3, Premium Four Images & Text
-10. **650 x 350 px** - Premium Single Image with Text, Premium Dual Images
-11. **1464 x 600 px** - Premium desktop images (Hotspots, Navigation Carousel, Regimen, Full Image, Simple Carousel)
-12. **1940 x 600 px** - Premium Background Image with Text (desktop)
-13. **600 x 450 px** - Premium mobile backgrounds (all carousel/hotspot modules)
-14. **800 x 600 px** - Premium Video with Text thumbnail
-15. **1920 x 1080 px** - Premium Full Video thumbnail
-16. **960 x 540 px** - Premium Video Image Carousel (minimum video resolution)
+10. **200 x 225 px** - Premium Comparison Table 1 products (up to 7 products)
+11. **300 x 225 px** - Premium Comparison Table 2 & 3, Premium Four Images & Text
+12. **650 x 350 px** - Premium Single Image with Text, Premium Dual Images
+13. **1464 x 600 px** - Premium desktop images (Hotspots, Navigation Carousel, Regimen, Full Image, Simple Carousel)
+14. **1940 x 600 px** - Premium Background Image with Text (desktop)
+15. **600 x 450 px** - Premium mobile backgrounds (all carousel/hotspot modules)
+16. **800 x 600 px** - Premium Video with Text thumbnail
+17. **1920 x 1080 px** - Premium Full Video thumbnail
+18. **960 x 540 px** - Premium Video Image Carousel (minimum video resolution)
 
-**Total unique placeholder images needed: 16**
+**Total unique placeholder images needed: 18**
 **Total unique placeholder videos needed: 3** (Full Video, Video with Text, Video Carousel)
 
 ---
