@@ -222,9 +222,21 @@ function onFormSubmit(e) {
         }
 
         var colNumber = columnLetterToNumber(colLetter);
-        Logger.log('  Writing to ' + colLetter + ' (col ' + colNumber + '): ' + value);
-        aplusSheet.getRange(targetRow, colNumber).setValue(value);
+
+        // Special handling for Export column - insert checkbox instead of TRUE
+        if (colKey === '☑️ Export') {
+          Logger.log('  Setting Export checkbox at ' + colLetter + ' (col ' + colNumber + ')');
+          aplusSheet.getRange(targetRow, colNumber).setValue(true).insertCheckboxes();
+        } else {
+          Logger.log('  Writing to ' + colLetter + ' (col ' + colNumber + '): ' + value);
+          aplusSheet.getRange(targetRow, colNumber).setValue(value);
+        }
       }
+
+      // After writing all columns, set metadata
+      updateAPlusStatus(aplusSheet, targetRow, 'PENDING');
+      ensureContentReferenceKey(aplusSheet, targetRow);
+      setDefaultRowHeight(aplusSheet, targetRow);
 
       targetRow++;
       modulesWritten++;

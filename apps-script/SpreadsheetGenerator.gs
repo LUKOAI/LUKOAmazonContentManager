@@ -440,7 +440,7 @@ function generateAPlusBasicSheet(ss) {
 
   // Row 1: Title (merge BEFORE freezing)
   sheet.getRange('A1:Z1').merge()
-    .setValue('A+ Content Basic - All 9 Module Types')
+    .setValue('A+ Content Basic - All 17 Module Types')
     .setFontWeight('bold')
     .setFontSize(14)
     .setBackground('#6A1B9A')
@@ -449,7 +449,7 @@ function generateAPlusBasicSheet(ss) {
 
   // Row 2: Instructions (merge BEFORE freezing)
   sheet.getRange('A2:Z2').merge()
-    .setValue('Fill in content for each module. Each module can have up to 7 modules per ASIN.')
+    .setValue('Fill in content for each module. Up to 7 modules per ASIN. Set moduleType to exact Amazon module name.')
     .setFontStyle('italic')
     .setBackground('#F3E5F5');
 
@@ -475,41 +475,19 @@ function generateAPlusBasicSheet(ss) {
     sheet.setColumnWidth(i, 200);
   }
 
+  // Add data validation dropdowns
+  addModuleTypeValidation_Basic(sheet);
+  addStatusValidation(sheet);
+
+  // Set default row height for data rows
+  sheet.setRowHeights(4, 996, 21);
+
   Logger.log('APlusBasic sheet generated');
 }
 
 function getAPlusBasicHeaders() {
-  const control = ['☑️ Export', 'ASIN', 'Module Number', 'Module Type'];
-  const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
-
-  // Module 1: Company Logo
-  const m1 = [
-    'aplus_basic_m1_companyLogoImage_URL',
-    ...languages.map(lang => `aplus_basic_m1_companyDescription_${lang}`)
-  ];
-
-  // Module 2: Image Text Overlay
-  const m2 = [
-    'aplus_basic_m2_overlayImage_URL',
-    'aplus_basic_m2_overlayColorType',
-    ...languages.map(lang => `aplus_basic_m2_headline_${lang}`),
-    ...languages.map(lang => `aplus_basic_m2_body_${lang}`)
-  ];
-
-  // Module 3: Single Image Highlights
-  const m3 = [
-    'aplus_basic_m3_image_URL',
-    ...languages.map(lang => `aplus_basic_m3_headline_${lang}`),
-    ...languages.map(lang => `aplus_basic_m3_highlight1_${lang}`),
-    ...languages.map(lang => `aplus_basic_m3_highlight2_${lang}`),
-    ...languages.map(lang => `aplus_basic_m3_highlight3_${lang}`),
-    ...languages.map(lang => `aplus_basic_m3_highlight4_${lang}`)
-  ];
-
-  // Status
-  const status = ['Status', 'ExportDateTime', 'ErrorMessage'];
-
-  return [...control, ...m1, ...m2, ...m3, ...status];
+  // Use complete column generator from APlusColumnGenerator.gs
+  return getCompleteAPlusBasicHeaders();
 }
 
 // ========================================
@@ -524,7 +502,7 @@ function generateAPlusPremiumSheet(ss) {
 
   // Merge BEFORE freezing
   sheet.getRange('A1:Z1').merge()
-    .setValue('A+ Content Premium (Brand Story)')
+    .setValue('A+ Content Premium - All 19 Module Types')
     .setFontWeight('bold')
     .setFontSize(14)
     .setBackground('#C2185B')
@@ -532,7 +510,7 @@ function generateAPlusPremiumSheet(ss) {
     .setHorizontalAlignment('center');
 
   sheet.getRange('A2:Z2').merge()
-    .setValue('Premium Brand Story with Hero section, video, and advanced modules.')
+    .setValue('Premium modules: Hotspots, Carousels, Comparison Tables, Video, Q&A. Up to 3 modules per ASIN.')
     .setFontStyle('italic')
     .setBackground('#F8BBD0');
 
@@ -548,24 +526,19 @@ function generateAPlusPremiumSheet(ss) {
     .setFontColor('#FFFFFF')
     .setWrap(true);
 
+  // Add data validation dropdowns
+  addModuleTypeValidation_Premium(sheet);
+  addStatusValidation(sheet);
+
+  // Set default row height for data rows
+  sheet.setRowHeights(4, 996, 21);
+
   Logger.log('APlusPremium sheet generated');
 }
 
 function getAPlusPremiumHeaders() {
-  const control = ['☑️ Export', 'ASIN', 'Brand Story ID'];
-  const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
-
-  const hero = [
-    'aplus_premium_hero_brandLogo_URL',
-    'aplus_premium_hero_heroImage_URL',
-    'aplus_premium_hero_heroVideo_URL',
-    ...languages.map(lang => `aplus_premium_hero_tagline_${lang}`),
-    'aplus_premium_hero_backgroundColor_HEX'
-  ];
-
-  const status = ['Status', 'ExportDateTime', 'ErrorMessage'];
-
-  return [...control, ...hero, ...status];
+  // Use complete column generator from APlusColumnGenerator.gs
+  return getCompleteAPlusPremiumHeaders();
 }
 
 // ========================================
