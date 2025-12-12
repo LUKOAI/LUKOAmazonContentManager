@@ -2264,7 +2264,7 @@ function viewClientSettings() {
 }
 
 function updateRowStatus(sheet, rowNumber, result) {
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const headers = sheet.getRange(3, 1, 1, sheet.getLastColumn()).getValues()[0];
   const values = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
 
   // Find column indices
@@ -2275,6 +2275,7 @@ function updateRowStatus(sheet, rowNumber, result) {
   const lastModifiedCol = headers.indexOf('LastModified') + 1;
   const modifiedByCol = headers.indexOf('ModifiedBy') + 1;
   const asinCol = headers.indexOf('ASIN') + 1;
+  const contentReferenceKeyCol = headers.indexOf('contentReferenceKey') + 1;
 
   // Convert status to spec format: SUCCESS → DONE, ERROR → FAILED
   const status = result.status === 'SUCCESS' ? 'DONE' : result.status === 'ERROR' ? 'FAILED' : result.status;
@@ -2306,6 +2307,11 @@ function updateRowStatus(sheet, rowNumber, result) {
     const now = new Date();
     const dateStr = Utilities.formatDate(now, Session.getScriptTimeZone(), 'dd.MM.yyyy HH:mm:ss');
     sheet.getRange(rowNumber, exportDateTimeCol).setValue(dateStr);
+  }
+
+  // Update contentReferenceKey (for A+ Content)
+  if (contentReferenceKeyCol > 0 && result.contentReferenceKey && status === 'DONE') {
+    sheet.getRange(rowNumber, contentReferenceKeyCol).setValue(result.contentReferenceKey);
   }
 
   // Auto-generate ProductLink (https://www.amazon.{domain}/dp/{ASIN})

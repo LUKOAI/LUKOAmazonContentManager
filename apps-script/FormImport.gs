@@ -186,7 +186,40 @@ function onFormSubmit(e) {
 
         var colNumber = columnLetterToNumber(colLetter);
         Logger.log('  Writing to ' + colLetter + ' (col ' + colNumber + '): ' + value);
-        aplusSheet.getRange(targetRow, colNumber).setValue(value);
+
+        var cell = aplusSheet.getRange(targetRow, colNumber);
+
+        // Check if this is a checkbox column (starts with ☑️)
+        if (colKey.indexOf('☑️') === 0 || colKey.indexOf('✓') === 0) {
+          // Handle checkbox columns
+          if (value === true || value === 'TRUE' || value === 'true' || value === 'PRAWDA') {
+            cell.insertCheckboxes();
+            cell.setValue(true);
+          } else if (value === false || value === 'FALSE' || value === 'false' || value === 'FAŁSZ') {
+            cell.insertCheckboxes();
+            cell.setValue(false);
+          } else {
+            cell.setValue(value); // Fallback for other values
+          }
+        } else {
+          cell.setValue(value);
+        }
+      }
+
+      // Set Status = DONE and ExportDateTime after import
+      var statusColLetter = headerMap['Status'];
+      var exportDateTimeColLetter = headerMap['ExportDateTime'];
+
+      if (statusColLetter) {
+        var statusColNumber = columnLetterToNumber(statusColLetter);
+        aplusSheet.getRange(targetRow, statusColNumber).setValue('DONE');
+      }
+
+      if (exportDateTimeColLetter) {
+        var exportDateTimeColNumber = columnLetterToNumber(exportDateTimeColLetter);
+        var now = new Date();
+        var dateStr = Utilities.formatDate(now, Session.getScriptTimeZone(), 'dd.MM.yyyy HH:mm:ss');
+        aplusSheet.getRange(targetRow, exportDateTimeColNumber).setValue(dateStr);
       }
 
       targetRow++;
