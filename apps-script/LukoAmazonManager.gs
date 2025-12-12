@@ -2268,9 +2268,6 @@ function updateRowStatus(sheet, rowNumber, result) {
   const values = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
 
   // Find column indices
-  const statusCol = headers.indexOf('Status') + 1;
-  const errorCol = headers.indexOf('ErrorMessage') + 1;
-  const exportDateTimeCol = headers.indexOf('ExportDateTime') + 1;
   const productLinkCol = headers.indexOf('ProductLink') + 1;
   const lastModifiedCol = headers.indexOf('LastModified') + 1;
   const modifiedByCol = headers.indexOf('ModifiedBy') + 1;
@@ -2279,33 +2276,21 @@ function updateRowStatus(sheet, rowNumber, result) {
   // Convert status to spec format: SUCCESS → DONE, ERROR → FAILED
   const status = result.status === 'SUCCESS' ? 'DONE' : result.status === 'ERROR' ? 'FAILED' : result.status;
 
-  // Update Status column - include client info
-  if (statusCol > 0) {
-    let statusText = status;
-    if (result.clientName && result.sellerId) {
-      statusText = `${status} [${result.clientName} - ${result.sellerId}]`;
-    }
-    sheet.getRange(rowNumber, statusCol).setValue(statusText);
-  }
-
-  // Update ErrorMessage column (only on failure)
-  if (errorCol > 0) {
-    if (status === 'FAILED') {
-      let errorMsg = result.message || '';
-      if (result.clientName) {
-        errorMsg = `[${result.clientName}] ${errorMsg}`;
-      }
-      sheet.getRange(rowNumber, errorCol).setValue(errorMsg);
-    } else {
-      sheet.getRange(rowNumber, errorCol).setValue(''); // Clear error on success
+  // Prepare error message with client info
+  let errorMsg = '';
+  if (status === 'FAILED') {
+    errorMsg = result.message || '';
+    if (result.clientName) {
+      errorMsg = `[${result.clientName}] ${errorMsg}`;
     }
   }
 
-  // Update ExportDateTime with EU format (dd.MM.yyyy HH:mm:ss)
-  if (exportDateTimeCol > 0 && status === 'DONE') {
-    const now = new Date();
-    const dateStr = Utilities.formatDate(now, Session.getScriptTimeZone(), 'dd.MM.yyyy HH:mm:ss');
-    sheet.getRange(rowNumber, exportDateTimeCol).setValue(dateStr);
+  // Use helper function to update Status, ExportDateTime, ErrorMessage with color coding
+  updateAPlusStatus(sheet, rowNumber, status, errorMsg);
+
+  // If successful, mark Export checkbox as DONE
+  if (status === 'DONE') {
+    markExportDone(sheet, rowNumber);
   }
 
   // Auto-generate ProductLink (https://www.amazon.{domain}/dp/{ASIN})

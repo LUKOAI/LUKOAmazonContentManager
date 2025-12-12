@@ -124,6 +124,147 @@ Menu → Import from Amazon → 📦 Import by ASIN(s)
 Menu → Import from Amazon → 🔍 Search Products by Keyword
 ```
 
+### A+ Content Management
+
+#### Supported Modules
+
+The tool supports **ALL 36 Amazon A+ Content modules**:
+
+**Basic Modules (17):**
+- STANDARD_TEXT
+- STANDARD_SINGLE_SIDE_IMAGE
+- STANDARD_HEADER_IMAGE_TEXT
+- STANDARD_COMPANY_LOGO
+- STANDARD_IMAGE_TEXT_OVERLAY
+- STANDARD_SINGLE_IMAGE_HIGHLIGHTS
+- STANDARD_MULTIPLE_IMAGE_TEXT
+- STANDARD_FOUR_IMAGE_TEXT
+- STANDARD_FOUR_IMAGE_TEXT_QUADRANT
+- STANDARD_THREE_IMAGE_TEXT
+- STANDARD_COMPARISON_TABLE
+- STANDARD_PRODUCT_DESCRIPTION
+- STANDARD_SINGLE_IMAGE_SPECS_DETAIL
+- STANDARD_IMAGE_SIDEBAR
+- STANDARD_TECH_SPECS
+- Plus 2 additional legacy modules
+
+**Premium Modules (19):**
+- PREMIUM_TEXT
+- PREMIUM_SINGLE_IMAGE_TEXT
+- PREMIUM_BACKGROUND_IMAGE_TEXT
+- PREMIUM_FULL_IMAGE
+- PREMIUM_DUAL_IMAGES_TEXT
+- PREMIUM_FOUR_IMAGES_TEXT
+- PREMIUM_COMPARISON_TABLE_1/2/3
+- PREMIUM_HOTSPOTS_1/2
+- PREMIUM_NAVIGATION_CAROUSEL
+- PREMIUM_REGIMEN_CAROUSEL
+- PREMIUM_SIMPLE_IMAGE_CAROUSEL
+- PREMIUM_VIDEO_IMAGE_CAROUSEL
+- PREMIUM_FULL_VIDEO
+- PREMIUM_VIDEO_WITH_TEXT
+- PREMIUM_QA
+- PREMIUM_TECHNICAL_SPECIFICATIONS
+
+#### A+ Content Workflow
+
+1. **Fill in content** in **APlusBasic** or **APlusPremium** sheets
+2. **Select moduleType** from dropdown (all 36 modules available)
+3. **Check ☑️ Export** checkbox for modules to publish
+4. Click:
+   ```
+   Menu → Export to Amazon → 📋 Publish A+ Content
+   ```
+5. Choose: **Basic** or **Premium**
+6. System will:
+   - ✅ Group modules by ASIN
+   - ✅ Publish all modules for each ASIN as one A+ Content document
+   - ✅ Update **Status** → DONE (green) or FAILED (red)
+   - ✅ Set **ExportDateTime** in German format (DD.MM.YYYY HH:mm:ss)
+   - ✅ Change **☑️ Export** → **DONE** (green background)
+   - ✅ Auto-generate **contentReferenceKey** (ASIN_module{N}_{timestamp})
+
+#### Multi-Language Support
+
+All text fields support **8 European languages**:
+- 🇩🇪 German (DE)
+- 🇬🇧 English (EN)
+- 🇫🇷 French (FR)
+- 🇮🇹 Italian (IT)
+- 🇪🇸 Spanish (ES)
+- 🇳🇱 Dutch (NL)
+- 🇵🇱 Polish (PL)
+- 🇸🇪 Swedish (SE)
+
+#### Placeholder Images System
+
+**18 unique image sizes** + **3 video types** supported across all modules.
+
+Complete specifications available in:
+```
+docs/APLUS_PLACEHOLDER_IMAGES_SPEC.md
+```
+
+**Standard Image Sizes (Basic):**
+- 135x135 px - Quadrant images
+- 150x300 px - Comparison table products
+- 220x220 px - Additional square image
+- 300x300 px - Square images (most common)
+- 300x400 px - Vertical images
+- 350x175 px - Additional horizontal image
+- 600x180 px - Company logo
+- 970x300 px - Overlay banner
+- 970x600 px - Header image
+
+**Premium Image Sizes:**
+- 200x225 px - Premium Comparison Table 1
+- 300x225 px - Premium Comparison Table 2/3
+- 650x350 px - Premium Single/Dual Images
+- 1464x600 px - Premium desktop
+- 1940x600 px - Premium Background Text
+- 600x450 px - Premium mobile
+- 800x600 px - Video with Text thumbnail
+- 1920x1080 px - Full Video thumbnail
+- 960x540 px - Video Carousel min
+
+**Video Support:**
+- MP4 format, H.264 codec
+- Max 1920x1080 resolution
+- Video with thumbnail support
+
+**Workflow:**
+1. Create 18 placeholder images with correct dimensions
+2. Upload to Amazon Asset Library
+3. Copy **uploadDestinationId** for each image
+4. Use in A+ Content modules
+
+**Three Export Options:**
+- a) **Text only** - no images
+- b) **Text + real images** - from your library
+- c) **Text + placeholder images** - using atrap placeholders
+
+#### Status Management
+
+The system tracks A+ Content publishing with:
+
+**Status Column** (color-coded):
+- 🟡 **PENDING** - Ready to publish (yellow)
+- 🟢 **DONE** - Successfully published (green)
+- 🔴 **FAILED** - Publishing error (red)
+- ⚪ **SKIPPED** - Intentionally skipped (gray)
+
+**ExportDateTime Column:**
+- German format: DD.MM.YYYY HH:mm:ss
+- Auto-set on publish attempt
+
+**ErrorMessage Column:**
+- Shows error details if FAILED
+- Includes client name for multi-client tracking
+
+**Export Column:**
+- ☑️ Checkbox → Select for publishing
+- Automatically changes to **DONE** (green) after successful publish
+
 ---
 
 ## 📊 Client Settings Sheet

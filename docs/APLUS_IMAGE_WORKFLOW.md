@@ -1,8 +1,32 @@
 # A+ Content Image Upload Workflow
 
-## Problem Summary
+---
 
-Amazon's A+ Content requires images to be uploaded to the **Asset Library** (separate from Product Images). The SP-API Uploads endpoint returns **403 Unauthorized**, preventing programmatic image uploads.
+## 🎉 UPDATE: December 11, 2025
+
+**Amazon has approved new API permissions!**
+
+- ✅ **A+ Content Manager** - Enhanced A+ Content API access
+- ✅ **Image Management** - Asset Library read/write permissions
+- ✅ **Upload and Manage Videos** - Video upload and management
+
+**This may enable programmatic image/video upload!** 🚀
+
+**See:** `docs/API_PERMISSIONS_UPDATE.md` for testing plan and integration steps.
+
+**Action required:**
+1. Re-authorize SP-API application to activate new permissions
+2. Test Uploads API endpoint (previously returned 403)
+3. Test Asset Library endpoints
+4. If successful, implement auto-upload functionality
+
+---
+
+## Problem Summary (Historical)
+
+Amazon's A+ Content requires images to be uploaded to the **Asset Library** (separate from Product Images). The SP-API Uploads endpoint **previously returned 403 Unauthorized**, preventing programmatic image uploads.
+
+**Note:** With new permissions, this may now work! See update above.
 
 ## Current Status
 
