@@ -118,6 +118,10 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   Logger.log(`Export mode: ${aplusData.exportMode || 'default'}`);
   Logger.log(`Images available: ${Object.keys(aplusData.images || {}).join(', ') || '(none)'}`);
 
+  // Check if we're in placeholder mode (used by module builders to decide if blocks should be skipped)
+  const usePlaceholders = aplusData.usePlaceholders || aplusData.exportMode === 'WITH_PLACEHOLDERS';
+  Logger.log(`Placeholder mode: ${usePlaceholders}`);
+
   // Determine content subtype based on module type
   const isPremium = aplusData.moduleType.startsWith('PREMIUM');
   const contentSubType = isPremium ? 'PREMIUM' : 'STANDARD';
@@ -431,14 +435,23 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
 
     // Add 4 blocks with images and text
     // IMPORTANT: Amazon expects block1, block2, block3, block4 as separate fields, NOT an array
-    // CRITICAL: Blocks REQUIRE images - Amazon API rejects blocks without images
-    let blocksWithImages = 0;
+    let blocksAdded = 0;
+    let missingPlaceholders = [];
+
     for (let i = 1; i <= 4; i++) {
       const imageId = getImageId(`image${i}`);
 
-      // Skip blocks without images - Amazon API requires images in blocks
+      // In placeholder mode: ALL blocks must be included, error if no placeholder found
+      // In normal mode: Skip blocks without images
       if (!imageId) {
-        Logger.log(`⚠️ Skipping block${i} - no image available (image required for STANDARD_FOUR_IMAGE_TEXT)`);
+        if (usePlaceholders) {
+          // In placeholder mode - this is an ERROR, placeholder should have been found
+          missingPlaceholders.push(`image${i} (135x135)`);
+          Logger.log(`❌ ERROR: Missing placeholder for image${i} (size 135x135) in STANDARD_FOUR_IMAGE_TEXT`);
+        } else {
+          // In normal mode - skip blocks without images
+          Logger.log(`⚠️ Skipping block${i} - no image available (image required for STANDARD_FOUR_IMAGE_TEXT)`);
+        }
         continue;
       }
 
@@ -447,7 +460,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
           uploadDestinationId: imageId
         }
       };
-      blocksWithImages++;
+      blocksAdded++;
 
       const blockHeadline = addTextComponent(`block${i}_headline`, content[`block${i}_headline`]);
       if (blockHeadline) block.headline = blockHeadline;
@@ -458,10 +471,15 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       module.standardFourImageText[`block${i}`] = block;
     }
 
-    if (blocksWithImages === 0) {
-      Logger.log(`❌ ERROR: STANDARD_FOUR_IMAGE_TEXT requires at least 1 block with image - no images found`);
+    if (usePlaceholders && missingPlaceholders.length > 0) {
+      Logger.log(`❌ CRITICAL: Placeholder mode enabled but ${missingPlaceholders.length} placeholders missing: ${missingPlaceholders.join(', ')}`);
+      Logger.log(`Please add placeholders to Image Library with status=PLACEHOLDER and correct dimensions (135x135)`);
+    }
+
+    if (blocksAdded === 0) {
+      Logger.log(`❌ ERROR: STANDARD_FOUR_IMAGE_TEXT has no blocks with images - module will be empty`);
     } else {
-      Logger.log(`✅ Added ${blocksWithImages} blocks with images to STANDARD_FOUR_IMAGE_TEXT`);
+      Logger.log(`✅ Added ${blocksAdded} blocks to STANDARD_FOUR_IMAGE_TEXT`);
     }
   }
 
@@ -474,14 +492,19 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
 
     // Add 4 quadrants with images and text
     // IMPORTANT: Amazon expects block1, block2, block3, block4 as separate fields, NOT an array
-    // CRITICAL: Blocks REQUIRE images - Amazon API rejects blocks without images
-    let blocksWithImages = 0;
+    let blocksAdded = 0;
+    let missingPlaceholders = [];
+
     for (let i = 1; i <= 4; i++) {
       const imageId = getImageId(`image${i}`);
 
-      // Skip blocks without images - Amazon API requires images in blocks
       if (!imageId) {
-        Logger.log(`⚠️ Skipping block${i} - no image available (image required for STANDARD_FOUR_IMAGE_TEXT_QUADRANT)`);
+        if (usePlaceholders) {
+          missingPlaceholders.push(`image${i} (300x300)`);
+          Logger.log(`❌ ERROR: Missing placeholder for image${i} (size 300x300) in STANDARD_FOUR_IMAGE_TEXT_QUADRANT`);
+        } else {
+          Logger.log(`⚠️ Skipping block${i} - no image available (image required for STANDARD_FOUR_IMAGE_TEXT_QUADRANT)`);
+        }
         continue;
       }
 
@@ -490,7 +513,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
           uploadDestinationId: imageId
         }
       };
-      blocksWithImages++;
+      blocksAdded++;
 
       const blockHeadline = addTextComponent(`block${i}_headline`, content[`block${i}_headline`]);
       if (blockHeadline) block.headline = blockHeadline;
@@ -501,10 +524,15 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       module.standardFourImageTextQuadrant[`block${i}`] = block;
     }
 
-    if (blocksWithImages === 0) {
-      Logger.log(`❌ ERROR: STANDARD_FOUR_IMAGE_TEXT_QUADRANT requires at least 1 block with image - no images found`);
+    if (usePlaceholders && missingPlaceholders.length > 0) {
+      Logger.log(`❌ CRITICAL: Placeholder mode but ${missingPlaceholders.length} placeholders missing: ${missingPlaceholders.join(', ')}`);
+      Logger.log(`Add placeholders to Image Library with status=PLACEHOLDER and dimensions 300x300`);
+    }
+
+    if (blocksAdded === 0) {
+      Logger.log(`❌ ERROR: STANDARD_FOUR_IMAGE_TEXT_QUADRANT has no blocks with images - module will be empty`);
     } else {
-      Logger.log(`✅ Added ${blocksWithImages} blocks with images to STANDARD_FOUR_IMAGE_TEXT_QUADRANT`);
+      Logger.log(`✅ Added ${blocksAdded} blocks to STANDARD_FOUR_IMAGE_TEXT_QUADRANT`);
     }
   }
 
@@ -517,14 +545,19 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
 
     // Add 3 blocks with images and text
     // IMPORTANT: Amazon expects block1, block2, block3 as separate fields, NOT an array
-    // CRITICAL: Blocks REQUIRE images - Amazon API rejects blocks without images
-    let blocksWithImages = 0;
+    let blocksAdded = 0;
+    let missingPlaceholders = [];
+
     for (let i = 1; i <= 3; i++) {
       const imageId = getImageId(`image${i}`);
 
-      // Skip blocks without images - Amazon API requires images in blocks
       if (!imageId) {
-        Logger.log(`⚠️ Skipping block${i} - no image available (image required for STANDARD_THREE_IMAGE_TEXT)`);
+        if (usePlaceholders) {
+          missingPlaceholders.push(`image${i} (300x300)`);
+          Logger.log(`❌ ERROR: Missing placeholder for image${i} (size 300x300) in STANDARD_THREE_IMAGE_TEXT`);
+        } else {
+          Logger.log(`⚠️ Skipping block${i} - no image available (image required for STANDARD_THREE_IMAGE_TEXT)`);
+        }
         continue;
       }
 
@@ -533,7 +566,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
           uploadDestinationId: imageId
         }
       };
-      blocksWithImages++;
+      blocksAdded++;
 
       const blockHeadline = addTextComponent(`block${i}_headline`, content[`block${i}_headline`]);
       if (blockHeadline) block.headline = blockHeadline;
@@ -544,10 +577,15 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       module.standardThreeImageText[`block${i}`] = block;
     }
 
-    if (blocksWithImages === 0) {
-      Logger.log(`❌ ERROR: STANDARD_THREE_IMAGE_TEXT requires at least 1 block with image - no images found`);
+    if (usePlaceholders && missingPlaceholders.length > 0) {
+      Logger.log(`❌ CRITICAL: Placeholder mode but ${missingPlaceholders.length} placeholders missing: ${missingPlaceholders.join(', ')}`);
+      Logger.log(`Add placeholders to Image Library with status=PLACEHOLDER and dimensions 300x300`);
+    }
+
+    if (blocksAdded === 0) {
+      Logger.log(`❌ ERROR: STANDARD_THREE_IMAGE_TEXT has no blocks with images - module will be empty`);
     } else {
-      Logger.log(`✅ Added ${blocksWithImages} blocks with images to STANDARD_THREE_IMAGE_TEXT`);
+      Logger.log(`✅ Added ${blocksAdded} blocks to STANDARD_THREE_IMAGE_TEXT`);
     }
   }
 
@@ -960,14 +998,19 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     if (headline) module.premiumThreeImageText.headline = headline;
 
     // Add 3 blocks with images and text
-    // CRITICAL: Blocks REQUIRE images - Amazon API rejects blocks without images
-    let blocksWithImages = 0;
+    let blocksAdded = 0;
+    let missingPlaceholders = [];
+
     for (let i = 1; i <= 3; i++) {
       const imageId = getImageId(`image${i}`);
 
-      // Skip blocks without images - Amazon API requires images in blocks
       if (!imageId) {
-        Logger.log(`⚠️ Skipping block${i} - no image available (image required for PREMIUM_THREE_IMAGE_TEXT)`);
+        if (usePlaceholders) {
+          missingPlaceholders.push(`image${i} (362x453)`);
+          Logger.log(`❌ ERROR: Missing placeholder for image${i} (size 362x453) in PREMIUM_THREE_IMAGE_TEXT`);
+        } else {
+          Logger.log(`⚠️ Skipping block${i} - no image available (image required for PREMIUM_THREE_IMAGE_TEXT)`);
+        }
         continue;
       }
 
@@ -976,7 +1019,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
           uploadDestinationId: imageId
         }
       };
-      blocksWithImages++;
+      blocksAdded++;
 
       const blockHeadline = addTextComponent(`block${i}_headline`, content[`block${i}_headline`]);
       if (blockHeadline) block.headline = blockHeadline;
@@ -987,10 +1030,15 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       module.premiumThreeImageText[`block${i}`] = block;
     }
 
-    if (blocksWithImages === 0) {
-      Logger.log(`❌ ERROR: PREMIUM_THREE_IMAGE_TEXT requires at least 1 block with image - no images found`);
+    if (usePlaceholders && missingPlaceholders.length > 0) {
+      Logger.log(`❌ CRITICAL: Placeholder mode but ${missingPlaceholders.length} placeholders missing: ${missingPlaceholders.join(', ')}`);
+      Logger.log(`Add placeholders to Image Library with status=PLACEHOLDER and dimensions 362x453`);
+    }
+
+    if (blocksAdded === 0) {
+      Logger.log(`❌ ERROR: PREMIUM_THREE_IMAGE_TEXT has no blocks with images - module will be empty`);
     } else {
-      Logger.log(`✅ Added ${blocksWithImages} blocks with images to PREMIUM_THREE_IMAGE_TEXT`);
+      Logger.log(`✅ Added ${blocksAdded} blocks to PREMIUM_THREE_IMAGE_TEXT`);
     }
   }
 
@@ -1002,14 +1050,19 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     if (headline) module.premiumFourImageText.headline = headline;
 
     // Add 4 blocks with images and text
-    // CRITICAL: Blocks REQUIRE images - Amazon API rejects blocks without images
-    let blocksWithImages = 0;
+    let blocksAdded = 0;
+    let missingPlaceholders = [];
+
     for (let i = 1; i <= 4; i++) {
       const imageId = getImageId(`image${i}`);
 
-      // Skip blocks without images - Amazon API requires images in blocks
       if (!imageId) {
-        Logger.log(`⚠️ Skipping block${i} - no image available (image required for PREMIUM_FOUR_IMAGE_TEXT)`);
+        if (usePlaceholders) {
+          missingPlaceholders.push(`image${i} (362x453)`);
+          Logger.log(`❌ ERROR: Missing placeholder for image${i} (size 362x453) in PREMIUM_FOUR_IMAGE_TEXT`);
+        } else {
+          Logger.log(`⚠️ Skipping block${i} - no image available (image required for PREMIUM_FOUR_IMAGE_TEXT)`);
+        }
         continue;
       }
 
@@ -1018,7 +1071,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
           uploadDestinationId: imageId
         }
       };
-      blocksWithImages++;
+      blocksAdded++;
 
       const blockHeadline = addTextComponent(`block${i}_headline`, content[`block${i}_headline`]);
       if (blockHeadline) block.headline = blockHeadline;
@@ -1029,10 +1082,15 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       module.premiumFourImageText[`block${i}`] = block;
     }
 
-    if (blocksWithImages === 0) {
-      Logger.log(`❌ ERROR: PREMIUM_FOUR_IMAGE_TEXT requires at least 1 block with image - no images found`);
+    if (usePlaceholders && missingPlaceholders.length > 0) {
+      Logger.log(`❌ CRITICAL: Placeholder mode but ${missingPlaceholders.length} placeholders missing: ${missingPlaceholders.join(', ')}`);
+      Logger.log(`Add placeholders to Image Library with status=PLACEHOLDER and dimensions 362x453`);
+    }
+
+    if (blocksAdded === 0) {
+      Logger.log(`❌ ERROR: PREMIUM_FOUR_IMAGE_TEXT has no blocks with images - module will be empty`);
     } else {
-      Logger.log(`✅ Added ${blocksWithImages} blocks with images to PREMIUM_FOUR_IMAGE_TEXT`);
+      Logger.log(`✅ Added ${blocksAdded} blocks to PREMIUM_FOUR_IMAGE_TEXT`);
     }
   }
 

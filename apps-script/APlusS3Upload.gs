@@ -542,40 +542,60 @@ function lookupPlaceholderBySize(size) {
     }
     const targetWidth = parseInt(sizeParts[0], 10);
     const targetHeight = parseInt(sizeParts[1], 10);
+    const sizePattern = `${targetWidth}x${targetHeight}`;
+    const sizePatternSpaced = `${targetWidth} x ${targetHeight}`;
+    const sizePatternUnderscore = `${targetWidth}_${targetHeight}`;
 
-    Logger.log(`Looking for placeholder with size ${targetWidth}x${targetHeight}`);
+    Logger.log(`Looking for placeholder with size ${sizePattern}`);
 
     // Search for placeholder with matching size
-    // Columns: 0=id, 4=width, 5=height, 9=status
+    // Columns: 0=uploadDestinationId, 1=image_url, 2=image_hash, 3=alt_text, 4=width, 5=height,
+    //          6=source_content_key, 7=module_type, 8=date_synced, 9=status, 10=notes
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      const status = row[9];
+      const uploadDestinationId = row[0] ? row[0].toString() : '';
+      const altText = row[3] ? row[3].toString() : '';
       const width = parseInt(row[4], 10) || 0;
       const height = parseInt(row[5], 10) || 0;
+      const status = row[9] ? row[9].toString() : '';
+      const notes = row[10] ? row[10].toString() : '';
 
-      // Check if this is a placeholder
+      // Check if this is a placeholder (multiple detection methods)
       const isPlaceholder = status === 'PLACEHOLDER' ||
-                           (row[3] && row[3].toString().toLowerCase().includes('placeholder')) ||
-                           (row[10] && row[10].toString().toLowerCase().includes('placeholder'));
+                           status.toLowerCase().includes('placeholder') ||
+                           altText.toLowerCase().includes('placeholder') ||
+                           notes.toLowerCase().includes('placeholder') ||
+                           uploadDestinationId.toLowerCase().includes('placeholder');
 
-      if (isPlaceholder) {
-        // Check if size matches
-        if (width === targetWidth && height === targetHeight) {
-          Logger.log(`Found placeholder for ${size}: ${row[0]}`);
-          return row[0];
-        }
+      if (!isPlaceholder) continue;
 
-        // Also check if alt_text contains size info
-        const altText = row[3] || '';
-        if (altText.includes(`${targetWidth}x${targetHeight}`) ||
-            altText.includes(`${targetWidth} x ${targetHeight}`)) {
-          Logger.log(`Found placeholder by alt_text for ${size}: ${row[0]}`);
-          return row[0];
-        }
+      // Method 1: Exact width/height match
+      if (width === targetWidth && height === targetHeight) {
+        Logger.log(`✅ Found placeholder for ${size} by dimensions: ${uploadDestinationId}`);
+        return uploadDestinationId;
+      }
+
+      // Method 2: Size pattern in uploadDestinationId (e.g., "placeholder_970x600.jpg")
+      if (uploadDestinationId.includes(sizePattern) ||
+          uploadDestinationId.includes(sizePatternUnderscore)) {
+        Logger.log(`✅ Found placeholder for ${size} in ID: ${uploadDestinationId}`);
+        return uploadDestinationId;
+      }
+
+      // Method 3: Size pattern in alt_text
+      if (altText.includes(sizePattern) || altText.includes(sizePatternSpaced)) {
+        Logger.log(`✅ Found placeholder for ${size} by alt_text: ${uploadDestinationId}`);
+        return uploadDestinationId;
+      }
+
+      // Method 4: Size pattern in notes
+      if (notes.includes(sizePattern) || notes.includes(sizePatternSpaced)) {
+        Logger.log(`✅ Found placeholder for ${size} by notes: ${uploadDestinationId}`);
+        return uploadDestinationId;
       }
     }
 
-    // If exact size not found, try to find closest match
+    // Second pass: find closest match by aspect ratio
     Logger.log(`No exact placeholder found for ${size}, searching for close matches...`);
 
     let closestMatch = null;
@@ -583,13 +603,18 @@ function lookupPlaceholderBySize(size) {
 
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      const status = row[9];
+      const uploadDestinationId = row[0] ? row[0].toString() : '';
+      const altText = row[3] ? row[3].toString() : '';
       const width = parseInt(row[4], 10) || 0;
       const height = parseInt(row[5], 10) || 0;
+      const status = row[9] ? row[9].toString() : '';
+      const notes = row[10] ? row[10].toString() : '';
 
       const isPlaceholder = status === 'PLACEHOLDER' ||
-                           (row[3] && row[3].toString().toLowerCase().includes('placeholder')) ||
-                           (row[10] && row[10].toString().toLowerCase().includes('placeholder'));
+                           status.toLowerCase().includes('placeholder') ||
+                           altText.toLowerCase().includes('placeholder') ||
+                           notes.toLowerCase().includes('placeholder') ||
+                           uploadDestinationId.toLowerCase().includes('placeholder');
 
       if (isPlaceholder && width > 0 && height > 0) {
         // Calculate similarity (aspect ratio match is important)
@@ -601,17 +626,17 @@ function lookupPlaceholderBySize(size) {
 
         if (totalDiff < closestDiff) {
           closestDiff = totalDiff;
-          closestMatch = row[0];
+          closestMatch = uploadDestinationId;
         }
       }
     }
 
-    if (closestMatch && closestDiff < 500) { // Only use if reasonably close
+    if (closestMatch && closestDiff < 500) {
       Logger.log(`Using closest placeholder match for ${size}: ${closestMatch} (diff: ${closestDiff})`);
       return closestMatch;
     }
 
-    Logger.log(`No placeholder found for size ${size}`);
+    Logger.log(`❌ No placeholder found for size ${size}. Make sure placeholders are synced to Image Library.`);
     return null;
 
   } catch (error) {
