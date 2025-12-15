@@ -46,9 +46,12 @@ function lukoTestAPIConnection() {
     // Test token refresh
     const startTime = new Date().getTime();
     try {
-      const config = getConfig();
-      const refreshToken = getCredentials().refreshToken;
-      const tokens = getAccessTokenFromRefresh(refreshToken, config);
+      const credentials = getCredentials();
+      const config = {
+        clientId: credentials.lwaClientId,
+        clientSecret: credentials.lwaClientSecret
+      };
+      const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
       testResults.tokenRefresh = '✅';
 
       // Test actual API call (simple search to verify API works)
@@ -279,7 +282,10 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
   }
 
   const credentials = getCredentials();
-  const config = getConfig();
+  const config = {
+    clientId: credentials.lwaClientId,
+    clientSecret: credentials.lwaClientSecret
+  };
   const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
 
   let success = 0;
@@ -559,7 +565,10 @@ function lukoSearchProducts() {
 
   try {
     const credentials = getCredentials();
-    const config = getConfig();
+    const config = {
+      clientId: credentials.lwaClientId,
+      clientSecret: credentials.lwaClientSecret
+    };
     const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
 
     // Search using Catalog API
@@ -587,6 +596,7 @@ function lukoSearchProducts() {
     const asins = searchResults.map(p => p.asin);
     const results = importProductsByASIN(asins, marketplace, marketplaceConfig);
 
+    hideProgress();
     ui.alert(
       'Import Complete',
       `✅ Successfully imported: ${results.success}\n` +
@@ -596,6 +606,7 @@ function lukoSearchProducts() {
     );
 
   } catch (error) {
+    hideProgress();
     handleError('lukoSearchProducts', error);
   }
 }
@@ -796,12 +807,16 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
 // ========================================
 
 function showProgress(message) {
-  SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Processing...', -1);
+  SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Processing...', 5);
+}
+
+function hideProgress() {
+  SpreadsheetApp.getActiveSpreadsheet().toast('');
 }
 
 function showError(message) {
   SpreadsheetApp.getUi().alert('Error', message, SpreadsheetApp.getUi().ButtonSet.OK);
-  SpreadsheetApp.getActiveSpreadsheet().toast('');
+  hideProgress();
 }
 
 function showInfo(message) {
