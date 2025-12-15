@@ -80,9 +80,23 @@ function getAPlusContentDocument(contentReferenceKey, accessToken, marketplace) 
 
 /**
  * Wyciągnij uploadDestinationId z modułów A+ Content
+ * COMPLETE VERSION - obsługuje wszystkie typy modułów STANDARD i PREMIUM
  */
 function extractImageIdsFromContentDocument(contentDocument) {
   const images = [];
+
+  // Helper function to extract image data
+  function addImage(moduleType, imageObj, fieldName) {
+    if (imageObj && imageObj.uploadDestinationId) {
+      images.push({
+        moduleType: moduleType,
+        fieldName: fieldName || 'image',
+        uploadDestinationId: imageObj.uploadDestinationId,
+        altText: imageObj.altText || ''
+      });
+      Logger.log(`  Found image: ${fieldName || 'image'} = ${imageObj.uploadDestinationId}`);
+    }
+  }
 
   try {
     const modules = contentDocument.contentRecord?.contentDocument?.contentModuleList || [];
@@ -91,30 +105,179 @@ function extractImageIdsFromContentDocument(contentDocument) {
       const moduleType = module.contentModuleType;
       Logger.log(`Processing module type: ${moduleType}`);
 
+      // ========== STANDARD MODULES ==========
+
       // STANDARD_SINGLE_SIDE_IMAGE
       if (module.standardSingleSideImage?.block?.image) {
-        const img = module.standardSingleSideImage.block.image;
-        images.push({
-          moduleType: moduleType,
-          uploadDestinationId: img.uploadDestinationId,
-          altText: img.altText
-        });
+        addImage(moduleType, module.standardSingleSideImage.block.image, 'image');
       }
 
       // STANDARD_HEADER_IMAGE_TEXT
       if (module.standardHeaderImageText?.block?.image) {
-        const img = module.standardHeaderImageText.block.image;
-        images.push({
-          moduleType: moduleType,
-          uploadDestinationId: img.uploadDestinationId,
-          altText: img.altText
+        addImage(moduleType, module.standardHeaderImageText.block.image, 'image');
+      }
+
+      // STANDARD_COMPANY_LOGO
+      if (module.standardCompanyLogo?.companyLogo) {
+        addImage(moduleType, module.standardCompanyLogo.companyLogo, 'companyLogo');
+      }
+
+      // STANDARD_IMAGE_TEXT_OVERLAY
+      if (module.standardImageTextOverlay?.block?.image) {
+        addImage(moduleType, module.standardImageTextOverlay.block.image, 'image');
+      }
+
+      // STANDARD_SINGLE_IMAGE_HIGHLIGHTS
+      if (module.standardSingleImageHighlights?.image) {
+        addImage(moduleType, module.standardSingleImageHighlights.image, 'image');
+      }
+      // Also check for bulleted list icons
+      if (module.standardSingleImageHighlights?.bulletedListBlock) {
+        const bulletedList = module.standardSingleImageHighlights.bulletedListBlock;
+        for (let i = 0; i < bulletedList.length; i++) {
+          if (bulletedList[i]?.icon) {
+            addImage(moduleType, bulletedList[i].icon, `bulleted_list_${i+1}_icon`);
+          }
+        }
+      }
+
+      // STANDARD_MULTIPLE_IMAGE_TEXT (array of images)
+      if (module.standardMultipleImageText?.image) {
+        const imgArray = Array.isArray(module.standardMultipleImageText.image)
+          ? module.standardMultipleImageText.image
+          : [module.standardMultipleImageText.image];
+        imgArray.forEach((img, idx) => {
+          addImage(moduleType, img, `image${idx + 1}`);
         });
       }
 
-      // Dodaj więcej typów modułów jeśli potrzeba
+      // STANDARD_FOUR_IMAGE_TEXT (block1-4)
+      if (module.standardFourImageText) {
+        for (let i = 1; i <= 4; i++) {
+          const block = module.standardFourImageText[`block${i}`];
+          if (block?.image) {
+            addImage(moduleType, block.image, `image${i}`);
+          }
+        }
+      }
+
+      // STANDARD_FOUR_IMAGE_TEXT_QUADRANT (block1-4)
+      if (module.standardFourImageTextQuadrant) {
+        for (let i = 1; i <= 4; i++) {
+          const block = module.standardFourImageTextQuadrant[`block${i}`];
+          if (block?.image) {
+            addImage(moduleType, block.image, `image${i}`);
+          }
+        }
+      }
+
+      // STANDARD_THREE_IMAGE_TEXT (block1-3)
+      if (module.standardThreeImageText) {
+        for (let i = 1; i <= 3; i++) {
+          const block = module.standardThreeImageText[`block${i}`];
+          if (block?.image) {
+            addImage(moduleType, block.image, `image${i}`);
+          }
+        }
+      }
+
+      // STANDARD_COMPARISON_TABLE (product columns)
+      if (module.standardComparisonTable?.productColumns) {
+        module.standardComparisonTable.productColumns.forEach((col, idx) => {
+          if (col?.image) {
+            addImage(moduleType, col.image, `productImage${idx + 1}`);
+          }
+        });
+      }
+
+      // STANDARD_SINGLE_IMAGE_SPECS_DETAIL
+      if (module.standardSingleImageSpecsDetail?.image) {
+        addImage(moduleType, module.standardSingleImageSpecsDetail.image, 'image');
+      }
+
+      // STANDARD_IMAGE_SIDEBAR
+      if (module.standardImageSidebar?.sidebarImage) {
+        addImage(moduleType, module.standardImageSidebar.sidebarImage, 'image');
+      }
+
+      // ========== PREMIUM MODULES ==========
+
+      // PREMIUM_SINGLE_IMAGE
+      if (module.premiumSingleImage?.image) {
+        addImage(moduleType, module.premiumSingleImage.image, 'image');
+      }
+
+      // PREMIUM_IMAGE_TEXT
+      if (module.premiumImageText?.image) {
+        addImage(moduleType, module.premiumImageText.image, 'image');
+      }
+
+      // PREMIUM_FULL_BACKGROUND_TEXT
+      if (module.premiumFullBackgroundText?.backgroundImage) {
+        addImage(moduleType, module.premiumFullBackgroundText.backgroundImage, 'backgroundImage');
+      }
+
+      // PREMIUM_FULL_BACKGROUND_IMAGE
+      if (module.premiumFullBackgroundImage?.backgroundImage) {
+        addImage(moduleType, module.premiumFullBackgroundImage.backgroundImage, 'backgroundImage');
+      }
+
+      // PREMIUM_IMAGE_CAROUSEL (array of carousel images)
+      if (module.premiumImageCarousel?.carouselImages) {
+        const carouselImages = module.premiumImageCarousel.carouselImages;
+        carouselImages.forEach((img, idx) => {
+          addImage(moduleType, img, `image${idx + 1}`);
+        });
+      }
+
+      // PREMIUM_FOUR_IMAGE_CAROUSEL (same structure as IMAGE_CAROUSEL)
+      if (module.premiumFourImageCarousel?.carouselImages) {
+        const carouselImages = module.premiumFourImageCarousel.carouselImages;
+        carouselImages.forEach((img, idx) => {
+          addImage(moduleType, img, `image${idx + 1}`);
+        });
+      }
+
+      // PREMIUM_COMPARISON_CHART (product columns)
+      if (module.premiumComparisonChart?.productColumns) {
+        module.premiumComparisonChart.productColumns.forEach((col, idx) => {
+          if (col?.image) {
+            addImage(moduleType, col.image, `image${idx + 1}`);
+          }
+        });
+      }
+
+      // PREMIUM_HOTSPOT_IMAGE
+      if (module.premiumHotspotImage?.image) {
+        addImage(moduleType, module.premiumHotspotImage.image, 'image');
+      }
+
+      // PREMIUM_THREE_IMAGE_TEXT (block1-3)
+      if (module.premiumThreeImageText) {
+        for (let i = 1; i <= 3; i++) {
+          const block = module.premiumThreeImageText[`block${i}`];
+          if (block?.image) {
+            addImage(moduleType, block.image, `image${i}`);
+          }
+        }
+      }
+
+      // PREMIUM_FOUR_IMAGE_TEXT (block1-4)
+      if (module.premiumFourImageText) {
+        for (let i = 1; i <= 4; i++) {
+          const block = module.premiumFourImageText[`block${i}`];
+          if (block?.image) {
+            addImage(moduleType, block.image, `image${i}`);
+          }
+        }
+      }
     }
+
+    Logger.log(`Total images extracted: ${images.length}`);
+
   } catch (error) {
     Logger.log(`Error extracting images: ${error.toString()}`);
+    Logger.log(`Stack: ${error.stack}`);
   }
 
   return images;

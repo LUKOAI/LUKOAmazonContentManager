@@ -54,22 +54,47 @@ const APLUS_IMAGE_SIZES = {
   'STANDARD_SINGLE_IMAGE_SPECS_DETAIL': { image: '300x300' },
   'STANDARD_IMAGE_SIDEBAR': { image: '350x175' },
   // PREMIUM modules (larger sizes)
+  'PREMIUM_TEXT': {}, // No images
   'PREMIUM_SINGLE_IMAGE': { image: '1464x600' },
+  'PREMIUM_IMAGE_TEXT': { image: '1464x600' },
+  'PREMIUM_FULL_BACKGROUND_TEXT': { backgroundImage: '1940x600' },
+  'PREMIUM_FULL_BACKGROUND_IMAGE': { backgroundImage: '1940x600' },
+  'PREMIUM_IMAGE_CAROUSEL': {
+    image1: '362x453',
+    image2: '362x453',
+    image3: '362x453',
+    image4: '362x453',
+    image5: '362x453',
+    image6: '362x453',
+    image7: '362x453',
+    image8: '362x453'
+  },
   'PREMIUM_COMPARISON_CHART': {
-    image_1: '220x220',
-    image_2: '220x220',
-    image_3: '220x220',
-    image_4: '220x220',
-    image_5: '220x220',
-    image_6: '220x220'
+    image1: '220x220',
+    image2: '220x220',
+    image3: '220x220',
+    image4: '220x220',
+    image5: '220x220',
+    image6: '220x220'
   },
   'PREMIUM_FOUR_IMAGE_CAROUSEL': {
-    image_1: '362x453',
-    image_2: '362x453',
-    image_3: '362x453',
-    image_4: '362x453'
+    image1: '362x453',
+    image2: '362x453',
+    image3: '362x453',
+    image4: '362x453'
   },
-  'PREMIUM_HOTSPOT_IMAGE': { image: '1940x600' }
+  'PREMIUM_HOTSPOT_IMAGE': { image: '1940x600' },
+  'PREMIUM_THREE_IMAGE_TEXT': {
+    image1: '362x453',
+    image2: '362x453',
+    image3: '362x453'
+  },
+  'PREMIUM_FOUR_IMAGE_TEXT': {
+    image1: '362x453',
+    image2: '362x453',
+    image3: '362x453',
+    image4: '362x453'
+  }
 };
 
 /**
@@ -78,11 +103,20 @@ const APLUS_IMAGE_SIZES = {
  */
 function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   // Get the first language from moduleContent (since locale is at document level)
-  const firstLang = Object.keys(aplusData.moduleContent)[0];
-  const content = aplusData.moduleContent[firstLang];
+  const moduleContentKeys = Object.keys(aplusData.moduleContent || {});
+  if (moduleContentKeys.length === 0) {
+    Logger.log(`⚠️ Warning: No module content found for ${aplusData.moduleType}. Using empty content.`);
+  }
+  const firstLang = moduleContentKeys[0] || 'EN';
+  const content = aplusData.moduleContent?.[firstLang] || {};
 
   // Generate unique content reference key
   const contentRefKey = `${aplusData.asin}_module${aplusData.moduleNumber}_${Date.now()}`;
+
+  Logger.log(`Building ${aplusData.moduleType} for ASIN ${aplusData.asin}, language: ${firstLang}`);
+  Logger.log(`Content keys: ${Object.keys(content).join(', ') || '(empty)'}`);
+  Logger.log(`Export mode: ${aplusData.exportMode || 'default'}`);
+  Logger.log(`Images available: ${Object.keys(aplusData.images || {}).join(', ') || '(none)'}`);
 
   // Determine content subtype based on module type
   const isPremium = aplusData.moduleType.startsWith('PREMIUM');
@@ -643,6 +677,216 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     if (carouselImages.length > 0) {
       module.premiumImageCarousel.carouselImages = carouselImages;
     }
+  }
+
+  // 21. PREMIUM_SINGLE_IMAGE
+  else if (aplusData.moduleType === 'PREMIUM_SINGLE_IMAGE') {
+    module.premiumSingleImage = {};
+
+    const imageId = getImageId('image');
+    if (imageId) {
+      module.premiumSingleImage.image = {
+        uploadDestinationId: imageId
+      };
+    }
+  }
+
+  // 22. PREMIUM_FOUR_IMAGE_CAROUSEL
+  else if (aplusData.moduleType === 'PREMIUM_FOUR_IMAGE_CAROUSEL') {
+    module.premiumFourImageCarousel = {};
+
+    // Add up to 4 carousel images
+    const carouselImages = [];
+    for (let i = 1; i <= 4; i++) {
+      const imageId = getImageId(`image${i}`);
+      if (imageId) {
+        carouselImages.push({
+          uploadDestinationId: imageId
+        });
+      }
+    }
+    if (carouselImages.length > 0) {
+      module.premiumFourImageCarousel.carouselImages = carouselImages;
+    }
+  }
+
+  // 23. PREMIUM_COMPARISON_CHART
+  else if (aplusData.moduleType === 'PREMIUM_COMPARISON_CHART') {
+    module.premiumComparisonChart = {};
+
+    // Product columns (up to 6)
+    const productColumns = [];
+    for (let i = 1; i <= 6; i++) {
+      const column = {};
+
+      const imageId = getImageId(`image${i}`);
+      if (imageId) {
+        column.image = {
+          uploadDestinationId: imageId
+        };
+      }
+
+      const productName = addTextComponent(`productName${i}`, content[`productName${i}`]);
+      if (productName) column.title = productName;
+
+      // Add ASIN reference if provided
+      const asinRef = content[`productAsin${i}`];
+      if (asinRef) {
+        column.asin = asinRef;
+      }
+
+      // Metrics for this product (up to 10)
+      const metrics = [];
+      for (let j = 1; j <= 10; j++) {
+        const metricValue = content[`metric${j}_product${i}`];
+        if (metricValue) {
+          metrics.push(addTextComponent(`metric${j}_product${i}`, metricValue));
+        }
+      }
+      if (metrics.length > 0) {
+        column.metrics = metrics;
+      }
+
+      // isHighlighted flag
+      if (content[`product${i}_highlighted`] === true || content[`product${i}_highlighted`] === 'true') {
+        column.isHighlighted = true;
+      }
+
+      if (Object.keys(column).length > 0) {
+        productColumns.push(column);
+      }
+    }
+
+    if (productColumns.length > 0) {
+      module.premiumComparisonChart.productColumns = productColumns;
+    }
+
+    // Metric row headings (up to 10)
+    const metricRowHeadings = [];
+    for (let i = 1; i <= 10; i++) {
+      const heading = content[`metricHeading${i}`];
+      if (heading) {
+        metricRowHeadings.push(addTextComponent(`metricHeading${i}`, heading));
+      }
+    }
+    if (metricRowHeadings.length > 0) {
+      module.premiumComparisonChart.metricRowLabels = metricRowHeadings;
+    }
+  }
+
+  // 24. PREMIUM_HOTSPOT_IMAGE
+  else if (aplusData.moduleType === 'PREMIUM_HOTSPOT_IMAGE') {
+    module.premiumHotspotImage = {};
+
+    const imageId = getImageId('image');
+    if (imageId) {
+      module.premiumHotspotImage.image = {
+        uploadDestinationId: imageId
+      };
+    }
+
+    // Hotspots (up to 10)
+    const hotspots = [];
+    for (let i = 1; i <= 10; i++) {
+      const hotspotTitle = content[`hotspot${i}_title`];
+      const hotspotDescription = content[`hotspot${i}_description`];
+      const hotspotX = content[`hotspot${i}_x`];
+      const hotspotY = content[`hotspot${i}_y`];
+
+      if (hotspotTitle || hotspotDescription) {
+        const hotspot = {};
+        if (hotspotTitle) hotspot.title = addTextComponent(`hotspot${i}_title`, hotspotTitle);
+        if (hotspotDescription) hotspot.description = addParagraphComponent(`hotspot${i}_description`, hotspotDescription);
+        if (hotspotX !== undefined && hotspotY !== undefined) {
+          hotspot.position = { x: parseFloat(hotspotX), y: parseFloat(hotspotY) };
+        }
+        hotspots.push(hotspot);
+      }
+    }
+    if (hotspots.length > 0) {
+      module.premiumHotspotImage.hotspots = hotspots;
+    }
+  }
+
+  // 25. PREMIUM_THREE_IMAGE_TEXT
+  else if (aplusData.moduleType === 'PREMIUM_THREE_IMAGE_TEXT') {
+    module.premiumThreeImageText = {};
+
+    const headline = addTextComponent('headline', content.headline);
+    if (headline) module.premiumThreeImageText.headline = headline;
+
+    // Add 3 blocks with images and text
+    for (let i = 1; i <= 3; i++) {
+      const block = {};
+
+      const imageId = getImageId(`image${i}`);
+      if (imageId) {
+        block.image = {
+          uploadDestinationId: imageId
+        };
+      }
+
+      const blockHeadline = addTextComponent(`block${i}_headline`, content[`block${i}_headline`]);
+      if (blockHeadline) block.headline = blockHeadline;
+
+      const blockBody = addParagraphComponent(`block${i}_body`, content[`block${i}_body`]);
+      if (blockBody) block.body = blockBody;
+
+      // Only add block if it has content
+      if (Object.keys(block).length > 0) {
+        module.premiumThreeImageText[`block${i}`] = block;
+      }
+    }
+  }
+
+  // 26. PREMIUM_FOUR_IMAGE_TEXT
+  else if (aplusData.moduleType === 'PREMIUM_FOUR_IMAGE_TEXT') {
+    module.premiumFourImageText = {};
+
+    const headline = addTextComponent('headline', content.headline);
+    if (headline) module.premiumFourImageText.headline = headline;
+
+    // Add 4 blocks with images and text
+    for (let i = 1; i <= 4; i++) {
+      const block = {};
+
+      const imageId = getImageId(`image${i}`);
+      if (imageId) {
+        block.image = {
+          uploadDestinationId: imageId
+        };
+      }
+
+      const blockHeadline = addTextComponent(`block${i}_headline`, content[`block${i}_headline`]);
+      if (blockHeadline) block.headline = blockHeadline;
+
+      const blockBody = addParagraphComponent(`block${i}_body`, content[`block${i}_body`]);
+      if (blockBody) block.body = blockBody;
+
+      // Only add block if it has content
+      if (Object.keys(block).length > 0) {
+        module.premiumFourImageText[`block${i}`] = block;
+      }
+    }
+  }
+
+  // FALLBACK: Unknown module type - log warning but continue
+  else {
+    Logger.log(`⚠️ Warning: Unknown module type "${aplusData.moduleType}". Creating empty module.`);
+    // Try to create a basic structure based on naming convention
+    const camelCaseName = aplusData.moduleType
+      .toLowerCase()
+      .replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+
+    module[camelCaseName] = {};
+
+    // Try to add headline if available
+    const headline = addTextComponent('headline', content.headline);
+    if (headline) module[camelCaseName].headline = headline;
+
+    // Try to add body if available
+    const body = addParagraphComponent('body', content.body);
+    if (body) module[camelCaseName].body = body;
   }
 
   contentDocument.contentModuleList.push(module);
