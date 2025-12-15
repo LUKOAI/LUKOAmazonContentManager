@@ -619,3 +619,323 @@ function lookupPlaceholderBySize(size) {
     return null;
   }
 }
+
+/**
+ * Look up images from library by module type
+ * Returns array of images that match the module type
+ *
+ * @param {string} moduleType - The module type (e.g., "STANDARD_HEADER_IMAGE_TEXT")
+ * @param {string} sourceContentKey - Optional: filter by source content key
+ * @returns {Array} - Array of image objects with all metadata
+ */
+function lookupImagesByModuleType(moduleType, sourceContentKey) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const librarySheet = ss.getSheetByName('A+ Image Library');
+
+    if (!librarySheet) {
+      Logger.log('Image library not found.');
+      return [];
+    }
+
+    const data = librarySheet.getDataRange().getValues();
+    const headers = data[0];
+    const results = [];
+
+    // Column indices based on library structure
+    const COL = {
+      uploadDestinationId: 0,
+      image_url: 1,
+      image_hash: 2,
+      alt_text: 3,
+      width: 4,
+      height: 5,
+      source_content_key: 6,
+      module_type: 7,
+      date_synced: 8,
+      status: 9,
+      notes: 10
+    };
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const rowModuleType = row[COL.module_type];
+      const rowSourceKey = row[COL.source_content_key];
+      const status = row[COL.status];
+
+      // Skip non-active images
+      if (status && status !== 'ACTIVE') continue;
+
+      // Match module type
+      if (rowModuleType === moduleType) {
+        // If sourceContentKey provided, also filter by that
+        if (sourceContentKey && rowSourceKey !== sourceContentKey) {
+          continue;
+        }
+
+        results.push({
+          uploadDestinationId: row[COL.uploadDestinationId],
+          imageUrl: row[COL.image_url],
+          imageHash: row[COL.image_hash],
+          altText: row[COL.alt_text],
+          width: row[COL.width] || null,
+          height: row[COL.height] || null,
+          sourceContentKey: row[COL.source_content_key],
+          moduleType: row[COL.module_type],
+          dateSynced: row[COL.date_synced],
+          status: row[COL.status],
+          notes: row[COL.notes],
+          filename: extractFilename(row[COL.uploadDestinationId])
+        });
+      }
+    }
+
+    Logger.log(`Found ${results.length} images for module type ${moduleType}${sourceContentKey ? ` (source: ${sourceContentKey})` : ''}`);
+    return results;
+
+  } catch (error) {
+    Logger.log(`Error in lookupImagesByModuleType: ${error.toString()}`);
+    return [];
+  }
+}
+
+/**
+ * Get first available image for a module type
+ * Useful for auto-selecting images
+ *
+ * @param {string} moduleType - The module type
+ * @param {string} sourceContentKey - Optional: filter by source content key
+ * @returns {Object|null} - Image object or null if not found
+ */
+function getFirstImageForModuleType(moduleType, sourceContentKey) {
+  const images = lookupImagesByModuleType(moduleType, sourceContentKey);
+  return images.length > 0 ? images[0] : null;
+}
+
+/**
+ * Get image metadata by uploadDestinationId
+ * Returns full metadata for an image from the library
+ *
+ * @param {string} uploadDestinationId - The Amazon uploadDestinationId
+ * @returns {Object|null} - Image metadata object or null if not found
+ */
+function getImageMetadata(uploadDestinationId) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const librarySheet = ss.getSheetByName('A+ Image Library');
+
+    if (!librarySheet || !uploadDestinationId) {
+      return null;
+    }
+
+    const data = librarySheet.getDataRange().getValues();
+
+    // Column indices
+    const COL = {
+      uploadDestinationId: 0,
+      image_url: 1,
+      image_hash: 2,
+      alt_text: 3,
+      width: 4,
+      height: 5,
+      source_content_key: 6,
+      module_type: 7,
+      date_synced: 8,
+      status: 9,
+      notes: 10
+    };
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (row[COL.uploadDestinationId] === uploadDestinationId) {
+        return {
+          uploadDestinationId: row[COL.uploadDestinationId],
+          imageUrl: row[COL.image_url],
+          imageHash: row[COL.image_hash],
+          altText: row[COL.alt_text],
+          width: row[COL.width] || null,
+          height: row[COL.height] || null,
+          sourceContentKey: row[COL.source_content_key],
+          moduleType: row[COL.module_type],
+          dateSynced: row[COL.date_synced],
+          status: row[COL.status],
+          notes: row[COL.notes],
+          filename: extractFilename(row[COL.uploadDestinationId])
+        };
+      }
+    }
+
+    return null;
+
+  } catch (error) {
+    Logger.log(`Error in getImageMetadata: ${error.toString()}`);
+    return null;
+  }
+}
+
+/**
+ * Extract filename from uploadDestinationId
+ * e.g., "aplus-media-library-service-media/3444de6d-44c9-4a69-9567-9acaba9798ce.jpg"
+ *       -> "3444de6d-44c9-4a69-9567-9acaba9798ce.jpg"
+ *
+ * @param {string} uploadDestinationId - The full uploadDestinationId
+ * @returns {string} - Just the filename portion
+ */
+function extractFilename(uploadDestinationId) {
+  if (!uploadDestinationId) return '';
+
+  // Handle different formats
+  const parts = uploadDestinationId.split('/');
+  return parts[parts.length - 1] || uploadDestinationId;
+}
+
+/**
+ * Get all unique module types in the image library
+ * Useful for understanding what images are available
+ *
+ * @returns {Array} - Array of unique module types
+ */
+function getLibraryModuleTypes() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const librarySheet = ss.getSheetByName('A+ Image Library');
+
+    if (!librarySheet) {
+      return [];
+    }
+
+    const data = librarySheet.getDataRange().getValues();
+    const moduleTypes = new Set();
+
+    for (let i = 1; i < data.length; i++) {
+      const moduleType = data[i][7]; // module_type column
+      if (moduleType) {
+        moduleTypes.add(moduleType);
+      }
+    }
+
+    return Array.from(moduleTypes).sort();
+
+  } catch (error) {
+    Logger.log(`Error in getLibraryModuleTypes: ${error.toString()}`);
+    return [];
+  }
+}
+
+/**
+ * Get image count summary by module type
+ * @returns {Object} - Object with module types as keys and counts as values
+ */
+function getImageCountByModuleType() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const librarySheet = ss.getSheetByName('A+ Image Library');
+
+    if (!librarySheet) {
+      return {};
+    }
+
+    const data = librarySheet.getDataRange().getValues();
+    const counts = {};
+
+    for (let i = 1; i < data.length; i++) {
+      const moduleType = data[i][7]; // module_type column
+      const status = data[i][9]; // status column
+
+      if (moduleType && status === 'ACTIVE') {
+        counts[moduleType] = (counts[moduleType] || 0) + 1;
+      }
+    }
+
+    return counts;
+
+  } catch (error) {
+    Logger.log(`Error in getImageCountByModuleType: ${error.toString()}`);
+    return {};
+  }
+}
+
+/**
+ * Auto-suggest images for A+ Content based on module types
+ * Returns a map of field names to suggested uploadDestinationIds
+ *
+ * @param {string} moduleType - The module type being built
+ * @param {string} sourceContentKey - Optional: prefer images from this source
+ * @returns {Object} - Map of field names to uploadDestinationIds
+ */
+function suggestImagesForModule(moduleType, sourceContentKey) {
+  const suggestions = {};
+  const images = lookupImagesByModuleType(moduleType, sourceContentKey);
+
+  if (images.length === 0) {
+    // Try without source filter
+    const allImages = lookupImagesByModuleType(moduleType);
+    if (allImages.length > 0) {
+      Logger.log(`No images found for source ${sourceContentKey}, using any available for ${moduleType}`);
+      images.push(...allImages);
+    }
+  }
+
+  // Module-specific field mapping
+  switch (moduleType) {
+    case 'STANDARD_HEADER_IMAGE_TEXT':
+    case 'STANDARD_IMAGE_TEXT_OVERLAY':
+    case 'STANDARD_SINGLE_IMAGE_SPECS_DETAIL':
+    case 'STANDARD_IMAGE_SIDEBAR':
+      if (images[0]) suggestions.image_id = images[0].uploadDestinationId;
+      break;
+
+    case 'STANDARD_SINGLE_SIDE_IMAGE':
+      if (images[0]) suggestions.image_id = images[0].uploadDestinationId;
+      break;
+
+    case 'STANDARD_COMPANY_LOGO':
+      if (images[0]) suggestions.companyLogo_id = images[0].uploadDestinationId;
+      break;
+
+    case 'STANDARD_SINGLE_IMAGE_HIGHLIGHTS':
+      if (images[0]) suggestions.image_id = images[0].uploadDestinationId;
+      // Bullet icons
+      for (let i = 1; i <= 4 && i < images.length; i++) {
+        suggestions[`bulleted_list_${i}_icon_id`] = images[i].uploadDestinationId;
+      }
+      break;
+
+    case 'STANDARD_MULTIPLE_IMAGE_TEXT':
+    case 'STANDARD_FOUR_IMAGE_TEXT':
+    case 'STANDARD_FOUR_IMAGE_TEXT_QUADRANT':
+      for (let i = 0; i < Math.min(4, images.length); i++) {
+        suggestions[`image${i + 1}_id`] = images[i].uploadDestinationId;
+      }
+      break;
+
+    case 'STANDARD_THREE_IMAGE_TEXT':
+      for (let i = 0; i < Math.min(3, images.length); i++) {
+        suggestions[`image${i + 1}_id`] = images[i].uploadDestinationId;
+      }
+      break;
+
+    case 'STANDARD_COMPARISON_TABLE':
+      for (let i = 0; i < Math.min(6, images.length); i++) {
+        suggestions[`productImage${i + 1}_id`] = images[i].uploadDestinationId;
+      }
+      break;
+
+    case 'PREMIUM_SINGLE_IMAGE':
+    case 'PREMIUM_IMAGE_TEXT':
+      if (images[0]) suggestions.image_id = images[0].uploadDestinationId;
+      break;
+
+    case 'PREMIUM_FULL_BACKGROUND_IMAGE':
+    case 'PREMIUM_FULL_BACKGROUND_TEXT':
+      if (images[0]) suggestions.backgroundImage_id = images[0].uploadDestinationId;
+      break;
+
+    default:
+      // Generic: assign first image to image_id
+      if (images[0]) suggestions.image_id = images[0].uploadDestinationId;
+  }
+
+  Logger.log(`Suggested ${Object.keys(suggestions).length} images for ${moduleType}`);
+  return suggestions;
+}

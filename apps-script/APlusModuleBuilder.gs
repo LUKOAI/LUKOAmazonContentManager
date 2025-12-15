@@ -164,10 +164,16 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   // Helper function to get image ID or null
   // Enhanced to support image library lookup and placeholder mode
   // Uses APLUS_IMAGE_SIZES map to automatically determine expected size
+  // Priority order:
+  //   1. Direct uploadDestinationId from sheet (explicit user input)
+  //   2. Lookup by module type from Image Library (auto-suggest)
+  //   3. Lookup by image URL from library
+  //   4. Placeholder fallback (if placeholder mode enabled)
   function getImageId(fieldName, explicitSize) {
     // Check export mode
     const exportMode = aplusData.exportMode;
     const usePlaceholders = aplusData.usePlaceholders || exportMode === 'WITH_PLACEHOLDERS';
+    const autoLookup = aplusData.autoLookupImages !== false; // Default to true
 
     // Get expected size from map or use explicit size
     const moduleType = aplusData.moduleType;
@@ -195,7 +201,33 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       return directId;
     }
 
-    // Second priority: Lookup from image library by URL
+    // Second priority: Auto-lookup by module type from Image Library
+    if (autoLookup) {
+      Logger.log(`Auto-lookup enabled, searching by module type: ${moduleType}`);
+      const suggestions = suggestImagesForModule(moduleType, aplusData.sourceContentKey);
+
+      // Map field names to suggestion keys
+      // suggestImagesForModule returns: image_id, image1_id, image2_id, companyLogo_id, backgroundImage_id, etc.
+      const suggestionKey = `${fieldName}_id`;
+      if (suggestions[suggestionKey]) {
+        Logger.log(`✅ Found image via auto-lookup for ${fieldName}: ${suggestions[suggestionKey]}`);
+        return suggestions[suggestionKey];
+      }
+
+      // Try direct field name without _id suffix (for backwards compatibility)
+      if (suggestions[fieldName]) {
+        Logger.log(`✅ Found image via auto-lookup (direct key) for ${fieldName}: ${suggestions[fieldName]}`);
+        return suggestions[fieldName];
+      }
+
+      // For numbered fields like image1, image2, try looking up first available
+      if (fieldName.match(/^image\d*$/) && suggestions.image_id) {
+        Logger.log(`✅ Using first available image for ${fieldName}: ${suggestions.image_id}`);
+        return suggestions.image_id;
+      }
+    }
+
+    // Third priority: Lookup from image library by URL
     const imageUrl = aplusData.images?.[`${fieldName}_url`];
     if (imageUrl) {
       Logger.log(`Attempting library lookup for ${fieldName} with URL: ${imageUrl}`);
