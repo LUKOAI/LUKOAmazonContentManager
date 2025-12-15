@@ -1653,10 +1653,16 @@ function publishMultiModuleAPlusContent(modules, contentType, exportMode) {
     // Build content document with ALL modules
     const contentRefKey = `${asin}_complete_${Date.now()}`;
 
+    // Detect if ANY module is Premium - then use PREMIUM contentSubType
+    const hasPremiumModule = modules.some(m => m.data.moduleType && m.data.moduleType.startsWith('PREMIUM'));
+    const contentSubType = hasPremiumModule ? 'PREMIUM' : 'STANDARD';
+
+    Logger.log(`Content subtype: ${contentSubType} (hasPremiumModule: ${hasPremiumModule})`);
+
     const contentDocument = {
       name: contentRefKey,
       contentType: 'EBC',  // Enhanced Brand Content
-      contentSubType: 'STANDARD',
+      contentSubType: contentSubType,
       locale: locale,
       contentModuleList: []
     };

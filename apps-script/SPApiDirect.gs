@@ -536,10 +536,14 @@ function buildAPlusContentDocument(aplusData, marketplace) {
   // Generate unique content reference key
   const contentRefKey = `${aplusData.asin}_module${aplusData.moduleNumber}_${Date.now()}`;
 
+  // Detect if this is a Premium module
+  const isPremium = aplusData.moduleType && aplusData.moduleType.startsWith('PREMIUM');
+  const contentSubType = isPremium ? 'PREMIUM' : 'STANDARD';
+
   const contentDocument = {
     name: contentRefKey,
     contentType: 'EBC',  // Enhanced Brand Content
-    contentSubType: 'STANDARD',  // Content subtype (not module type)
+    contentSubType: contentSubType,
     locale: convertMarketplaceToLocale(marketplace),
     contentModuleList: []
   };

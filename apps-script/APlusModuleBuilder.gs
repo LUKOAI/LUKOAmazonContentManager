@@ -608,8 +608,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     const headline = addTextComponent('headline', content.headline);
     if (headline) module.premiumText.headline = headline;
 
-    const body = addParagraphComponent('body', content.body);
-    if (body) module.premiumText.body = body;
+    // Premium modules use 'bodyText' not 'body'
+    const bodyText = addParagraphComponent('bodyText', content.body);
+    if (bodyText) module.premiumText.bodyText = bodyText;
   }
 
   // 17. PREMIUM_IMAGE_TEXT
@@ -728,9 +729,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     const headline = addTextComponent('headline', content.headline);
     if (headline) module.premiumImageCarousel.headline = headline;
 
-    // Add body if provided
-    const body = addParagraphComponent('body', content.body);
-    if (body) module.premiumImageCarousel.body = body;
+    // Premium modules use 'bodyText' not 'body'
+    const bodyText = addParagraphComponent('bodyText', content.body);
+    if (bodyText) module.premiumImageCarousel.bodyText = bodyText;
   }
 
   // 21. PREMIUM_SINGLE_IMAGE
