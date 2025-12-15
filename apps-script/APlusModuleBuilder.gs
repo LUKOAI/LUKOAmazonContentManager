@@ -431,15 +431,23 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
 
     // Add 4 blocks with images and text
     // IMPORTANT: Amazon expects block1, block2, block3, block4 as separate fields, NOT an array
+    // CRITICAL: Blocks REQUIRE images - Amazon API rejects blocks without images
+    let blocksWithImages = 0;
     for (let i = 1; i <= 4; i++) {
-      const block = {};
-
       const imageId = getImageId(`image${i}`);
-      if (imageId) {
-        block.image = {
-          uploadDestinationId: imageId
-        };
+
+      // Skip blocks without images - Amazon API requires images in blocks
+      if (!imageId) {
+        Logger.log(`⚠️ Skipping block${i} - no image available (image required for STANDARD_FOUR_IMAGE_TEXT)`);
+        continue;
       }
+
+      const block = {
+        image: {
+          uploadDestinationId: imageId
+        }
+      };
+      blocksWithImages++;
 
       const blockHeadline = addTextComponent(`block${i}_headline`, content[`block${i}_headline`]);
       if (blockHeadline) block.headline = blockHeadline;
@@ -447,10 +455,13 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       const blockBody = addParagraphComponent(`block${i}_body`, content[`block${i}_body`]);
       if (blockBody) block.body = blockBody;
 
-      // Only add block if it has content
-      if (Object.keys(block).length > 0) {
-        module.standardFourImageText[`block${i}`] = block;
-      }
+      module.standardFourImageText[`block${i}`] = block;
+    }
+
+    if (blocksWithImages === 0) {
+      Logger.log(`❌ ERROR: STANDARD_FOUR_IMAGE_TEXT requires at least 1 block with image - no images found`);
+    } else {
+      Logger.log(`✅ Added ${blocksWithImages} blocks with images to STANDARD_FOUR_IMAGE_TEXT`);
     }
   }
 
@@ -463,15 +474,23 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
 
     // Add 4 quadrants with images and text
     // IMPORTANT: Amazon expects block1, block2, block3, block4 as separate fields, NOT an array
+    // CRITICAL: Blocks REQUIRE images - Amazon API rejects blocks without images
+    let blocksWithImages = 0;
     for (let i = 1; i <= 4; i++) {
-      const block = {};
-
       const imageId = getImageId(`image${i}`);
-      if (imageId) {
-        block.image = {
-          uploadDestinationId: imageId
-        };
+
+      // Skip blocks without images - Amazon API requires images in blocks
+      if (!imageId) {
+        Logger.log(`⚠️ Skipping block${i} - no image available (image required for STANDARD_FOUR_IMAGE_TEXT_QUADRANT)`);
+        continue;
       }
+
+      const block = {
+        image: {
+          uploadDestinationId: imageId
+        }
+      };
+      blocksWithImages++;
 
       const blockHeadline = addTextComponent(`block${i}_headline`, content[`block${i}_headline`]);
       if (blockHeadline) block.headline = blockHeadline;
@@ -479,10 +498,13 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       const blockBody = addParagraphComponent(`block${i}_body`, content[`block${i}_body`]);
       if (blockBody) block.body = blockBody;
 
-      // Only add block if it has content
-      if (Object.keys(block).length > 0) {
-        module.standardFourImageTextQuadrant[`block${i}`] = block;
-      }
+      module.standardFourImageTextQuadrant[`block${i}`] = block;
+    }
+
+    if (blocksWithImages === 0) {
+      Logger.log(`❌ ERROR: STANDARD_FOUR_IMAGE_TEXT_QUADRANT requires at least 1 block with image - no images found`);
+    } else {
+      Logger.log(`✅ Added ${blocksWithImages} blocks with images to STANDARD_FOUR_IMAGE_TEXT_QUADRANT`);
     }
   }
 
@@ -495,15 +517,23 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
 
     // Add 3 blocks with images and text
     // IMPORTANT: Amazon expects block1, block2, block3 as separate fields, NOT an array
+    // CRITICAL: Blocks REQUIRE images - Amazon API rejects blocks without images
+    let blocksWithImages = 0;
     for (let i = 1; i <= 3; i++) {
-      const block = {};
-
       const imageId = getImageId(`image${i}`);
-      if (imageId) {
-        block.image = {
-          uploadDestinationId: imageId
-        };
+
+      // Skip blocks without images - Amazon API requires images in blocks
+      if (!imageId) {
+        Logger.log(`⚠️ Skipping block${i} - no image available (image required for STANDARD_THREE_IMAGE_TEXT)`);
+        continue;
       }
+
+      const block = {
+        image: {
+          uploadDestinationId: imageId
+        }
+      };
+      blocksWithImages++;
 
       const blockHeadline = addTextComponent(`block${i}_headline`, content[`block${i}_headline`]);
       if (blockHeadline) block.headline = blockHeadline;
@@ -511,10 +541,13 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       const blockBody = addParagraphComponent(`block${i}_body`, content[`block${i}_body`]);
       if (blockBody) block.body = blockBody;
 
-      // Only add block if it has content
-      if (Object.keys(block).length > 0) {
-        module.standardThreeImageText[`block${i}`] = block;
-      }
+      module.standardThreeImageText[`block${i}`] = block;
+    }
+
+    if (blocksWithImages === 0) {
+      Logger.log(`❌ ERROR: STANDARD_THREE_IMAGE_TEXT requires at least 1 block with image - no images found`);
+    } else {
+      Logger.log(`✅ Added ${blocksWithImages} blocks with images to STANDARD_THREE_IMAGE_TEXT`);
     }
   }
 
@@ -927,15 +960,23 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     if (headline) module.premiumThreeImageText.headline = headline;
 
     // Add 3 blocks with images and text
+    // CRITICAL: Blocks REQUIRE images - Amazon API rejects blocks without images
+    let blocksWithImages = 0;
     for (let i = 1; i <= 3; i++) {
-      const block = {};
-
       const imageId = getImageId(`image${i}`);
-      if (imageId) {
-        block.image = {
-          uploadDestinationId: imageId
-        };
+
+      // Skip blocks without images - Amazon API requires images in blocks
+      if (!imageId) {
+        Logger.log(`⚠️ Skipping block${i} - no image available (image required for PREMIUM_THREE_IMAGE_TEXT)`);
+        continue;
       }
+
+      const block = {
+        image: {
+          uploadDestinationId: imageId
+        }
+      };
+      blocksWithImages++;
 
       const blockHeadline = addTextComponent(`block${i}_headline`, content[`block${i}_headline`]);
       if (blockHeadline) block.headline = blockHeadline;
@@ -943,10 +984,13 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       const blockBody = addParagraphComponent(`block${i}_body`, content[`block${i}_body`]);
       if (blockBody) block.body = blockBody;
 
-      // Only add block if it has content
-      if (Object.keys(block).length > 0) {
-        module.premiumThreeImageText[`block${i}`] = block;
-      }
+      module.premiumThreeImageText[`block${i}`] = block;
+    }
+
+    if (blocksWithImages === 0) {
+      Logger.log(`❌ ERROR: PREMIUM_THREE_IMAGE_TEXT requires at least 1 block with image - no images found`);
+    } else {
+      Logger.log(`✅ Added ${blocksWithImages} blocks with images to PREMIUM_THREE_IMAGE_TEXT`);
     }
   }
 
@@ -958,15 +1002,23 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     if (headline) module.premiumFourImageText.headline = headline;
 
     // Add 4 blocks with images and text
+    // CRITICAL: Blocks REQUIRE images - Amazon API rejects blocks without images
+    let blocksWithImages = 0;
     for (let i = 1; i <= 4; i++) {
-      const block = {};
-
       const imageId = getImageId(`image${i}`);
-      if (imageId) {
-        block.image = {
-          uploadDestinationId: imageId
-        };
+
+      // Skip blocks without images - Amazon API requires images in blocks
+      if (!imageId) {
+        Logger.log(`⚠️ Skipping block${i} - no image available (image required for PREMIUM_FOUR_IMAGE_TEXT)`);
+        continue;
       }
+
+      const block = {
+        image: {
+          uploadDestinationId: imageId
+        }
+      };
+      blocksWithImages++;
 
       const blockHeadline = addTextComponent(`block${i}_headline`, content[`block${i}_headline`]);
       if (blockHeadline) block.headline = blockHeadline;
@@ -974,10 +1026,13 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       const blockBody = addParagraphComponent(`block${i}_body`, content[`block${i}_body`]);
       if (blockBody) block.body = blockBody;
 
-      // Only add block if it has content
-      if (Object.keys(block).length > 0) {
-        module.premiumFourImageText[`block${i}`] = block;
-      }
+      module.premiumFourImageText[`block${i}`] = block;
+    }
+
+    if (blocksWithImages === 0) {
+      Logger.log(`❌ ERROR: PREMIUM_FOUR_IMAGE_TEXT requires at least 1 block with image - no images found`);
+    } else {
+      Logger.log(`✅ Added ${blocksWithImages} blocks with images to PREMIUM_FOUR_IMAGE_TEXT`);
     }
   }
 
