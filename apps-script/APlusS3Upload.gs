@@ -515,6 +515,45 @@ function lookupUploadDestinationId(imageUrl) {
 }
 
 /**
+ * Look up alt_text from library by uploadDestinationId
+ * @param {string} uploadDestinationId - The uploadDestinationId to search for
+ * @returns {string|null} - alt_text or null if not found
+ *
+ * Image Library columns: 0=uploadDestinationId, 3=alt_text
+ */
+function lookupImageAltText(uploadDestinationId) {
+  try {
+    if (!uploadDestinationId) return null;
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const librarySheet = ss.getSheetByName('A+ Image Library');
+
+    if (!librarySheet) {
+      return null;
+    }
+
+    const data = librarySheet.getDataRange().getValues();
+
+    // Search by uploadDestinationId (column 0), return alt_text (column 3)
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === uploadDestinationId) {
+        const altText = data[i][3] ? data[i][3].toString() : '';
+        if (altText) {
+          Logger.log(`Found alt_text for ${uploadDestinationId.substring(0, 30)}...: "${altText}"`);
+          return altText;
+        }
+      }
+    }
+
+    return null;
+
+  } catch (error) {
+    Logger.log(`Error in lookupImageAltText: ${error.toString()}`);
+    return null;
+  }
+}
+
+/**
  * Look up placeholder uploadDestinationId from library by image size
  * @param {string} size - Expected size in format "WIDTHxHEIGHT" (e.g., "300x300", "970x600")
  * @returns {string|null} - uploadDestinationId or null if not found

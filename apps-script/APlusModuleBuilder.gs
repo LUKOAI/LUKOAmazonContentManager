@@ -292,6 +292,72 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     return null;
   }
 
+  // Helper function to build complete image object with imageCropSpecification and altText
+  // Amazon API REQUIRES these fields - without them, the API returns 400 error
+  function buildImageObject(imageId, fieldName, altText) {
+    if (!imageId) return null;
+
+    const moduleType = aplusData.moduleType;
+    const sizeMap = APLUS_IMAGE_SIZES[moduleType] || {};
+
+    // Try multiple key formats: image1, image_1, image, backgroundImage, companyLogo
+    const fieldNameWithUnderscore = fieldName.replace(/(\d+)$/, '_$1'); // image1 -> image_1
+    const sizeStr = sizeMap[fieldName] ||
+                    sizeMap[fieldNameWithUnderscore] ||
+                    sizeMap['image'] ||
+                    sizeMap['backgroundImage'] ||
+                    sizeMap['companyLogo'] ||
+                    '300x300'; // Default fallback
+
+    // Parse size string "WxH" to width and height
+    const [width, height] = sizeStr.split('x').map(Number);
+
+    // Get alt text from:
+    // 1. Explicit parameter
+    // 2. aplusData.images[fieldName_altText]
+    // 3. Image Library (lookup by uploadDestinationId)
+    // 4. Default placeholder text
+    let imageAltText = altText ||
+                       aplusData.images?.[`${fieldName}_altText`] ||
+                       aplusData.images?.[`${fieldName}_alt`] ||
+                       '';
+
+    // If no alt text provided, try to get from Image Library
+    if (!imageAltText) {
+      try {
+        const libraryAltText = lookupImageAltText(imageId);
+        if (libraryAltText) {
+          imageAltText = libraryAltText;
+        }
+      } catch (e) {
+        // Image Library lookup may fail if sheet doesn't exist
+        Logger.log(`Could not lookup alt text from library: ${e.message}`);
+      }
+    }
+
+    // Default alt text if still empty (Amazon requires non-null)
+    if (!imageAltText) {
+      imageAltText = `${moduleType} image`;
+    }
+
+    Logger.log(`Building image object for ${fieldName}: ${width}x${height}, altText: "${imageAltText.substring(0, 30)}..."`);
+
+    return {
+      uploadDestinationId: imageId,
+      imageCropSpecification: {
+        size: {
+          width: { value: width, units: 'pixels' },
+          height: { value: height, units: 'pixels' }
+        },
+        offset: {
+          x: { value: 0, units: 'pixels' },
+          y: { value: 0, units: 'pixels' }
+        }
+      },
+      altText: imageAltText
+    };
+  }
+
   // ========== STANDARD MODULES ==========
 
   // 1. STANDARD_TEXT
@@ -313,10 +379,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     };
 
     const imageId = getImageId('image');
-    if (imageId) {
-      module.standardSingleSideImage.block.image = {
-        uploadDestinationId: imageId
-      };
+    const imageObj = buildImageObject(imageId, 'image');
+    if (imageObj) {
+      module.standardSingleSideImage.block.image = imageObj;
     }
 
     const headline = addTextComponent('headline', content.headline);
@@ -333,10 +398,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     };
 
     const imageId = getImageId('image');
-    if (imageId) {
-      module.standardHeaderImageText.block.image = {
-        uploadDestinationId: imageId
-      };
+    const imageObj = buildImageObject(imageId, 'image');
+    if (imageObj) {
+      module.standardHeaderImageText.block.image = imageObj;
     }
 
     const headline = addTextComponent('headline', content.headline);
@@ -351,10 +415,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     module.standardCompanyLogo = {};
 
     const logoId = getImageId('companyLogo');
-    if (logoId) {
-      module.standardCompanyLogo.companyLogo = {
-        uploadDestinationId: logoId
-      };
+    const logoObj = buildImageObject(logoId, 'companyLogo');
+    if (logoObj) {
+      module.standardCompanyLogo.companyLogo = logoObj;
     }
 
     const description = addParagraphComponent('companyDescription', content.companyDescription);
@@ -369,10 +432,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     };
 
     const imageId = getImageId('image');
-    if (imageId) {
-      module.standardImageTextOverlay.block.image = {
-        uploadDestinationId: imageId
-      };
+    const imageObj = buildImageObject(imageId, 'image');
+    if (imageObj) {
+      module.standardImageTextOverlay.block.image = imageObj;
     }
 
     const headline = addTextComponent('headline', content.headline);
@@ -387,10 +449,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     module.standardSingleImageHighlights = {};
 
     const imageId = getImageId('image');
-    if (imageId) {
-      module.standardSingleImageHighlights.image = {
-        uploadDestinationId: imageId
-      };
+    const imageObj = buildImageObject(imageId, 'image');
+    if (imageObj) {
+      module.standardSingleImageHighlights.image = imageObj;
     }
 
     const headline = addTextComponent('headline', content.headline);
@@ -423,10 +484,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     const images = [];
     for (let i = 1; i <= 4; i++) {
       const imageId = getImageId(`image${i}`);
-      if (imageId) {
-        images.push({
-          uploadDestinationId: imageId
-        });
+      const imageObj = buildImageObject(imageId, `image${i}`);
+      if (imageObj) {
+        images.push(imageObj);
       }
     }
     if (images.length > 0) {
@@ -451,7 +511,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
 
       // In placeholder mode: ALL blocks must be included, error if no placeholder found
       // In normal mode: Skip blocks without images
-      if (!imageId) {
+      const imageObj = buildImageObject(imageId, `image${i}`);
+
+      if (!imageObj) {
         if (usePlaceholders) {
           // In placeholder mode - this is an ERROR, placeholder should have been found
           missingPlaceholders.push(`image${i} (135x135)`);
@@ -464,9 +526,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       }
 
       const block = {
-        image: {
-          uploadDestinationId: imageId
-        }
+        image: imageObj
       };
       blocksAdded++;
 
@@ -505,8 +565,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
 
     for (let i = 1; i <= 4; i++) {
       const imageId = getImageId(`image${i}`);
+      const imageObj = buildImageObject(imageId, `image${i}`);
 
-      if (!imageId) {
+      if (!imageObj) {
         if (usePlaceholders) {
           missingPlaceholders.push(`image${i} (300x300)`);
           Logger.log(`❌ ERROR: Missing placeholder for image${i} (size 300x300) in STANDARD_FOUR_IMAGE_TEXT_QUADRANT`);
@@ -517,9 +578,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       }
 
       const block = {
-        image: {
-          uploadDestinationId: imageId
-        }
+        image: imageObj
       };
       blocksAdded++;
 
@@ -558,8 +617,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
 
     for (let i = 1; i <= 3; i++) {
       const imageId = getImageId(`image${i}`);
+      const imageObj = buildImageObject(imageId, `image${i}`);
 
-      if (!imageId) {
+      if (!imageObj) {
         if (usePlaceholders) {
           missingPlaceholders.push(`image${i} (300x300)`);
           Logger.log(`❌ ERROR: Missing placeholder for image${i} (size 300x300) in STANDARD_THREE_IMAGE_TEXT`);
@@ -570,9 +630,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       }
 
       const block = {
-        image: {
-          uploadDestinationId: imageId
-        }
+        image: imageObj
       };
       blocksAdded++;
 
@@ -607,10 +665,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       const column = {};
 
       const imageId = getImageId(`productImage${i}`);
-      if (imageId) {
-        column.image = {
-          uploadDestinationId: imageId
-        };
+      const imageObj = buildImageObject(imageId, `image${i}`);
+      if (imageObj) {
+        column.image = imageObj;
       }
 
       const productName = addTextComponent(`productName${i}`, content[`productName${i}`]);
@@ -664,10 +721,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     module.standardSingleImageSpecsDetail = {};
 
     const imageId = getImageId('image');
-    if (imageId) {
-      module.standardSingleImageSpecsDetail.image = {
-        uploadDestinationId: imageId
-      };
+    const imageObj = buildImageObject(imageId, 'image');
+    if (imageObj) {
+      module.standardSingleImageSpecsDetail.image = imageObj;
     }
 
     const headline = addTextComponent('headline', content.headline);
@@ -697,10 +753,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     };
 
     const imageId = getImageId('image');
-    if (imageId) {
-      module.standardImageSidebar.sidebarImage = {
-        uploadDestinationId: imageId
-      };
+    const imageObj = buildImageObject(imageId, 'image');
+    if (imageObj) {
+      module.standardImageSidebar.sidebarImage = imageObj;
     }
 
     const headline = addTextComponent('headline', content.headline);
@@ -756,10 +811,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     module.premiumImageText.positionType = aplusData.images?.imagePositionType || 'LEFT';
 
     const imageId = getImageId('image');
-    if (imageId) {
-      module.premiumImageText.image = {
-        uploadDestinationId: imageId
-      };
+    const imageObj = buildImageObject(imageId, 'image');
+    if (imageObj) {
+      module.premiumImageText.image = imageObj;
     } else {
       // Image is REQUIRED - use empty placeholder structure
       Logger.log('WARNING: PREMIUM_IMAGE_TEXT requires image - API will fail without it');
@@ -795,14 +849,11 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
 
     // desktopImage is REQUIRED (previously was backgroundImage)
     const bgImageId = getImageId('backgroundImage');
-    if (bgImageId) {
-      module.premiumFullBackgroundText.desktopImage = {
-        uploadDestinationId: bgImageId
-      };
+    const bgImageObj = buildImageObject(bgImageId, 'backgroundImage');
+    if (bgImageObj) {
+      module.premiumFullBackgroundText.desktopImage = bgImageObj;
       // mobileImage is also REQUIRED - use same image as desktop
-      module.premiumFullBackgroundText.mobileImage = {
-        uploadDestinationId: bgImageId
-      };
+      module.premiumFullBackgroundText.mobileImage = bgImageObj;
     } else {
       Logger.log('WARNING: PREMIUM_FULL_BACKGROUND_TEXT requires desktopImage and mobileImage - API will fail without them');
     }
@@ -824,10 +875,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     module.premiumFullBackgroundImage = {};
 
     const bgImageId = getImageId('backgroundImage');
-    if (bgImageId) {
-      module.premiumFullBackgroundImage.backgroundImage = {
-        uploadDestinationId: bgImageId
-      };
+    const bgImageObj = buildImageObject(bgImageId, 'backgroundImage');
+    if (bgImageObj) {
+      module.premiumFullBackgroundImage.backgroundImage = bgImageObj;
     }
   }
 
@@ -839,11 +889,10 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     const carouselCards = [];
     for (let i = 1; i <= 6; i++) {
       const imageId = getImageId(`image${i}`);
-      if (imageId) {
+      const imageObj = buildImageObject(imageId, `image${i}`);
+      if (imageObj) {
         carouselCards.push({
-          image: {
-            uploadDestinationId: imageId
-          }
+          image: imageObj
         });
       }
     }
@@ -874,10 +923,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     module.premiumSingleImage = {};
 
     const imageId = getImageId('image');
-    if (imageId) {
-      module.premiumSingleImage.image = {
-        uploadDestinationId: imageId
-      };
+    const imageObj = buildImageObject(imageId, 'image');
+    if (imageObj) {
+      module.premiumSingleImage.image = imageObj;
     }
   }
 
@@ -889,10 +937,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     const carouselImages = [];
     for (let i = 1; i <= 4; i++) {
       const imageId = getImageId(`image${i}`);
-      if (imageId) {
-        carouselImages.push({
-          uploadDestinationId: imageId
-        });
+      const imageObj = buildImageObject(imageId, `image${i}`);
+      if (imageObj) {
+        carouselImages.push(imageObj);
       }
     }
     if (carouselImages.length > 0) {
@@ -910,10 +957,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       const column = {};
 
       const imageId = getImageId(`image${i}`);
-      if (imageId) {
-        column.image = {
-          uploadDestinationId: imageId
-        };
+      const imageObj = buildImageObject(imageId, `image${i}`);
+      if (imageObj) {
+        column.image = imageObj;
       }
 
       const productName = addTextComponent(`productName${i}`, content[`productName${i}`]);
@@ -969,10 +1015,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     module.premiumHotspotImage = {};
 
     const imageId = getImageId('image');
-    if (imageId) {
-      module.premiumHotspotImage.image = {
-        uploadDestinationId: imageId
-      };
+    const imageObj = buildImageObject(imageId, 'image');
+    if (imageObj) {
+      module.premiumHotspotImage.image = imageObj;
     }
 
     // Hotspots (up to 10)
@@ -1011,8 +1056,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
 
     for (let i = 1; i <= 3; i++) {
       const imageId = getImageId(`image${i}`);
+      const imageObj = buildImageObject(imageId, `image${i}`);
 
-      if (!imageId) {
+      if (!imageObj) {
         if (usePlaceholders) {
           missingPlaceholders.push(`image${i} (362x453)`);
           Logger.log(`❌ ERROR: Missing placeholder for image${i} (size 362x453) in PREMIUM_THREE_IMAGE_TEXT`);
@@ -1023,9 +1069,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       }
 
       const block = {
-        image: {
-          uploadDestinationId: imageId
-        }
+        image: imageObj
       };
       blocksAdded++;
 
@@ -1063,8 +1107,9 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
 
     for (let i = 1; i <= 4; i++) {
       const imageId = getImageId(`image${i}`);
+      const imageObj = buildImageObject(imageId, `image${i}`);
 
-      if (!imageId) {
+      if (!imageObj) {
         if (usePlaceholders) {
           missingPlaceholders.push(`image${i} (362x453)`);
           Logger.log(`❌ ERROR: Missing placeholder for image${i} (size 362x453) in PREMIUM_FOUR_IMAGE_TEXT`);
@@ -1075,9 +1120,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       }
 
       const block = {
-        image: {
-          uploadDestinationId: imageId
-        }
+        image: imageObj
       };
       blocksAdded++;
 
