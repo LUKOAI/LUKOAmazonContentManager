@@ -2598,16 +2598,62 @@ function lukoShowErrors() {
 // ========================================
 
 function getSelectedCheckboxRows(sheet) {
+  const sheetName = sheet.getName();
   const data = sheet.getDataRange().getValues();
-  const checkboxCol = 0; // Assuming first column
 
-  const selectedRows = [];
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][checkboxCol] === true) {
-      selectedRows.push(i + 1);
+  // Determine header row based on sheet type
+  // APlusBasic, APlusPremium use row 3 for headers
+  // Other sheets use row 1
+  let headerRowIndex = 0; // 0-indexed, so row 1
+  let dataStartIndex = 1; // Start from row 2
+
+  if (sheetName === 'APlusBasic' || sheetName === 'APlusPremium' || sheetName.startsWith('APlus')) {
+    headerRowIndex = 2; // 0-indexed, so row 3
+    dataStartIndex = 3; // Start from row 4
+  }
+
+  // Find ☑️ Export column in headers
+  const headers = data[headerRowIndex] || [];
+  let checkboxCol = -1;
+
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i]?.toString() || '';
+    if (header.includes('☑️ Export') || header.includes('Export') || header === '☑️') {
+      checkboxCol = i;
+      break;
     }
   }
 
+  // Fallback to column 0 if not found
+  if (checkboxCol === -1) {
+    checkboxCol = 0;
+    Logger.log(`WARNING: ☑️ Export column not found in ${sheetName}, using column 0`);
+  } else {
+    Logger.log(`Found ☑️ Export column at index ${checkboxCol} in ${sheetName}`);
+  }
+
+  const selectedRows = [];
+  for (let i = dataStartIndex; i < data.length; i++) {
+    const cellValue = data[i][checkboxCol];
+
+    // Check for various true values: boolean true, string 'TRUE', 'true', 'PRAWDA', checkbox value
+    const isChecked = cellValue === true ||
+                      cellValue === 'TRUE' ||
+                      cellValue === 'true' ||
+                      cellValue === 'PRAWDA' ||
+                      cellValue === 1 ||
+                      cellValue === '1';
+
+    // Also check it's not 'DONE' (already exported)
+    const isDone = cellValue === 'DONE' || cellValue === 'done';
+
+    if (isChecked && !isDone) {
+      selectedRows.push(i + 1); // Convert to 1-based row number
+      Logger.log(`Row ${i + 1} selected (value: ${cellValue})`);
+    }
+  }
+
+  Logger.log(`getSelectedCheckboxRows(${sheetName}): Found ${selectedRows.length} selected rows`);
   return selectedRows;
 }
 

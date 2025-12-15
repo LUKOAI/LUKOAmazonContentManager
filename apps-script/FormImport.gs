@@ -1,8 +1,10 @@
 /**
- * Google Forms → APlusBasic Auto-Import Integration
+ * Google Forms → APlusBasic/APlusPremium Auto-Import Integration
  *
  * Automatically imports A+ Content data from Google Form submissions
- * directly into the APlusBasic sheet at the first available row.
+ * directly into the appropriate sheet:
+ * - STANDARD modules → APlusBasic
+ * - PREMIUM modules → APlusPremium
  *
  * FORM STRUCTURE:
  * - Form URL: https://docs.google.com/forms/d/1LDysIzwc5kfSBG3cAT7cDKnWlx6w-Sj9vJw2YhbrYI8/edit
@@ -19,6 +21,7 @@
 
 /**
  * Main trigger function - runs on form submission
+ * Routes modules to APlusBasic (STANDARD) or APlusPremium (PREMIUM)
  * @param {Object} e - Event object from form submission
  */
 function onFormSubmit(e) {
@@ -136,115 +139,85 @@ function onFormSubmit(e) {
 
     Logger.log('Parsed ' + data.modules.length + ' modules from JSON');
 
-    // 3. Get target sheet
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var aplusSheet = ss.getSheetByName('APlusBasic');
+    // 3. Separate modules by type (STANDARD vs PREMIUM)
+    var standardModules = [];
+    var premiumModules = [];
 
-    if (!aplusSheet) {
-      throw new Error('APlusBasic sheet not found - please create it first');
-    }
+    data.modules.forEach(function(module) {
+      var moduleType = module.columns && (module.columns['Module Type'] || module.columns['D'] || '');
 
-    // 4. Build header mapping (column name → column letter)
-    var headerMap = buildHeaderMap(aplusSheet);
-    Logger.log('Header map created with ' + Object.keys(headerMap).length + ' columns');
-
-    // 5. Find first empty row
-    var targetRow = findFirstEmptyRow(aplusSheet);
-    Logger.log('First empty row: ' + targetRow);
-
-    var startRow = targetRow;
-
-    // 6. Write each module
-    var modulesWritten = 0;
-    data.modules.forEach(function(module, index) {
-      Logger.log('Processing module ' + (index + 1) + '/' + data.modules.length);
-
-      if (!module.columns) {
-        Logger.log('WARNING: Module ' + (index + 1) + ' has no columns - skipping');
-        return;
+      if (moduleType.toString().toUpperCase().startsWith('PREMIUM')) {
+        premiumModules.push(module);
+        Logger.log('Module type "' + moduleType + '" → APlusPremium');
+      } else {
+        standardModules.push(module);
+        Logger.log('Module type "' + moduleType + '" → APlusBasic');
       }
-
-      // Write each column value
-      for (var colKey in module.columns) {
-        var value = module.columns[colKey];
-
-        // Check if colKey is already a letter (A, B, C) or a name (☑️ Export, ASIN)
-        var colLetter;
-        if (colKey.length <= 2 && /^[A-Z]+$/.test(colKey)) {
-          // Already a letter (A, B, AA, etc.)
-          colLetter = colKey;
-          Logger.log('  Using column letter directly: ' + colLetter);
-        } else {
-          // It's a column name - look up in header map
-          colLetter = headerMap[colKey];
-          if (!colLetter) {
-            Logger.log('  WARNING: Column name "' + colKey + '" not found in headers - skipping');
-            continue;
-          }
-          Logger.log('  Mapped "' + colKey + '" → ' + colLetter);
-        }
-
-        var colNumber = columnLetterToNumber(colLetter);
-        Logger.log('  Writing to ' + colLetter + ' (col ' + colNumber + '): ' + value);
-
-        var cell = aplusSheet.getRange(targetRow, colNumber);
-
-        // Check if this is a checkbox column (starts with ☑️)
-        if (colKey.indexOf('☑️') === 0 || colKey.indexOf('✓') === 0) {
-          // Handle checkbox columns
-          if (value === true || value === 'TRUE' || value === 'true' || value === 'PRAWDA') {
-            cell.insertCheckboxes();
-            cell.setValue(true);
-          } else if (value === false || value === 'FALSE' || value === 'false' || value === 'FAŁSZ') {
-            cell.insertCheckboxes();
-            cell.setValue(false);
-          } else {
-            cell.setValue(value); // Fallback for other values
-          }
-        } else {
-          cell.setValue(value);
-        }
-      }
-
-      // Set Status = DONE and ExportDateTime after import
-      var statusColLetter = headerMap['Status'];
-      var exportDateTimeColLetter = headerMap['ExportDateTime'];
-
-      if (statusColLetter) {
-        var statusColNumber = columnLetterToNumber(statusColLetter);
-        aplusSheet.getRange(targetRow, statusColNumber).setValue('DONE');
-      }
-
-      if (exportDateTimeColLetter) {
-        var exportDateTimeColNumber = columnLetterToNumber(exportDateTimeColLetter);
-        var now = new Date();
-        var dateStr = Utilities.formatDate(now, Session.getScriptTimeZone(), 'dd.MM.yyyy HH:mm:ss');
-        aplusSheet.getRange(targetRow, exportDateTimeColNumber).setValue(dateStr);
-      }
-
-      targetRow++;
-      modulesWritten++;
     });
 
+    Logger.log('Standard modules: ' + standardModules.length + ', Premium modules: ' + premiumModules.length);
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var totalModulesWritten = 0;
+    var results = [];
+
+    // 4. Import STANDARD modules to APlusBasic
+    if (standardModules.length > 0) {
+      var basicSheet = ss.getSheetByName('APlusBasic');
+      if (!basicSheet) {
+        Logger.log('WARNING: APlusBasic sheet not found - skipping standard modules');
+      } else {
+        var basicResult = importModulesToSheet(basicSheet, standardModules, 'APlusBasic');
+        totalModulesWritten += basicResult.count;
+        results.push(basicResult);
+      }
+    }
+
+    // 5. Import PREMIUM modules to APlusPremium
+    if (premiumModules.length > 0) {
+      var premiumSheet = ss.getSheetByName('APlusPremium');
+      if (!premiumSheet) {
+        Logger.log('WARNING: APlusPremium sheet not found - creating it...');
+        // Try to create APlusPremium sheet if it doesn't exist
+        premiumSheet = ss.insertSheet('APlusPremium');
+        // Copy headers from APlusBasic if available
+        var basicSheet = ss.getSheetByName('APlusBasic');
+        if (basicSheet) {
+          var headers = basicSheet.getRange(1, 1, 3, basicSheet.getLastColumn()).getValues();
+          premiumSheet.getRange(1, 1, 3, headers[0].length).setValues(headers);
+          premiumSheet.setFrozenRows(3);
+        }
+      }
+
+      if (premiumSheet) {
+        var premiumResult = importModulesToSheet(premiumSheet, premiumModules, 'APlusPremium');
+        totalModulesWritten += premiumResult.count;
+        results.push(premiumResult);
+      }
+    }
+
     Logger.log('=== IMPORT COMPLETE ===');
-    Logger.log('Modules written: ' + modulesWritten);
-    Logger.log('Rows: ' + startRow + ' to ' + (targetRow - 1));
+    Logger.log('Total modules written: ' + totalModulesWritten);
 
     // 6. Log success
-    logOperation('FORM_IMPORT', 'SUCCESS', modulesWritten + ' modules imported (rows ' + startRow + '-' + (targetRow - 1) + ')');
+    var logMessage = totalModulesWritten + ' modules imported: ';
+    logMessage += standardModules.length + ' to APlusBasic, ';
+    logMessage += premiumModules.length + ' to APlusPremium';
+    logOperation('FORM_IMPORT', 'SUCCESS', logMessage);
 
     // 7. Success notification (only if running manually, not from trigger)
     try {
       var ui = SpreadsheetApp.getUi();
-      ui.alert(
-        '✅ A+ Content Import Success',
-        modulesWritten + ' module(s) imported to APlusBasic.\n\n' +
-        'Starting at row ' + startRow + '\n' +
-        'Ending at row ' + (targetRow - 1) + '\n\n' +
-        'You can now publish these modules using:\n' +
-        'Export to Amazon → 📤 Publish A+ Content',
-        ui.ButtonSet.OK
-      );
+      var detailMessage = totalModulesWritten + ' module(s) imported:\n\n';
+
+      results.forEach(function(r) {
+        detailMessage += r.sheetName + ': ' + r.count + ' modules (rows ' + r.startRow + '-' + r.endRow + ')\n';
+      });
+
+      detailMessage += '\nYou can now publish these modules using:\n';
+      detailMessage += 'Export to Amazon → 📤 Publish A+ Content';
+
+      ui.alert('✅ A+ Content Import Success', detailMessage, ui.ButtonSet.OK);
     } catch (uiError) {
       // Running from trigger - UI not available, that's OK
       Logger.log('Success notification skipped (running from trigger)');
@@ -275,6 +248,104 @@ function onFormSubmit(e) {
       Logger.log('Error notification skipped (running from trigger)');
     }
   }
+}
+
+/**
+ * Import modules to a specific sheet
+ * @param {Sheet} sheet - Target sheet
+ * @param {Array} modules - Array of module objects
+ * @param {string} sheetName - Sheet name for logging
+ * @returns {Object} - Result with count, startRow, endRow
+ */
+function importModulesToSheet(sheet, modules, sheetName) {
+  var headerMap = buildHeaderMap(sheet);
+  Logger.log('Header map created for ' + sheetName + ' with ' + Object.keys(headerMap).length + ' columns');
+
+  var targetRow = findFirstEmptyRow(sheet);
+  Logger.log('First empty row in ' + sheetName + ': ' + targetRow);
+
+  var startRow = targetRow;
+  var modulesWritten = 0;
+
+  modules.forEach(function(module, index) {
+    Logger.log('Processing module ' + (index + 1) + '/' + modules.length + ' for ' + sheetName);
+
+    if (!module.columns) {
+      Logger.log('WARNING: Module ' + (index + 1) + ' has no columns - skipping');
+      return;
+    }
+
+    // Write each column value
+    for (var colKey in module.columns) {
+      var value = module.columns[colKey];
+
+      // Check if colKey is already a letter (A, B, C) or a name (☑️ Export, ASIN)
+      var colLetter;
+      if (colKey.length <= 2 && /^[A-Z]+$/.test(colKey)) {
+        // Already a letter (A, B, AA, etc.)
+        colLetter = colKey;
+        Logger.log('  Using column letter directly: ' + colLetter);
+      } else {
+        // It's a column name - look up in header map
+        colLetter = headerMap[colKey];
+        if (!colLetter) {
+          Logger.log('  WARNING: Column name "' + colKey + '" not found in headers - skipping');
+          continue;
+        }
+        Logger.log('  Mapped "' + colKey + '" → ' + colLetter);
+      }
+
+      var colNumber = columnLetterToNumber(colLetter);
+      Logger.log('  Writing to ' + colLetter + ' (col ' + colNumber + '): ' + value);
+
+      var cell = sheet.getRange(targetRow, colNumber);
+
+      // Check if this is a checkbox column (starts with ☑️)
+      if (colKey.indexOf('☑️') === 0 || colKey.indexOf('✓') === 0) {
+        // Handle checkbox columns - SET TO TRUE for new imports
+        cell.insertCheckboxes();
+        cell.setValue(true);
+        Logger.log('  Set checkbox to TRUE for new import');
+      } else if (value === true || value === 'TRUE' || value === 'true' || value === 'PRAWDA') {
+        cell.insertCheckboxes();
+        cell.setValue(true);
+      } else if (value === false || value === 'FALSE' || value === 'false' || value === 'FAŁSZ') {
+        cell.insertCheckboxes();
+        cell.setValue(false);
+      } else {
+        cell.setValue(value);
+      }
+    }
+
+    // Set ☑️ Export to TRUE for new imports (if not already set)
+    var exportColLetter = headerMap['☑️ Export'];
+    if (exportColLetter) {
+      var exportColNumber = columnLetterToNumber(exportColLetter);
+      var exportCell = sheet.getRange(targetRow, exportColNumber);
+      exportCell.insertCheckboxes();
+      exportCell.setValue(true);
+      Logger.log('  Set ☑️ Export = TRUE for new import');
+    }
+
+    // Set Status = PENDING (not DONE) for new imports
+    var statusColLetter = headerMap['Status'];
+    if (statusColLetter) {
+      var statusColNumber = columnLetterToNumber(statusColLetter);
+      sheet.getRange(targetRow, statusColNumber).setValue('PENDING');
+    }
+
+    targetRow++;
+    modulesWritten++;
+  });
+
+  Logger.log('Wrote ' + modulesWritten + ' modules to ' + sheetName + ' (rows ' + startRow + '-' + (targetRow - 1) + ')');
+
+  return {
+    sheetName: sheetName,
+    count: modulesWritten,
+    startRow: startRow,
+    endRow: targetRow - 1
+  };
 }
 
 /**
