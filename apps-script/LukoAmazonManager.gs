@@ -36,8 +36,8 @@ const SHEETS = {
   images: 'Images',
   images360: 'Images-360',
   videos: 'Videos',
-  aplusBasic: 'APlus-Basic',
-  aplusPremium: 'APlus-Premium',
+  aplusBasic: 'APlusBasic',
+  aplusPremium: 'APlusPremium',
   brandStore: 'BrandStore',
   brandStrip: 'BrandStrip',
   coupons: 'Coupons',
@@ -138,14 +138,20 @@ const MARKETPLACE_LANGUAGES = {
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
 
-  ui.createMenu('Amazon Manager')
-    .addSubMenu(ui.createMenu('🔑 SP-API Auth')
-      .addItem('📧 Setup Email Automation', 'setupEmailAutomationTrigger')
-      .addItem('🔄 Process Emails Now', 'processActivationEmails')
-      .addItem('✋ Stop Email Automation', 'removeEmailAutomationTrigger')
+  ui.createMenu('NetAnaliza Manager')
+    .addSubMenu(ui.createMenu('👥 Client Management')
+      .addItem('📋 Show Active Client', 'showActiveClientInfo')
+      .addItem('🔄 Switch Active Client', 'switchActiveClient')
+      .addItem('➕ Add New Client', 'addNewClient')
       .addSeparator()
-      .addItem('📝 Manual: Exchange Auth Code', 'exchangeAuthorizationCode')
-      .addItem('🔄 Manual: Refresh Token', 'refreshAccessToken'))
+      .addItem('📊 View Client Settings Sheet', 'viewClientSettings')
+      .addItem('🔧 Setup Client Settings', 'generateClientSettingsSheet')
+      .addItem('📥 Migrate from Old Config', 'migrateFromOldConfig'))
+    .addSubMenu(ui.createMenu('🔑 SP-API Auth')
+      .addItem('📖 How to Get Auth Code', 'showAuthorizationInstructions')
+      .addSeparator()
+      .addItem('📝 Exchange Auth Code', 'exchangeAuthorizationCode')
+      .addItem('🔄 Refresh Access Token', 'refreshAccessToken'))
     .addSeparator()
     .addSubMenu(ui.createMenu('Export to Amazon')
       .addItem('📤 Export Products (ProductsMain)', 'lukoExportProducts')
@@ -157,7 +163,36 @@ function onOpen() {
       .addSeparator()
       .addItem('Upload Images', 'lukoUploadImages')
       .addItem('Upload Videos', 'lukoUploadVideos')
-      .addItem('Publish A+ Content', 'lukoPublishAPlus')
+      .addSeparator()
+      .addItem('📝 Publish A+ (Text Only)', 'lukoPublishAPlusTextOnly')
+      .addItem('🖼️ Publish A+ (Text + Images)', 'lukoPublishAPlusWithImages')
+      .addItem('🎭 Publish A+ (Text + Placeholders)', 'lukoPublishAPlusWithPlaceholders')
+      .addSeparator()
+      .addItem('✅ Check A+ Status', 'lukoCheckAPlusStatus')
+      .addSeparator()
+      .addItem('📚 Create Image Library', 'createImageLibrarySheet')
+      .addItem('🔄 Sync ALL Images to Library', 'syncAllImagesToLibrary')
+      .addItem('🔄 Quick Sync (first 5 docs)', 'syncImagesToLibrary')
+      .addSeparator()
+      .addItem('🗺️ Map Single Placeholder', 'mapSinglePlaceholder')
+      .addItem('📋 Bulk Map Placeholders', 'bulkMapPlaceholders')
+      .addItem('➕ Add Placeholder Manually', 'addPlaceholderToLibrary')
+      .addSeparator()
+      .addItem('📐 List Required Sizes', 'listRequiredPlaceholderSizes')
+      .addItem('🎭 Show Placeholder Coverage', 'showPlaceholderCoverage')
+      .addItem('🔧 Fix Invalid Placeholders', 'fixInvalidPlaceholders')
+      .addSeparator()
+      .addItem('🧪 Test New API Permissions', 'testNewAPIPermissions')
+      // EXPERIMENTAL/DIAGNOSTIC FUNCTIONS - Zakomentowane bo nie działają (brak dostępu do Amazon S3 bucket)
+      // Te funkcje testują endpoint S3 i Asset Library API, które zwracają 403 Forbidden
+      // Zostawione w kodzie do celów diagnostycznych i dokumentacji
+      // Aby aktywować: odkomentuj poniższe linie
+      // .addSeparator()
+      // .addItem('🧪 Test S3 Direct Upload', 'testS3DirectUpload')
+      // .addItem('🧪 Search S3 Credential Endpoints', 'searchForS3CredentialEndpoints')
+      // .addItem('🧪 Test Asset Library API', 'testAssetLibraryEndpoints')
+      // .addItem('🧪 Test A+ Parameters', 'testAPlusDocumentParameters')
+      .addSeparator()
       .addItem('Create Coupons', 'lukoCreateCoupons')
       .addItem('Launch Promotions', 'lukoLaunchPromotions'))
 
@@ -190,6 +225,8 @@ function onOpen() {
       .addSeparator()
       .addItem('🎨 Generate Spreadsheet', 'lukoGenerateFullSpreadsheet')
       .addItem('🔧 Regenerate Config Only', 'lukoRegenerateConfigOnly')
+      .addSeparator()
+      .addItem('📋 Setup Google Forms Import', 'showGoogleFormsSetupInstructions')
       .addSeparator()
       .addItem('Translate Content', 'lukoTranslateContent')
       .addItem('Generate Variants', 'lukoGenerateVariants')
@@ -758,48 +795,8 @@ function extractProductData(sheet, rowNumber, activeLanguages) {
 }
 
 function syncProductToAmazon(productData, marketplace, marketplaceConfig) {
-  try {
-    // Prepare payload for Cloud Function
-    const payload = {
-      operation: productData.action.toLowerCase(),
-      marketplace: marketplace,
-      marketplaceId: marketplaceConfig.marketplaceId,
-      asin: productData.asin,
-      sku: productData.sku,
-      productType: productData.productType,
-      content: productData.content,
-      credentials: getCredentials()
-    };
-
-    // Add optional fields if present
-    if (productData.modelNumber) payload.modelNumber = productData.modelNumber;
-    if (productData.releaseDate) payload.releaseDate = productData.releaseDate;
-    if (productData.packageQuantity) payload.packageQuantity = productData.packageQuantity;
-    if (productData.pricing) payload.pricing = productData.pricing;
-    if (productData.inventory) payload.inventory = productData.inventory;
-    if (productData.compliance) payload.compliance = productData.compliance;
-    if (productData.dimensions) payload.dimensions = productData.dimensions;
-
-    // Call Cloud Function
-    const response = callCloudFunction(payload);
-
-    return {
-      asin: productData.asin,
-      marketplace: marketplace,
-      status: response.status,
-      message: response.message,
-      timestamp: new Date()
-    };
-
-  } catch (error) {
-    return {
-      asin: productData.asin,
-      marketplace: marketplace,
-      status: 'ERROR',
-      message: error.toString(),
-      timestamp: new Date()
-    };
-  }
+  // Use new direct SP-API call (no Cloud Function)
+  return syncProductToAmazonDirect(productData, marketplace, marketplaceConfig);
 }
 
 
@@ -931,15 +928,10 @@ function uploadImagesToAmazon(imageData) {
       credentials: getCredentials()
     };
 
-    const response = callCloudFunction(payload);
-
-    return {
-      asin: imageData.asin,
-      marketplace: imageData.marketplace,
-      status: response.status,
-      message: response.message,
-      timestamp: new Date()
-    };
+    throw new Error(
+      'Image upload via direct SP-API is not yet available in v3.0.\n' +
+      'Please use Amazon Seller Central to upload images.'
+    );
 
   } catch (error) {
     return {
@@ -954,16 +946,10 @@ function uploadImagesToAmazon(imageData) {
 
 function uploadVideosToAmazon(videoData) {
   try {
-    const payload = {
-      operation: 'upload_videos',
-      marketplace: videoData.marketplace,
-      asin: videoData.asin,
-      sku: videoData.sku,
-      video: videoData,
-      credentials: getCredentials()
-    };
-
-    const response = callCloudFunction(payload);
+    throw new Error(
+      'Video upload via direct SP-API is not yet available in v3.0.\n' +
+      'Please use Amazon Seller Central to upload videos.'
+    );
 
     return {
       asin: videoData.asin,
@@ -1008,98 +994,814 @@ function lukoPublishAPlus() {
 
     const sheetName = contentType === 'BASIC' ? SHEETS.aplusBasic : SHEETS.aplusPremium;
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-    const selectedRows = getSelectedCheckboxRows(sheet);
 
-    if (selectedRows.length === 0) {
-      showError('Please select A+ content to publish');
+    if (!sheet) {
+      showError(`Sheet "${sheetName}" not found!\n\nPlease generate the spreadsheet first:\nMenu → Tools → Generate Spreadsheet`);
       return;
     }
 
-    showProgress(`Publishing ${selectedRows.length} A+ ${contentType} modules...`);
+    const selectedRows = getSelectedCheckboxRows(sheet);
 
-    const results = [];
+    if (selectedRows.length === 0) {
+      showError('Please select A+ content to publish (check the ☑️ Export column)');
+      return;
+    }
+
+    // GROUP MODULES BY ASIN
+    // Each ASIN gets ONE A+ Content document with MULTIPLE modules
+    const modulesByAsin = {};
+
+    Logger.log('=== Grouping modules by ASIN ===');
+
     for (const row of selectedRows) {
       const aplusData = extractAPlusData(sheet, row, contentType);
-      const result = publishAPlusContent(aplusData, contentType);
+
+      if (!modulesByAsin[aplusData.asin]) {
+        modulesByAsin[aplusData.asin] = [];
+        Logger.log(`Created group for ASIN: ${aplusData.asin}`);
+      }
+
+      modulesByAsin[aplusData.asin].push({
+        row: row,
+        data: aplusData
+      });
+
+      Logger.log(`  Added module ${aplusData.moduleNumber} (${aplusData.moduleType}) to ${aplusData.asin}`);
+    }
+
+    const asinCount = Object.keys(modulesByAsin).length;
+    Logger.log(`Total ASINs: ${asinCount}`);
+
+    showProgress(`Publishing ${asinCount} A+ Content document(s) with ${selectedRows.length} total modules...`);
+
+    // PUBLISH EACH ASIN AS ONE A+ CONTENT WITH MULTIPLE MODULES
+    const results = [];
+
+    for (const asin in modulesByAsin) {
+      const modules = modulesByAsin[asin];
+
+      Logger.log(`\n=== Publishing ${asin} with ${modules.length} modules ===`);
+
+      // Publish all modules for this ASIN as ONE A+ Content
+      const result = publishMultiModuleAPlusContent(modules, contentType);
+
       results.push(result);
-      updateRowStatus(sheet, row, result);
+
+      // Update status for ALL rows of this ASIN
+      for (const module of modules) {
+        updateRowStatus(sheet, module.row, result);
+      }
     }
 
     logOperations(results, 'ALL', `PUBLISH_APLUS_${contentType}`);
-    showSummary(results);
+    hideProgress();
+
+    // Enhanced summary
+    let summary = `A+ Content Publishing Results\n\n`;
+    summary += `✅ Published: ${asinCount} A+ Content document(s)\n`;
+    summary += `📦 Total modules: ${selectedRows.length}\n\n`;
+    summary += `Breakdown by ASIN:\n`;
+
+    for (const asin in modulesByAsin) {
+      const modules = modulesByAsin[asin];
+      summary += `  ${asin}: ${modules.length} module(s)\n`;
+    }
+
+    ui.alert('Publishing Complete', summary, ui.ButtonSet.OK);
 
   } catch (error) {
+    hideProgress();
     handleError('lukoPublishAPlus', error);
+  }
+}
+
+// ========================================
+// A+ CONTENT - 3 EXPORT MODES
+// ========================================
+
+/**
+ * TEXT ONLY MODULES (no images required):
+ * - STANDARD_TEXT
+ * - STANDARD_PRODUCT_DESCRIPTION
+ * - STANDARD_TECH_SPECS
+ */
+const TEXT_ONLY_MODULES = [
+  'STANDARD_TEXT',
+  'STANDARD_PRODUCT_DESCRIPTION',
+  'STANDARD_TECH_SPECS'
+];
+
+/**
+ * MODULES REQUIRING IMAGES:
+ * All other modules that have image fields
+ */
+const IMAGE_MODULES = [
+  'STANDARD_SINGLE_SIDE_IMAGE',
+  'STANDARD_HEADER_IMAGE_TEXT',
+  'STANDARD_COMPANY_LOGO',
+  'STANDARD_IMAGE_TEXT_OVERLAY',
+  'STANDARD_SINGLE_IMAGE_HIGHLIGHTS',
+  'STANDARD_MULTIPLE_IMAGE_TEXT',
+  'STANDARD_FOUR_IMAGE_TEXT',
+  'STANDARD_FOUR_IMAGE_TEXT_QUADRANT',
+  'STANDARD_THREE_IMAGE_TEXT',
+  'STANDARD_COMPARISON_TABLE',
+  'STANDARD_SINGLE_IMAGE_SPECS_DETAIL',
+  'STANDARD_IMAGE_SIDEBAR'
+];
+
+/**
+ * Mode 1: Publish A+ Text Only
+ * Only exports modules that don't require images
+ */
+function lukoPublishAPlusTextOnly() {
+  lukoPublishAPlusWithMode('TEXT_ONLY');
+}
+
+/**
+ * Mode 2: Publish A+ with Real Images
+ * Exports all modules with real uploadDestinationIds from Image Library
+ */
+function lukoPublishAPlusWithImages() {
+  lukoPublishAPlusWithMode('WITH_IMAGES');
+}
+
+/**
+ * Mode 3: Publish A+ with Placeholders
+ * Exports all modules using placeholder images from library
+ * Placeholders are marked with 'placeholder' in notes column of Image Library
+ */
+function lukoPublishAPlusWithPlaceholders() {
+  lukoPublishAPlusWithMode('WITH_PLACEHOLDERS');
+}
+
+/**
+ * Main A+ publish function with mode selection
+ * @param {string} exportMode - 'TEXT_ONLY', 'WITH_IMAGES', or 'WITH_PLACEHOLDERS'
+ */
+function lukoPublishAPlusWithMode(exportMode) {
+  try {
+    const ui = SpreadsheetApp.getUi();
+
+    // Mode descriptions
+    const modeDescriptions = {
+      'TEXT_ONLY': '📝 Tylko tekst (moduły bez obrazów)',
+      'WITH_IMAGES': '🖼️ Tekst + obrazy (z prawdziwymi ID obrazów)',
+      'WITH_PLACEHOLDERS': '🎭 Tekst + atrapy (z placeholder obrazami)'
+    };
+
+    const response = ui.alert(
+      `Publish A+ Content - ${modeDescriptions[exportMode]}`,
+      'Wybierz typ treści:\nTAK = Basic\nNIE = Premium\nANULUJ = Przerwij',
+      ui.ButtonSet.YES_NO_CANCEL
+    );
+
+    let contentType;
+    if (response === ui.Button.YES) {
+      contentType = 'BASIC';
+    } else if (response === ui.Button.NO) {
+      contentType = 'PREMIUM';
+    } else {
+      return;
+    }
+
+    const sheetName = contentType === 'BASIC' ? SHEETS.aplusBasic : SHEETS.aplusPremium;
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+
+    if (!sheet) {
+      showError(`Arkusz "${sheetName}" nie znaleziony!\n\nWygeneruj arkusz najpierw:\nMenu → Tools → Generate Spreadsheet`);
+      return;
+    }
+
+    const selectedRows = getSelectedCheckboxRows(sheet);
+
+    if (selectedRows.length === 0) {
+      showError('Wybierz treści A+ do publikacji (zaznacz ☑️ Export)');
+      return;
+    }
+
+    // FILTER MODULES BY EXPORT MODE
+    const filteredRows = [];
+    const skippedModules = [];
+
+    for (const row of selectedRows) {
+      const aplusData = extractAPlusData(sheet, row, contentType);
+      const moduleType = aplusData.moduleType;
+
+      if (exportMode === 'TEXT_ONLY') {
+        // Only allow text-only modules
+        if (TEXT_ONLY_MODULES.includes(moduleType)) {
+          filteredRows.push(row);
+        } else {
+          skippedModules.push(`Row ${row}: ${moduleType} (wymaga obrazów)`);
+        }
+      } else {
+        // For WITH_IMAGES and WITH_PLACEHOLDERS, allow all modules
+        filteredRows.push(row);
+      }
+    }
+
+    // Show warning if some modules were skipped
+    if (exportMode === 'TEXT_ONLY' && skippedModules.length > 0) {
+      const continueResponse = ui.alert(
+        '⚠️ Pominięte moduły',
+        `Następujące moduły zostaną pominięte (wymagają obrazów):\n\n${skippedModules.join('\n')}\n\nKontynuować z modułami tekstowymi?`,
+        ui.ButtonSet.YES_NO
+      );
+      if (continueResponse !== ui.Button.YES) {
+        return;
+      }
+    }
+
+    if (filteredRows.length === 0) {
+      showError('Brak modułów do eksportu po filtrowaniu.\n\nW trybie "Tylko tekst" dostępne są tylko moduły:\n- STANDARD_TEXT\n- STANDARD_PRODUCT_DESCRIPTION\n- STANDARD_TECH_SPECS');
+      return;
+    }
+
+    // GROUP MODULES BY ASIN
+    const modulesByAsin = {};
+
+    Logger.log(`=== Grouping modules by ASIN (Mode: ${exportMode}) ===`);
+
+    for (const row of filteredRows) {
+      const aplusData = extractAPlusData(sheet, row, contentType);
+
+      // For placeholder mode, inject placeholder image IDs
+      if (exportMode === 'WITH_PLACEHOLDERS') {
+        aplusData.usePlaceholders = true;
+      }
+
+      if (!modulesByAsin[aplusData.asin]) {
+        modulesByAsin[aplusData.asin] = [];
+        Logger.log(`Created group for ASIN: ${aplusData.asin}`);
+      }
+
+      modulesByAsin[aplusData.asin].push({
+        row: row,
+        data: aplusData
+      });
+
+      Logger.log(`  Added module ${aplusData.moduleNumber} (${aplusData.moduleType}) to ${aplusData.asin}`);
+    }
+
+    const asinCount = Object.keys(modulesByAsin).length;
+    Logger.log(`Total ASINs: ${asinCount}`);
+
+    // PREFLIGHT CHECK FOR PLACEHOLDER MODE
+    if (exportMode === 'WITH_PLACEHOLDERS') {
+      Logger.log('=== Preflight placeholder check ===');
+
+      // Collect all modules for preflight
+      const allModules = [];
+      for (const asin in modulesByAsin) {
+        allModules.push(...modulesByAsin[asin]);
+      }
+
+      const preflightReport = preflightPlaceholderCheck(allModules);
+
+      if (!preflightReport.ready) {
+        hideProgress();
+
+        const reportMessage = formatPlaceholderReport(preflightReport);
+        const continueAnyway = ui.alert(
+          '⚠️ Brakujące placeholdery',
+          reportMessage + '\n\nCzy kontynuować mimo to?\n(Moduły bez placeholderów mogą spowodować błąd)',
+          ui.ButtonSet.YES_NO
+        );
+
+        if (continueAnyway !== ui.Button.YES) {
+          Logger.log('User cancelled due to missing placeholders');
+          return;
+        }
+
+        Logger.log('User chose to continue despite missing placeholders');
+      } else {
+        Logger.log('Preflight check passed - all placeholders available');
+      }
+    }
+
+    showProgress(`Publikowanie ${asinCount} dokumentów A+ z ${filteredRows.length} modułami (tryb: ${exportMode})...`);
+
+    // PUBLISH EACH ASIN AS ONE A+ CONTENT WITH MULTIPLE MODULES
+    const results = [];
+
+    for (const asin in modulesByAsin) {
+      const modules = modulesByAsin[asin];
+
+      Logger.log(`\n=== Publishing ${asin} with ${modules.length} modules (${exportMode}) ===`);
+
+      // Publish all modules for this ASIN as ONE A+ Content
+      const result = publishMultiModuleAPlusContent(modules, contentType, exportMode);
+
+      results.push(result);
+
+      // Update status for ALL rows of this ASIN
+      for (const module of modules) {
+        updateRowStatus(sheet, module.row, result);
+      }
+    }
+
+    logOperations(results, 'ALL', `PUBLISH_APLUS_${contentType}_${exportMode}`);
+    hideProgress();
+
+    // Count successes and failures
+    const successResults = results.filter(r => r.success === true);
+    const failedResults = results.filter(r => r.success !== true);
+
+    // Enhanced summary
+    let summary = `A+ Content Publishing Results (${modeDescriptions[exportMode]})\n\n`;
+
+    if (successResults.length > 0) {
+      summary += `✅ Opublikowano: ${successResults.length} dokumentów A+\n`;
+    }
+    if (failedResults.length > 0) {
+      summary += `❌ Błędy: ${failedResults.length} dokumentów\n`;
+    }
+    summary += `📦 Łącznie modułów: ${filteredRows.length}\n`;
+    if (skippedModules.length > 0) {
+      summary += `⏭️ Pominięto: ${skippedModules.length} modułów\n`;
+    }
+    summary += `\nRozkład wg ASIN:\n`;
+
+    for (const asin in modulesByAsin) {
+      const modules = modulesByAsin[asin];
+      const asinResult = results.find(r => r.asin === asin);
+      const status = asinResult?.success ? '✅' : '❌';
+      summary += `  ${status} ${asin}: ${modules.length} moduł(ów)`;
+      if (asinResult && !asinResult.success && asinResult.error) {
+        summary += ` - ${asinResult.error.substring(0, 50)}...`;
+      }
+      summary += `\n`;
+    }
+
+    const dialogTitle = failedResults.length > 0 ? 'Publikowanie zakończone z błędami' : 'Publikowanie zakończone';
+    ui.alert(dialogTitle, summary, ui.ButtonSet.OK);
+
+  } catch (error) {
+    hideProgress();
+    handleError('lukoPublishAPlusWithMode', error);
+  }
+}
+
+/**
+ * Sync placeholder images from Amazon Asset Library to Image Library sheet
+ * User can either:
+ * 1. Enter a specific uploadDestinationId to add directly
+ * 2. Enter a prefix to search for in existing A+ Content
+ * 3. Leave empty to sync ALL images from A+ Content
+ */
+function syncPlaceholderImagesToLibrary() {
+  try {
+    const ui = SpreadsheetApp.getUi();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // Get or create library sheet
+    let librarySheet = ss.getSheetByName('A+ Image Library');
+    if (!librarySheet) {
+      librarySheet = createImageLibrarySheet();
+    }
+
+    // Prompt for what to sync
+    const response = ui.prompt(
+      'Sync Placeholder Images',
+      'Opcje:\n' +
+      '1. Wklej pełny uploadDestinationId (np. "aplus-media-library-service-media/abc123.png")\n' +
+      '2. Wpisz prefiks do wyszukania (np. "placeholder_")\n' +
+      '3. Zostaw puste aby zsynchronizować WSZYSTKIE obrazy z A+ Content\n\n' +
+      'Co chcesz zrobić?',
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (response.getSelectedButton() !== ui.Button.OK) {
+      return;
+    }
+
+    const input = response.getResponseText().trim();
+
+    // Check if input looks like a full uploadDestinationId
+    if (input.includes('aplus-media-library-service-media/') || input.includes('/') && input.includes('.')) {
+      // Direct ID - add it to library
+      addDirectUploadDestinationId(librarySheet, input, ui);
+      return;
+    }
+
+    // Otherwise, search through A+ Content
+    const prefix = input;
+
+    showProgress('Szukam obrazów w A+ Content...');
+
+    // Get client and token
+    const client = getActiveClient();
+    const accessToken = getActiveAccessToken();
+
+    // Search for A+ Content documents
+    const documents = searchAPlusContentDocuments(accessToken, client.marketplace);
+
+    Logger.log(`Found ${documents.length} A+ Content documents`);
+
+    if (documents.length === 0) {
+      hideProgress();
+      ui.alert('Brak dokumentów', 'Nie znaleziono żadnych A+ Content dokumentów.', ui.ButtonSet.OK);
+      return;
+    }
+
+    const placeholderData = [];
+
+    // Process each document to find images
+    for (let i = 0; i < documents.length; i++) {
+      const doc = documents[i];
+      const contentRefKey = doc.contentReferenceKey;
+      const contentType = doc.badgeSet || [];
+
+      // Skip BRAND content (Brand Story) - API doesn't support fetching these
+      if (contentType.includes('BRAND')) {
+        Logger.log(`Skipping BRAND content: ${contentRefKey}`);
+        continue;
+      }
+
+      showProgress(`Przetwarzam ${i + 1}/${documents.length}: ${contentRefKey}...`);
+
+      try {
+        const fullDocument = getAPlusContentDocument(contentRefKey, accessToken, client.marketplace);
+        const images = extractImageIdsFromContentDocument(fullDocument);
+
+        Logger.log(`Found ${images.length} images in ${contentRefKey}`);
+
+        // Check if any image matches criteria
+        for (const img of images) {
+          let shouldAdd = false;
+
+          if (prefix === '') {
+            // Empty prefix = add ALL images
+            shouldAdd = true;
+          } else {
+            // Check if matches prefix or placeholder indicators
+            shouldAdd = img.altText?.toLowerCase().includes('placeholder') ||
+                       img.altText?.toLowerCase().includes('atrapa') ||
+                       img.uploadDestinationId?.includes(prefix) ||
+                       img.altText?.toLowerCase().includes(prefix.toLowerCase());
+          }
+
+          if (shouldAdd) {
+            placeholderData.push([
+              img.uploadDestinationId,
+              '', // image_url
+              '', // image_hash
+              img.altText || (prefix === '' ? 'SYNCED' : 'PLACEHOLDER'),
+              '', // width
+              '', // height
+              contentRefKey,
+              img.moduleType,
+              new Date(),
+              prefix === '' ? 'ACTIVE' : 'PLACEHOLDER',
+              `Synced from ${contentRefKey}`
+            ]);
+          }
+        }
+
+      } catch (error) {
+        Logger.log(`Error processing ${contentRefKey}: ${error.toString()}`);
+        // Continue with next document
+      }
+
+      Utilities.sleep(500);
+    }
+
+    hideProgress();
+
+    if (placeholderData.length > 0) {
+      // Check for duplicates before adding
+      const existingData = librarySheet.getDataRange().getValues();
+      const existingIds = new Set(existingData.slice(1).map(row => row[0]));
+
+      const newData = placeholderData.filter(row => !existingIds.has(row[0]));
+
+      if (newData.length > 0) {
+        const startRow = librarySheet.getLastRow() + 1;
+        librarySheet.getRange(startRow, 1, newData.length, newData[0].length).setValues(newData);
+
+        ui.alert(
+          'Sync Complete',
+          `Dodano ${newData.length} nowych obrazów do biblioteki.\n` +
+          `(${placeholderData.length - newData.length} duplikatów pominięto)\n\n` +
+          'Sprawdź arkusz "A+ Image Library".',
+          ui.ButtonSet.OK
+        );
+      } else {
+        ui.alert('Brak nowych', 'Wszystkie znalezione obrazy już są w bibliotece.', ui.ButtonSet.OK);
+      }
+    } else {
+      ui.alert(
+        'Brak obrazów',
+        'Nie znaleziono obrazów pasujących do kryteriów.\n\n' +
+        'Sprawdź czy:\n' +
+        '1. Masz A+ Content z obrazami\n' +
+        '2. Prefiks jest poprawny\n' +
+        '3. Obrazy mają odpowiedni altText',
+        ui.ButtonSet.OK
+      );
+    }
+
+  } catch (error) {
+    hideProgress();
+    Logger.log(`Error in syncPlaceholderImagesToLibrary: ${error.toString()}`);
+    Logger.log(`Stack: ${error.stack}`);
+    SpreadsheetApp.getUi().alert('Błąd', error.toString(), SpreadsheetApp.getUi().ButtonSet.OK);
+  }
+}
+
+/**
+ * Add a specific uploadDestinationId directly to the Image Library
+ */
+function addDirectUploadDestinationId(librarySheet, uploadDestinationId, ui) {
+  try {
+    // Check if already exists
+    const existingData = librarySheet.getDataRange().getValues();
+    const existingIds = existingData.slice(1).map(row => row[0]);
+
+    if (existingIds.includes(uploadDestinationId)) {
+      ui.alert('Już istnieje', `Ten uploadDestinationId już jest w bibliotece:\n${uploadDestinationId}`, ui.ButtonSet.OK);
+      return;
+    }
+
+    // Ask for additional info
+    const sizeResponse = ui.prompt(
+      'Rozmiar obrazu',
+      'Podaj rozmiar obrazu (np. "970x600" lub "300x300"):\n\n' +
+      'Popularne rozmiary:\n' +
+      '• 970x600 - Header Image\n' +
+      '• 300x300 - Side Image\n' +
+      '• 135x135 - Icon\n' +
+      '• 1464x600 - Premium Image',
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (sizeResponse.getSelectedButton() !== ui.Button.OK) {
+      return;
+    }
+
+    const sizeStr = sizeResponse.getResponseText().trim();
+    let width = '';
+    let height = '';
+
+    if (sizeStr.includes('x')) {
+      const parts = sizeStr.split('x');
+      width = parts[0].trim();
+      height = parts[1].trim();
+    }
+
+    // Add to library
+    const newRow = [
+      uploadDestinationId,
+      '', // image_url
+      '', // image_hash
+      'PLACEHOLDER ' + sizeStr,
+      width,
+      height,
+      'manual',
+      'MANUAL_ENTRY',
+      new Date(),
+      'PLACEHOLDER',
+      'Manually added placeholder'
+    ];
+
+    const startRow = librarySheet.getLastRow() + 1;
+    librarySheet.getRange(startRow, 1, 1, newRow.length).setValues([newRow]);
+
+    ui.alert(
+      'Dodano',
+      `Placeholder dodany do biblioteki:\n${uploadDestinationId}\n\nRozmiar: ${sizeStr || '(nie podano)'}`,
+      ui.ButtonSet.OK
+    );
+
+  } catch (error) {
+    Logger.log(`Error in addDirectUploadDestinationId: ${error.toString()}`);
+    ui.alert('Błąd', error.toString(), ui.ButtonSet.OK);
   }
 }
 
 function extractAPlusData(sheet, rowNumber, contentType) {
   const range = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn());
   const values = range.getValues()[0];
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  // Headers are in row 3, not row 1
+  const headers = sheet.getRange(3, 1, 1, sheet.getLastColumn()).getValues()[0];
 
-  const aplus = {
-    asin: getColumnValue(values, headers, 'ASIN'),
-    contentId: getColumnValue(values, headers, 'Content ID'),
-    moduleNumber: getColumnValue(values, headers, 'Module Number'),
-    moduleType: getColumnValue(values, headers, 'Module Type'),
-    language: getColumnValue(values, headers, 'Language'),
-    content: {}
-  };
+  // Debug: Log first few values
+  Logger.log(`Row ${rowNumber}: ${values.slice(0, 5).join(' | ')}`);
+  Logger.log(`Headers (row 3): ${headers.slice(0, 5).join(' | ')}`);
 
-  // Extract module-specific content based on type
-  if (contentType === 'BASIC') {
-    aplus.content = {
-      heading: getColumnValue(values, headers, `Heading [${aplus.language}]`),
-      subheading: getColumnValue(values, headers, `Subheading [${aplus.language}]`),
-      bodyText: getColumnValue(values, headers, `Body Text [${aplus.language}]`),
-      images: [
-        { url: getColumnValue(values, headers, 'Image 1 URL'), alt: getColumnValue(values, headers, `Image 1 Alt [${aplus.language}]`) },
-        { url: getColumnValue(values, headers, 'Image 2 URL'), alt: getColumnValue(values, headers, `Image 2 Alt [${aplus.language}]`) },
-        { url: getColumnValue(values, headers, 'Image 3 URL'), alt: getColumnValue(values, headers, `Image 3 Alt [${aplus.language}]`) },
-        { url: getColumnValue(values, headers, 'Image 4 URL'), alt: getColumnValue(values, headers, `Image 4 Alt [${aplus.language}]`) }
-      ].filter(img => img.url),
-      cta: {
-        text: getColumnValue(values, headers, `CTA Text [${aplus.language}]`),
-        link: getColumnValue(values, headers, 'CTA Link')
-      }
-    };
-  } else {
-    // Premium content structure
-    aplus.content = {
-      heroImage: getColumnValue(values, headers, 'Hero Image URL'),
-      heroVideo: getColumnValue(values, headers, 'Hero Video URL'),
-      brandLogo: getColumnValue(values, headers, 'Brand Logo URL'),
-      tagline: getColumnValue(values, headers, `Tagline [${aplus.language}]`)
-    };
+  const asin = getColumnValue(values, headers, 'ASIN');
+  const moduleNumber = getColumnValue(values, headers, 'Module Number');
+  const moduleType = getColumnValue(values, headers, 'Module Type');
+
+  Logger.log(`Extracted - ASIN: "${asin}", Module: "${moduleNumber}", Type: "${moduleType}"`);
+
+  if (!asin || asin === '') {
+    throw new Error(`ASIN is empty in row ${rowNumber}. Please fill in the ASIN column.`);
   }
 
-  return aplus;
+  if (!moduleNumber || moduleNumber === '') {
+    throw new Error(`Module Number is empty in row ${rowNumber}. Please fill in the Module Number column.`);
+  }
+
+  if (!moduleType || moduleType === '') {
+    throw new Error(`Module Type is empty in row ${rowNumber}. Please fill in the Module Type column.`);
+  }
+
+  // Extract multi-language content for all available languages
+  const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
+  const moduleContent = {};
+
+  // Determine if this is a Premium module based on Module Type
+  const isPremium = moduleType && moduleType.toString().toUpperCase().startsWith('PREMIUM');
+
+  // Build prefix for this module (e.g., aplus_basic_m1_ or aplus_premium_m1_)
+  const prefix = isPremium
+    ? `aplus_premium_m${moduleNumber}_`
+    : `aplus_basic_m${moduleNumber}_`;
+
+  Logger.log(`Using prefix: ${prefix} (isPremium: ${isPremium})`);
+
+
+  for (const lang of languages) {
+    const langContent = {};
+
+    // Extract all fields for this language
+    for (let i = 0; i < headers.length; i++) {
+      const header = headers[i];
+      if (header && header.startsWith(prefix) && header.endsWith(`_${lang}`)) {
+        // Extract field name without prefix and language suffix
+        const fieldName = header.substring(prefix.length, header.length - 3);
+        const value = values[i];
+        if (value && value !== '') {
+          langContent[fieldName] = value;
+        }
+      }
+    }
+
+    // Only add if there's content for this language
+    if (Object.keys(langContent).length > 0) {
+      moduleContent[lang] = langContent;
+    }
+  }
+
+  // Extract image URLs and IDs (language-independent)
+  const images = {};
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i];
+    if (header && header.startsWith(prefix)) {
+      // Match: _url, _id, _imagePositionType, _overlayColorType, etc.
+      if (header.includes('_url') || header.includes('_id') ||
+          header.includes('_imagePositionType') || header.includes('_overlayColorType')) {
+        const fieldName = header.substring(prefix.length);
+        const value = values[i];
+        if (value && value !== '') {
+          images[fieldName] = value;
+        }
+      }
+    }
+  }
+
+  Logger.log(`Module content languages: ${Object.keys(moduleContent).join(', ')}`);
+  Logger.log(`Images: ${Object.keys(images).join(', ')}`);
+
+  return {
+    asin: asin,
+    moduleNumber: moduleNumber,
+    moduleType: moduleType,
+    moduleContent: moduleContent,
+    images: images
+  };
 }
 
-function publishAPlusContent(aplusData, contentType) {
+/**
+ * Publish MULTIPLE modules for ONE ASIN as a SINGLE A+ Content document
+ * @param {Array} modules - Array of {row, data} objects for same ASIN
+ * @param {string} contentType - 'BASIC' or 'PREMIUM'
+ * @param {string} exportMode - 'TEXT_ONLY', 'WITH_IMAGES', or 'WITH_PLACEHOLDERS' (optional)
+ * @returns {Object} - Result object
+ */
+function publishMultiModuleAPlusContent(modules, contentType, exportMode) {
   try {
-    const payload = {
-      operation: 'publish_aplus',
-      contentType: contentType,
-      data: aplusData,
-      credentials: getCredentials()
+    const client = getActiveClient();
+    const marketplace = client.marketplace || 'DE';
+    const marketplaceConfig = getMarketplaceConfig(marketplace);
+
+    if (!marketplaceConfig) {
+      throw new Error(`Invalid marketplace: ${marketplace}`);
+    }
+
+    if (!modules || modules.length === 0) {
+      throw new Error('No modules provided');
+    }
+
+    // All modules are for the same ASIN
+    const asin = modules[0].data.asin;
+    const moduleCount = modules.length;
+
+    Logger.log(`Building multi-module A+ Content for ${asin} with ${moduleCount} modules (mode: ${exportMode || 'DEFAULT'})`);
+
+    const accessToken = getActiveAccessToken();
+
+    // Get first language to determine locale (all modules should use same language)
+    const firstModule = modules[0].data;
+    const firstLang = Object.keys(firstModule.moduleContent)[0];
+    const locale = convertMarketplaceToLocale(marketplace);
+
+    // Build content document with ALL modules
+    const contentRefKey = `${asin}_complete_${Date.now()}`;
+
+    // Detect if ANY module is Premium - then use PREMIUM contentSubType
+    const hasPremiumModule = modules.some(m => m.data.moduleType && m.data.moduleType.startsWith('PREMIUM'));
+    const contentSubType = hasPremiumModule ? 'PREMIUM' : 'STANDARD';
+
+    Logger.log(`Content subtype: ${contentSubType} (hasPremiumModule: ${hasPremiumModule})`);
+
+    const contentDocument = {
+      name: contentRefKey,
+      contentType: 'EBC',  // Enhanced Brand Content
+      contentSubType: contentSubType,
+      locale: locale,
+      contentModuleList: []
     };
 
-    const response = callCloudFunction(payload);
+    // Build each module and add to contentModuleList
+    for (let i = 0; i < modules.length; i++) {
+      const moduleData = modules[i].data;
+
+      // Pass export mode to module data
+      if (exportMode) {
+        moduleData.exportMode = exportMode;
+      }
+
+      Logger.log(`  Building module ${moduleData.moduleNumber}: ${moduleData.moduleType} (mode: ${exportMode || 'DEFAULT'})`);
+
+      // Use existing buildAPlusContentDocumentComplete from APlusModuleBuilder.gs
+      const moduleDoc = buildAPlusContentDocumentComplete(moduleData, marketplace);
+
+      // Extract the module from the built document
+      if (moduleDoc.contentModuleList && moduleDoc.contentModuleList.length > 0) {
+        const module = moduleDoc.contentModuleList[0];
+        contentDocument.contentModuleList.push(module);
+        Logger.log(`    ✅ Added ${moduleData.moduleType} to content document`);
+      } else {
+        Logger.log(`    ⚠️ WARNING: Module ${moduleData.moduleNumber} produced empty contentModuleList`);
+      }
+    }
+
+    Logger.log(`Content document has ${contentDocument.contentModuleList.length} modules`);
+
+    // Create A+ Content
+    const result = createAPlusContent(contentDocument, contentRefKey, marketplaceConfig, accessToken);
 
     return {
-      asin: aplusData.asin,
-      contentId: aplusData.contentId,
-      status: response.status,
-      message: response.message,
+      asin: asin,
+      moduleNumbers: modules.map(m => m.data.moduleNumber).join(', '),
+      moduleCount: moduleCount,
+      contentReferenceKey: contentRefKey,
+      status: 'SUCCESS',
+      success: true,
+      message: `A+ Content with ${moduleCount} modules submitted successfully`,
       timestamp: new Date()
     };
 
   } catch (error) {
+    Logger.log(`ERROR in publishMultiModuleAPlusContent: ${error.toString()}`);
+    Logger.log(`Stack: ${error.stack}`);
+
+    return {
+      asin: modules[0].data.asin,
+      moduleNumbers: modules.map(m => m.data.moduleNumber).join(', '),
+      moduleCount: modules.length,
+      status: 'ERROR',
+      success: false,
+      error: error.toString(),
+      message: error.toString(),
+      timestamp: new Date()
+    };
+  }
+}
+
+/**
+ * Publish SINGLE module (legacy function - kept for compatibility)
+ */
+function publishAPlusContent(aplusData, contentType) {
+  try {
+    const client = getActiveClient();
+    const marketplace = client.marketplace || 'DE';
+    const marketplaceConfig = getMarketplaceConfig(marketplace);
+
+    if (!marketplaceConfig) {
+      throw new Error(`Invalid marketplace: ${marketplace}`);
+    }
+
+    // Call direct SP-API function
+    return publishAPlusContentDirect(aplusData, marketplace, marketplaceConfig);
+
+  } catch (error) {
     return {
       asin: aplusData.asin,
-      contentId: aplusData.contentId,
+      moduleNumber: aplusData.moduleNumber,
       status: 'ERROR',
       message: error.toString(),
       timestamp: new Date()
@@ -1209,14 +1911,10 @@ function extractPromotionData(sheet, rowNumber) {
 
 function createCouponOnAmazon(couponData) {
   try {
-    const payload = {
-      operation: 'create_coupon',
-      marketplace: couponData.marketplace,
-      coupon: couponData,
-      credentials: getCredentials()
-    };
-
-    const response = callCloudFunction(payload);
+    throw new Error(
+      'Coupon creation via direct SP-API is not yet available in v3.0.\n' +
+      'Please use Amazon Seller Central to create coupons.'
+    );
 
     return {
       asin: couponData.asin,
@@ -1241,14 +1939,10 @@ function createCouponOnAmazon(couponData) {
 
 function launchPromotionOnAmazon(promoData) {
   try {
-    const payload = {
-      operation: 'launch_promotion',
-      marketplace: promoData.marketplace,
-      promotion: promoData,
-      credentials: getCredentials()
-    };
-
-    const response = callCloudFunction(payload);
+    throw new Error(
+      'Promotion launch via direct SP-API is not yet available in v3.0.\n' +
+      'Please use Amazon Seller Central to launch promotions.'
+    );
 
     return {
       asin: promoData.asin,
@@ -1296,18 +1990,13 @@ function lukoImportProducts() {
 
     showProgress(`Importing products from Amazon ${marketplace}...`);
 
-    const payload = {
-      operation: 'import_products',
-      marketplace: marketplace,
-      marketplaceId: marketplaceConfig.marketplaceId,
-      credentials: getCredentials()
-    };
-
-    const response2 = callCloudFunction(payload);
-    const products = response2.products || [];
-
-    // Insert products into Products-Master and Content sheets
-    populateProductsSheet(products, marketplace);
+    throw new Error(
+      'Full catalog import via direct SP-API is not yet available in v3.0.\n\n' +
+      'Please use:\n' +
+      '• Menu → Import → Search Products by Keyword\n' +
+      '• Menu → Import → Import from ASIN List\n\n' +
+      'These alternatives allow you to import specific products.'
+    );
 
     ui.alert(`Imported ${products.length} products from Amazon ${marketplace}`);
 
@@ -1353,7 +2042,10 @@ function lukoImportPricing() {
 
   try {
     const credentials = getCredentials();
-    const config = getConfig();
+    const config = {
+      clientId: credentials.lwaClientId,
+      clientSecret: credentials.lwaClientSecret
+    };
     const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
 
     // Fetch pricing using Product Pricing API
@@ -1411,7 +2103,10 @@ function lukoImportInventory() {
 
   try {
     const credentials = getCredentials();
-    const config = getConfig();
+    const config = {
+      clientId: credentials.lwaClientId,
+      clientSecret: credentials.lwaClientSecret
+    };
     const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
 
     // Fetch inventory using FBA Inventory API
@@ -1469,7 +2164,10 @@ function lukoImportAPlus() {
 
   try {
     const credentials = getCredentials();
-    const config = getConfig();
+    const config = {
+      clientId: credentials.lwaClientId,
+      clientSecret: credentials.lwaClientSecret
+    };
     const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
 
     // Fetch A+ content using APlusContent API
@@ -1799,15 +2497,10 @@ function lukoTranslateContent() {
 }
 
 function translateText(text, sourceLang, targetLangs) {
-  const payload = {
-    operation: 'translate',
-    text: text,
-    sourceLang: sourceLang,
-    targetLangs: targetLangs
-  };
-
-  const response = callCloudFunction(payload);
-  return response.translations || {};
+  throw new Error(
+    'Translation via Cloud Function is not available in v3.0.\n\n' +
+    'Please use Google Translate or Amazon\'s translation services directly.'
+  );
 }
 
 function lukoApplyTemplate() {
@@ -1980,16 +2673,62 @@ function lukoShowErrors() {
 // ========================================
 
 function getSelectedCheckboxRows(sheet) {
+  const sheetName = sheet.getName();
   const data = sheet.getDataRange().getValues();
-  const checkboxCol = 0; // Assuming first column
 
-  const selectedRows = [];
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][checkboxCol] === true) {
-      selectedRows.push(i + 1);
+  // Determine header row based on sheet type
+  // APlusBasic, APlusPremium use row 3 for headers
+  // Other sheets use row 1
+  let headerRowIndex = 0; // 0-indexed, so row 1
+  let dataStartIndex = 1; // Start from row 2
+
+  if (sheetName === 'APlusBasic' || sheetName === 'APlusPremium' || sheetName.startsWith('APlus')) {
+    headerRowIndex = 2; // 0-indexed, so row 3
+    dataStartIndex = 3; // Start from row 4
+  }
+
+  // Find ☑️ Export column in headers
+  const headers = data[headerRowIndex] || [];
+  let checkboxCol = -1;
+
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i]?.toString() || '';
+    if (header.includes('☑️ Export') || header.includes('Export') || header === '☑️') {
+      checkboxCol = i;
+      break;
     }
   }
 
+  // Fallback to column 0 if not found
+  if (checkboxCol === -1) {
+    checkboxCol = 0;
+    Logger.log(`WARNING: ☑️ Export column not found in ${sheetName}, using column 0`);
+  } else {
+    Logger.log(`Found ☑️ Export column at index ${checkboxCol} in ${sheetName}`);
+  }
+
+  const selectedRows = [];
+  for (let i = dataStartIndex; i < data.length; i++) {
+    const cellValue = data[i][checkboxCol];
+
+    // Check for various true values: boolean true, string 'TRUE', 'true', 'PRAWDA', checkbox value
+    const isChecked = cellValue === true ||
+                      cellValue === 'TRUE' ||
+                      cellValue === 'true' ||
+                      cellValue === 'PRAWDA' ||
+                      cellValue === 1 ||
+                      cellValue === '1';
+
+    // Also check it's not 'DONE' (already exported)
+    const isDone = cellValue === 'DONE' || cellValue === 'done';
+
+    if (isChecked && !isDone) {
+      selectedRows.push(i + 1); // Convert to 1-based row number
+      Logger.log(`Row ${i + 1} selected (value: ${cellValue})`);
+    }
+  }
+
+  Logger.log(`getSelectedCheckboxRows(${sheetName}): Found ${selectedRows.length} selected rows`);
   return selectedRows;
 }
 
@@ -2078,94 +2817,46 @@ function getMarketplaceDomain(marketplace) {
 }
 
 function getCredentials() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.config);
-  if (!sheet) {
-    throw new Error('Config sheet not found. Please create Config sheet first.');
-  }
-
-  const data = sheet.getDataRange().getValues();
-
-  // Build credentials map from Config sheet (Column A = Key, Column B = Value)
-  const credentials = {};
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] && data[i][1]) {
-      credentials[data[i][0]] = data[i][1];
-    }
-  }
-
-  // Try multiple key name variations for backwards compatibility
-  const lwaClientId = credentials['LWA Client ID'] || credentials['lwaClientId'] || credentials['Client ID'];
-  const lwaClientSecret = credentials['LWA Client Secret'] || credentials['lwaClientSecret'] || credentials['Client Secret'];
-  const refreshToken = credentials['Refresh Token'] || credentials['refreshToken'];
-  const sellerId = credentials['Seller ID'] || credentials['sellerId'] || credentials['Merchant ID'];
-
-  // Validate that all required credentials are present
-  const missing = [];
-  if (!lwaClientId) missing.push('LWA Client ID');
-  if (!lwaClientSecret) missing.push('LWA Client Secret');
-  if (!refreshToken) missing.push('Refresh Token');
-  if (!sellerId) missing.push('Seller ID');
-
-  if (missing.length > 0) {
-    throw new Error(`Missing required credentials in Config sheet: ${missing.join(', ')}\n\nPlease fill in Config sheet with:\n- LWA Client ID (from Amazon SP-API)\n- LWA Client Secret (from Amazon SP-API)\n- Refresh Token (from Amazon SP-API)\n- Seller ID (your Merchant ID)`);
-  }
+  // New version: Get credentials from active client
+  const client = getActiveClient();
 
   return {
-    lwaClientId: lwaClientId,
-    lwaClientSecret: lwaClientSecret,
-    refreshToken: refreshToken,
-    sellerId: sellerId
+    lwaClientId: client.lwaClientId,
+    lwaClientSecret: client.lwaClientSecret,
+    refreshToken: client.refreshToken,
+    sellerId: client.sellerId
   };
 }
 
-function callCloudFunction(payload) {
-  const configSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.config);
-  if (!configSheet) {
-    throw new Error('Config sheet not found');
-  }
+// ========================================
+// REMOVED: callCloudFunction
+// Now using direct SP-API calls via SPApiDirect.gs
+// ========================================
 
-  const data = configSheet.getDataRange().getValues();
-  let cloudFunctionUrl = '';
+// Helper functions for menu actions
+function viewClientSettings() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Client Settings');
 
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === 'Cloud Function URL') {
-      cloudFunctionUrl = data[i][1];
-      break;
-    }
-  }
-
-  if (!cloudFunctionUrl) {
-    throw new Error('Cloud Function URL not configured');
-  }
-
-  const options = {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
-
-  try {
-    const response = UrlFetchApp.fetch(cloudFunctionUrl, options);
-    const result = JSON.parse(response.getContentText());
-
-    if (response.getResponseCode() !== 200) {
-      throw new Error(result.error || result.message || 'Cloud Function error');
-    }
-
-    return result;
-
-  } catch (error) {
-    Logger.log(`Cloud Function Error: ${error.toString()}`);
-    throw error;
+  if (!sheet) {
+    const ui = SpreadsheetApp.getUi();
+    ui.alert(
+      'Client Settings Not Found',
+      'Client Settings sheet does not exist.\n\nWould you like to create it now?',
+      ui.ButtonSet.OK
+    );
+    generateClientSettingsSheet();
+  } else {
+    ss.setActiveSheet(sheet);
   }
 }
 
 function updateRowStatus(sheet, rowNumber, result) {
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const headers = sheet.getRange(3, 1, 1, sheet.getLastColumn()).getValues()[0];
   const values = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
 
   // Find column indices
+  const exportCol = headers.indexOf('☑️ Export') + 1;
   const statusCol = headers.indexOf('Status') + 1;
   const errorCol = headers.indexOf('ErrorMessage') + 1;
   const exportDateTimeCol = headers.indexOf('ExportDateTime') + 1;
@@ -2173,19 +2864,39 @@ function updateRowStatus(sheet, rowNumber, result) {
   const lastModifiedCol = headers.indexOf('LastModified') + 1;
   const modifiedByCol = headers.indexOf('ModifiedBy') + 1;
   const asinCol = headers.indexOf('ASIN') + 1;
+  const contentReferenceKeyCol = headers.indexOf('contentReferenceKey') + 1;
 
   // Convert status to spec format: SUCCESS → DONE, ERROR → FAILED
   const status = result.status === 'SUCCESS' ? 'DONE' : result.status === 'ERROR' ? 'FAILED' : result.status;
 
-  // Update Status column
+  // Update ☑️ Export column: TRUE → DONE on success, keep TRUE on failure
+  // This replaces the checkbox with "DONE" text after successful export
+  if (exportCol > 0) {
+    if (status === 'DONE') {
+      sheet.getRange(rowNumber, exportCol).setValue('DONE');
+    } else if (status === 'FAILED') {
+      // Keep checkbox checked on failure so user can retry
+      sheet.getRange(rowNumber, exportCol).setValue(true);
+    }
+  }
+
+  // Update Status column - include client info (for logging/tracking purposes)
   if (statusCol > 0) {
-    sheet.getRange(rowNumber, statusCol).setValue(status);
+    let statusText = status;
+    if (result.clientName && result.sellerId) {
+      statusText = `${status} [${result.clientName} - ${result.sellerId}]`;
+    }
+    sheet.getRange(rowNumber, statusCol).setValue(statusText);
   }
 
   // Update ErrorMessage column (only on failure)
   if (errorCol > 0) {
     if (status === 'FAILED') {
-      sheet.getRange(rowNumber, errorCol).setValue(result.message || '');
+      let errorMsg = result.message || '';
+      if (result.clientName) {
+        errorMsg = `[${result.clientName}] ${errorMsg}`;
+      }
+      sheet.getRange(rowNumber, errorCol).setValue(errorMsg);
     } else {
       sheet.getRange(rowNumber, errorCol).setValue(''); // Clear error on success
     }
@@ -2196,6 +2907,11 @@ function updateRowStatus(sheet, rowNumber, result) {
     const now = new Date();
     const dateStr = Utilities.formatDate(now, Session.getScriptTimeZone(), 'dd.MM.yyyy HH:mm:ss');
     sheet.getRange(rowNumber, exportDateTimeCol).setValue(dateStr);
+  }
+
+  // Update contentReferenceKey (for A+ Content)
+  if (contentReferenceKeyCol > 0 && result.contentReferenceKey && status === 'DONE') {
+    sheet.getRange(rowNumber, contentReferenceKeyCol).setValue(result.contentReferenceKey);
   }
 
   // Auto-generate ProductLink (https://www.amazon.{domain}/dp/{ASIN})
@@ -2217,7 +2933,12 @@ function updateRowStatus(sheet, rowNumber, result) {
 
   // Update ModifiedBy with user email
   if (modifiedByCol > 0) {
-    sheet.getRange(rowNumber, modifiedByCol).setValue(Session.getActiveUser().getEmail());
+    const modifiedBy = Session.getActiveUser().getEmail();
+    let modifiedByText = modifiedBy;
+    if (result.clientName) {
+      modifiedByText = `${modifiedBy} [Client: ${result.clientName}]`;
+    }
+    sheet.getRange(rowNumber, modifiedByCol).setValue(modifiedByText);
   }
 }
 
@@ -2244,12 +2965,16 @@ function logOperations(results, marketplace, operationType) {
 }
 
 function showProgress(message) {
-  SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Processing...', -1);
+  SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Processing...', 5);
+}
+
+function hideProgress() {
+  SpreadsheetApp.getActiveSpreadsheet().toast('');
 }
 
 function showError(message) {
   SpreadsheetApp.getUi().alert('Error', message, SpreadsheetApp.getUi().ButtonSet.OK);
-  SpreadsheetApp.getActiveSpreadsheet().toast('');
+  hideProgress();
 }
 
 function showInfo(message) {

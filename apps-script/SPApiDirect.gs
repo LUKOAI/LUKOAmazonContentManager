@@ -1,0 +1,1064 @@
+/**
+ * NetAnaliza SP-API Direct
+ * Direct SP-API calls without Cloud Functions
+ *
+ * @version 3.0.0
+ * @author NetAnaliza
+ */
+
+// ========================================
+// PRODUCT SYNC TO AMAZON
+// ========================================
+
+/**
+ * Sync product to Amazon SP-API directly
+ * Replaces callCloudFunction for product updates
+ */
+function syncProductToAmazonDirect(productData, marketplace, marketplaceConfig) {
+  try {
+    const client = getActiveClient();
+
+    // Display which client we're using
+    showProgress(`[${client.clientName}] Syncing product ${productData.asin || productData.sku} to Amazon ${marketplace}...`);
+
+    // Get access token
+    const accessToken = getActiveAccessToken();
+
+    // Prepare feed for product update
+    const feedType = 'JSON_LISTINGS_FEED';
+    const feedPayload = prepareFeedPayload(productData, marketplace, marketplaceConfig);
+
+    // Submit feed to Amazon
+    const feedResult = submitFeed(feedType, feedPayload, marketplaceConfig, accessToken);
+
+    return {
+      asin: productData.asin,
+      sku: productData.sku,
+      marketplace: marketplace,
+      clientName: client.clientName,
+      sellerId: client.sellerId,
+      status: 'SUCCESS',
+      message: `Feed submitted: ${feedResult.feedId}`,
+      feedId: feedResult.feedId,
+      timestamp: new Date()
+    };
+
+  } catch (error) {
+    const client = getActiveClient();
+    return {
+      asin: productData.asin,
+      sku: productData.sku,
+      marketplace: marketplace,
+      clientName: client.clientName,
+      sellerId: client.sellerId,
+      status: 'ERROR',
+      message: error.toString(),
+      timestamp: new Date()
+    };
+  }
+}
+
+/**
+ * Get active access token (refresh if needed)
+ */
+function getActiveAccessToken() {
+  const client = getActiveClient();
+
+  const config = {
+    clientId: client.lwaClientId,
+    clientSecret: client.lwaClientSecret,
+    redirectUri: 'https://ads.netanaliza.com/amazon-callback'
+  };
+
+  const tokens = getAccessTokenFromRefresh(client.refreshToken, config);
+
+  return tokens.access_token;
+}
+
+/**
+ * Prepare feed payload for Listings API
+ */
+function prepareFeedPayload(productData, marketplace, marketplaceConfig) {
+  const payload = {
+    header: {
+      sellerId: getActiveClient().sellerId,
+      version: '2.0',
+      issueLocale: 'en_US'
+    },
+    messages: [
+      {
+        messageId: 1,
+        sku: productData.sku,
+        operationType: productData.action || 'UPDATE',
+        productType: productData.productType || 'PRODUCT',
+        requirements: 'LISTING',
+        attributes: {}
+      }
+    ]
+  };
+
+  const message = payload.messages[0];
+  const attrs = message.attributes;
+
+  // Add ASIN if provided
+  if (productData.asin) {
+    attrs.externally_assigned_product_identifier = [{
+      marketplace_id: marketplaceConfig.marketplaceId,
+      value: productData.asin,
+      type: 'ASIN'
+    }];
+  }
+
+  // Add multi-language content
+  if (productData.content) {
+    for (const langCode in productData.content) {
+      const langData = productData.content[langCode];
+
+      // Convert marketplace lang code to locale (e.g., DE -> de_DE)
+      const locale = convertToLocale(langCode, marketplace);
+
+      if (!locale) continue;
+
+      // Title
+      if (langData.title) {
+        if (!attrs.item_name) attrs.item_name = [];
+        attrs.item_name.push({
+          language_tag: locale,
+          value: langData.title
+        });
+      }
+
+      // Brand
+      if (langData.brand) {
+        if (!attrs.brand) attrs.brand = [];
+        attrs.brand.push({
+          language_tag: locale,
+          value: langData.brand
+        });
+      }
+
+      // Manufacturer
+      if (langData.manufacturer) {
+        if (!attrs.manufacturer) attrs.manufacturer = [];
+        attrs.manufacturer.push({
+          language_tag: locale,
+          value: langData.manufacturer
+        });
+      }
+
+      // Bullet points
+      if (langData.bulletPoints && langData.bulletPoints.length > 0) {
+        if (!attrs.bullet_point) attrs.bullet_point = [];
+
+        for (const bullet of langData.bulletPoints) {
+          if (bullet && bullet.trim()) {
+            attrs.bullet_point.push({
+              language_tag: locale,
+              value: bullet
+            });
+          }
+        }
+      }
+
+      // Description
+      if (langData.description) {
+        if (!attrs.product_description) attrs.product_description = [];
+        attrs.product_description.push({
+          language_tag: locale,
+          value: langData.description
+        });
+      }
+
+      // Generic keywords
+      if (langData.keywords) {
+        if (!attrs.generic_keyword) attrs.generic_keyword = [];
+        attrs.generic_keyword.push({
+          language_tag: locale,
+          value: langData.keywords
+        });
+      }
+
+      // Platinum keywords (1-5)
+      for (let i = 1; i <= 5; i++) {
+        const pkField = `platinumKeywords${i}`;
+        if (langData[pkField]) {
+          const attrName = `platinum_keywords${i}`;
+          if (!attrs[attrName]) attrs[attrName] = [];
+          attrs[attrName].push({
+            language_tag: locale,
+            value: langData[pkField]
+          });
+        }
+      }
+
+      // Target audience keywords
+      if (langData.targetAudienceKeywords) {
+        if (!attrs.target_audience_keywords) attrs.target_audience_keywords = [];
+        attrs.target_audience_keywords.push({
+          language_tag: locale,
+          value: langData.targetAudienceKeywords
+        });
+      }
+
+      // Legal disclaimer
+      if (langData.legalDisclaimer) {
+        if (!attrs.legal_disclaimer) attrs.legal_disclaimer = [];
+        attrs.legal_disclaimer.push({
+          language_tag: locale,
+          value: langData.legalDisclaimer
+        });
+      }
+
+      // Safety warning
+      if (langData.safetyWarning) {
+        if (!attrs.safety_warning) attrs.safety_warning = [];
+        attrs.safety_warning.push({
+          language_tag: locale,
+          value: langData.safetyWarning
+        });
+      }
+    }
+  }
+
+  // Add images
+  if (productData.images) {
+    if (productData.images.main) {
+      attrs.main_product_image_locator = [{
+        media_location: productData.images.main
+      }];
+    }
+
+    if (productData.images.additional && productData.images.additional.length > 0) {
+      attrs.other_product_image_locator_1 = [];
+
+      for (let i = 0; i < productData.images.additional.length && i < 8; i++) {
+        if (productData.images.additional[i]) {
+          attrs.other_product_image_locator_1.push({
+            media_location: productData.images.additional[i]
+          });
+        }
+      }
+    }
+  }
+
+  // Add non-language-specific fields
+  if (productData.modelNumber) {
+    attrs.model_number = [{ value: productData.modelNumber }];
+  }
+
+  if (productData.releaseDate) {
+    attrs.release_date = [{ value: productData.releaseDate }];
+  }
+
+  if (productData.packageQuantity) {
+    attrs.number_of_items = [{ value: parseInt(productData.packageQuantity) }];
+  }
+
+  // Add dimensions
+  if (productData.dimensions) {
+    const dims = productData.dimensions;
+
+    if (dims.itemLength) {
+      attrs.item_length = [{ value: parseFloat(dims.itemLength), unit: 'centimeters' }];
+    }
+    if (dims.itemWidth) {
+      attrs.item_width = [{ value: parseFloat(dims.itemWidth), unit: 'centimeters' }];
+    }
+    if (dims.itemHeight) {
+      attrs.item_height = [{ value: parseFloat(dims.itemHeight), unit: 'centimeters' }];
+    }
+    if (dims.itemWeight) {
+      attrs.item_weight = [{ value: parseFloat(dims.itemWeight), unit: 'kilograms' }];
+    }
+    if (dims.packageLength) {
+      attrs.package_length = [{ value: parseFloat(dims.packageLength), unit: 'centimeters' }];
+    }
+    if (dims.packageWidth) {
+      attrs.package_width = [{ value: parseFloat(dims.packageWidth), unit: 'centimeters' }];
+    }
+    if (dims.packageHeight) {
+      attrs.package_height = [{ value: parseFloat(dims.packageHeight), unit: 'centimeters' }];
+    }
+    if (dims.packageWeight) {
+      attrs.package_weight = [{ value: parseFloat(dims.packageWeight), unit: 'kilograms' }];
+    }
+  }
+
+  // Add compliance
+  if (productData.compliance) {
+    const comp = productData.compliance;
+
+    if (comp.countryOfOrigin) {
+      attrs.country_of_origin = [{ value: comp.countryOfOrigin }];
+    }
+
+    if (comp.batteriesRequired !== undefined) {
+      attrs.are_batteries_included = [{ value: comp.batteriesRequired }];
+    }
+
+    if (comp.isLithiumBattery !== undefined) {
+      attrs.lithium_battery_packaging = [{ value: comp.isLithiumBattery ? 'batteries_contained_in_equipment' : 'batteries_only' }];
+    }
+  }
+
+  return payload;
+}
+
+/**
+ * Submit feed to SP-API
+ */
+function submitFeed(feedType, feedPayload, marketplaceConfig, accessToken) {
+  // Step 1: Create feed document
+  const createDocResponse = createFeedDocument(feedPayload, accessToken);
+  const feedDocumentId = createDocResponse.feedDocumentId;
+  const uploadUrl = createDocResponse.url;
+
+  // Step 2: Upload feed content to S3
+  uploadFeedContent(uploadUrl, feedPayload);
+
+  // Step 3: Create feed
+  const feedResult = createFeed(feedType, [marketplaceConfig.marketplaceId], feedDocumentId, accessToken);
+
+  Logger.log(`Feed created: ${feedResult.feedId}`);
+
+  return feedResult;
+}
+
+/**
+ * Create feed document
+ */
+function createFeedDocument(feedPayload, accessToken) {
+  const client = getActiveClient();
+  const marketplaceConfig = MARKETPLACE_LANGUAGES[client.marketplace];
+  const endpoint = marketplaceConfig.endpoint;
+
+  const url = `${endpoint}/feeds/2021-06-30/documents`;
+
+  const payload = {
+    contentType: 'application/json; charset=UTF-8'
+  };
+
+  const options = {
+    method: 'post',
+    headers: {
+      'x-amz-access-token': accessToken,
+      'Content-Type': 'application/json'
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  const responseCode = response.getResponseCode();
+
+  if (responseCode !== 201) {
+    throw new Error(`Failed to create feed document: ${response.getContentText()}`);
+  }
+
+  return JSON.parse(response.getContentText());
+}
+
+/**
+ * Upload feed content to S3
+ */
+function uploadFeedContent(uploadUrl, feedPayload) {
+  const options = {
+    method: 'put',
+    headers: {
+      'Content-Type': 'application/json; charset=UTF-8'
+    },
+    payload: JSON.stringify(feedPayload),
+    muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch(uploadUrl, options);
+  const responseCode = response.getResponseCode();
+
+  if (responseCode !== 200) {
+    throw new Error(`Failed to upload feed content: ${response.getContentText()}`);
+  }
+
+  Logger.log('Feed content uploaded successfully');
+}
+
+/**
+ * Create feed
+ */
+function createFeed(feedType, marketplaceIds, feedDocumentId, accessToken) {
+  const client = getActiveClient();
+  const marketplaceConfig = MARKETPLACE_LANGUAGES[client.marketplace];
+  const endpoint = marketplaceConfig.endpoint;
+
+  const url = `${endpoint}/feeds/2021-06-30/feeds`;
+
+  const payload = {
+    feedType: feedType,
+    marketplaceIds: marketplaceIds,
+    inputFeedDocumentId: feedDocumentId
+  };
+
+  const options = {
+    method: 'post',
+    headers: {
+      'x-amz-access-token': accessToken,
+      'Content-Type': 'application/json'
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  const responseCode = response.getResponseCode();
+
+  if (responseCode !== 202) {
+    throw new Error(`Failed to create feed: ${response.getContentText()}`);
+  }
+
+  return JSON.parse(response.getContentText());
+}
+
+// ========================================
+// HELPER FUNCTIONS
+// ========================================
+
+/**
+ * Convert language code to locale
+ */
+function convertToLocale(langCode, marketplace) {
+  const localeMap = {
+    'DE': {
+      'de-DE': 'de_DE',
+      'en-GB': 'en_GB',
+      'pl-PL': 'pl_PL',
+      'tr-TR': 'tr_TR',
+      'cs-CZ': 'cs_CZ'
+    },
+    'FR': {
+      'fr-FR': 'fr_FR',
+      'en-GB': 'en_GB',
+      'de-DE': 'de_DE',
+      'es-ES': 'es_ES',
+      'it-IT': 'it_IT'
+    },
+    'IT': {
+      'it-IT': 'it_IT',
+      'en-GB': 'en_GB',
+      'de-DE': 'de_DE',
+      'fr-FR': 'fr_FR'
+    },
+    'ES': {
+      'es-ES': 'es_ES',
+      'en-GB': 'en_GB',
+      'ca-ES': 'ca_ES',
+      'eu-ES': 'eu_ES'
+    },
+    'UK': {
+      'en-GB': 'en_GB',
+      'de-DE': 'de_DE',
+      'fr-FR': 'fr_FR',
+      'es-ES': 'es_ES',
+      'it-IT': 'it_IT',
+      'pl-PL': 'pl_PL'
+    },
+    'NL': {
+      'nl-NL': 'nl_NL',
+      'en-GB': 'en_GB',
+      'de-DE': 'de_DE',
+      'fr-FR': 'fr_FR'
+    },
+    'PL': {
+      'pl-PL': 'pl_PL',
+      'en-GB': 'en_GB',
+      'de-DE': 'de_DE'
+    },
+    'SE': {
+      'sv-SE': 'sv_SE',
+      'en-GB': 'en_GB',
+      'de-DE': 'de_DE',
+      'fi-FI': 'fi_FI'
+    }
+  };
+
+  const marketplaceLocales = localeMap[marketplace] || {};
+  return marketplaceLocales[langCode] || null;
+}
+
+// ========================================
+// A+ CONTENT PUBLISHING
+// ========================================
+
+/**
+ * Publish A+ Content module to Amazon
+ */
+function publishAPlusContentDirect(aplusData, marketplace, marketplaceConfig) {
+  try {
+    const client = getActiveClient();
+    const accessToken = getActiveAccessToken();
+
+    showProgress(`[${client.clientName}] Publishing A+ Content for ${aplusData.asin}...`);
+
+    // Build A+ Content payload based on module type
+    const contentDocument = buildAPlusContentDocument(aplusData, marketplace);
+
+    // Create or update content document
+    const contentReferenceKey = `${aplusData.asin}_module${aplusData.moduleNumber}_${Date.now()}`;
+
+    const result = createAPlusContent(contentDocument, contentReferenceKey, marketplaceConfig, accessToken);
+
+    return {
+      asin: aplusData.asin,
+      moduleNumber: aplusData.moduleNumber,
+      contentReferenceKey: contentReferenceKey,
+      status: 'SUCCESS',
+      message: `A+ Content submitted successfully`,
+      timestamp: new Date()
+    };
+
+  } catch (error) {
+    return {
+      asin: aplusData.asin,
+      moduleNumber: aplusData.moduleNumber,
+      status: 'ERROR',
+      message: error.toString(),
+      timestamp: new Date()
+    };
+  }
+}
+
+/**
+ * Build A+ Content document from module data
+ */
+function buildAPlusContentDocument(aplusData, marketplace) {
+  // Get the first language from moduleContent (since locale is at document level)
+  const firstLang = Object.keys(aplusData.moduleContent)[0];
+  const content = aplusData.moduleContent[firstLang];
+
+  // Generate unique content reference key
+  const contentRefKey = `${aplusData.asin}_module${aplusData.moduleNumber}_${Date.now()}`;
+
+  // Detect if this is a Premium module
+  const isPremium = aplusData.moduleType && aplusData.moduleType.startsWith('PREMIUM');
+  const contentSubType = isPremium ? 'PREMIUM' : 'STANDARD';
+
+  const contentDocument = {
+    name: contentRefKey,
+    contentType: 'EBC',  // Enhanced Brand Content
+    contentSubType: contentSubType,
+    locale: convertMarketplaceToLocale(marketplace),
+    contentModuleList: []
+  };
+
+  // Build module based on type
+  const module = {
+    contentModuleType: aplusData.moduleType
+  };
+
+  // STANDARD_TEXT module - Simple text block
+  if (aplusData.moduleType === 'STANDARD_TEXT') {
+    module.standardText = {};
+
+    // headline is TextComponent - NO textList wrapper, direct {value, decoratorSet}
+    if (content.headline) {
+      module.standardText.headline = {
+        value: content.headline,
+        decoratorSet: []
+      };
+    }
+
+    // body is ParagraphComponent - REQUIRES textList wrapper
+    if (content.body) {
+      module.standardText.body = {
+        textList: [
+          {
+            value: content.body,
+            decoratorSet: []
+          }
+        ]
+      };
+    }
+  }
+
+  // STANDARD_SINGLE_SIDE_IMAGE module - Text with optional side image
+  else if (aplusData.moduleType === 'STANDARD_SINGLE_SIDE_IMAGE') {
+    module.standardSingleSideImage = {
+      imagePositionType: aplusData.images.imagePositionType || 'RIGHT',
+      block: {}
+    };
+
+    // Add image to block if uploadDestinationId is provided
+    if (aplusData.images.image_id) {
+      module.standardSingleSideImage.block.image = {
+        uploadDestinationId: aplusData.images.image_id,
+        imageCropSpecification: {
+          size: {
+            width: {
+              value: 300,
+              units: 'pixels'
+            },
+            height: {
+              value: 300,
+              units: 'pixels'
+            }
+          },
+          offset: {
+            x: {
+              value: 0,
+              units: 'pixels'
+            },
+            y: {
+              value: 0,
+              units: 'pixels'
+            }
+          }
+        },
+        altText: aplusData.images.image_altText || content.headline || 'Product image'
+      };
+    }
+
+    // headline is TextComponent - NO textList
+    if (content.headline) {
+      module.standardSingleSideImage.block.headline = {
+        value: content.headline,
+        decoratorSet: []
+      };
+    }
+
+    // body is ParagraphComponent - REQUIRES textList
+    if (content.body) {
+      module.standardSingleSideImage.block.body = {
+        textList: [
+          {
+            value: content.body,
+            decoratorSet: []
+          }
+        ]
+      };
+    }
+  }
+
+  // STANDARD_HEADER_IMAGE_TEXT module - Header with image and text
+  else if (aplusData.moduleType === 'STANDARD_HEADER_IMAGE_TEXT') {
+    module.standardHeaderImageText = {
+      block: {}
+    };
+
+    // headline is TextComponent - NO textList (note: it's 'headline' not 'heading')
+    if (content.headline) {
+      module.standardHeaderImageText.headline = {
+        value: content.headline,
+        decoratorSet: []
+      };
+    }
+
+    // Add image to block if uploadDestinationId is provided
+    if (aplusData.images.image_id) {
+      module.standardHeaderImageText.block.image = {
+        uploadDestinationId: aplusData.images.image_id,
+        imageCropSpecification: {
+          size: {
+            width: {
+              value: 970,
+              units: 'pixels'
+            },
+            height: {
+              value: 300,
+              units: 'pixels'
+            }
+          },
+          offset: {
+            x: {
+              value: 0,
+              units: 'pixels'
+            },
+            y: {
+              value: 0,
+              units: 'pixels'
+            }
+          }
+        },
+        altText: aplusData.images.image_altText || content.headline || 'Product image'
+      };
+    }
+
+    // body is ParagraphComponent - REQUIRES textList
+    if (content.body) {
+      module.standardHeaderImageText.block.body = {
+        textList: [
+          {
+            value: content.body,
+            decoratorSet: []
+          }
+        ]
+      };
+    }
+
+    // Or add multiple paragraphs from highlights
+    if (!content.body && content.highlight1) {
+      const bodyTextList = [];
+      for (let i = 1; i <= 4; i++) {
+        const paragraphText = content[`highlight${i}`];
+        if (paragraphText) {
+          bodyTextList.push({
+            value: paragraphText,
+            decoratorSet: []
+          });
+        }
+      }
+      if (bodyTextList.length > 0) {
+        module.standardHeaderImageText.block.body = {
+          textList: bodyTextList
+        };
+      }
+    }
+  }
+
+  contentDocument.contentModuleList.push(module);
+
+  return contentDocument;
+}
+
+/**
+ * Create A+ Content document via SP-API
+ */
+function createAPlusContent(contentDocument, contentReferenceKey, marketplaceConfig, accessToken) {
+  const endpoint = marketplaceConfig.endpoint;
+  // Add marketplaceId as query parameter
+  const url = `${endpoint}/aplus/2020-11-01/contentDocuments?marketplaceId=${marketplaceConfig.marketplaceId}`;
+
+  // Payload should only contain contentDocument
+  const payload = {
+    contentDocument: contentDocument
+  };
+
+  // Debug: Log the payload being sent
+  Logger.log(`A+ Content URL: ${url}`);
+  Logger.log(`A+ Content Payload: ${JSON.stringify(payload, null, 2)}`);
+
+  const options = {
+    method: 'post',
+    headers: {
+      'x-amz-access-token': accessToken,
+      'Content-Type': 'application/json'
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  Logger.log(`Creating A+ Content: ${contentReferenceKey}`);
+
+  const response = UrlFetchApp.fetch(url, options);
+  const responseCode = response.getResponseCode();
+  const responseBody = response.getContentText();
+
+  Logger.log(`A+ API Response Code: ${responseCode}`);
+  Logger.log(`A+ API Response: ${responseBody}`);
+
+  if (responseCode < 200 || responseCode >= 300) {
+    let errorMessage = `SP-API Error ${responseCode}`;
+    try {
+      const error = JSON.parse(responseBody);
+      errorMessage = error.errors?.[0]?.message || error.message || responseBody;
+    } catch (e) {
+      errorMessage = responseBody;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return JSON.parse(responseBody);
+}
+
+/**
+ * Convert marketplace code to locale
+ */
+function convertMarketplaceToLocale(marketplace) {
+  const localeMap = {
+    'DE': 'de-DE',
+    'FR': 'fr-FR',
+    'IT': 'it-IT',
+    'ES': 'es-ES',
+    'UK': 'en-GB',
+    'NL': 'nl-NL',
+    'PL': 'pl-PL',
+    'SE': 'sv-SE'
+  };
+  return localeMap[marketplace] || 'en-GB';
+}
+
+/**
+ * Convert language code to locale for specific marketplace
+ */
+function convertLanguageToLocale(lang, marketplace) {
+  const localeMap = {
+    'DE': 'de-DE',
+    'EN': 'en-GB',
+    'FR': 'fr-FR',
+    'IT': 'it-IT',
+    'ES': 'es-ES',
+    'NL': 'nl-NL',
+    'PL': 'pl-PL',
+    'SE': 'sv-SE'
+  };
+  return localeMap[lang] || null;
+}
+
+/**
+ * Call SP-API with proper authentication (enhanced version)
+ */
+function callSPAPIDirect(method, path, params, accessToken, body) {
+  const client = getActiveClient();
+  const marketplaceConfig = MARKETPLACE_LANGUAGES[client.marketplace];
+  const endpoint = marketplaceConfig.endpoint;
+
+  let url = endpoint + path;
+
+  // Add query parameters
+  if (params && Object.keys(params).length > 0) {
+    const queryString = Object.keys(params)
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+      .join('&');
+    url += '?' + queryString;
+  }
+
+  const options = {
+    method: method.toLowerCase(),
+    headers: {
+      'x-amz-access-token': accessToken,
+      'Content-Type': 'application/json'
+    },
+    muteHttpExceptions: true
+  };
+
+  if (body) {
+    options.payload = JSON.stringify(body);
+  }
+
+  Logger.log(`[${client.clientName}] Calling SP-API: ${method} ${url}`);
+
+  const response = UrlFetchApp.fetch(url, options);
+  const responseCode = response.getResponseCode();
+  const responseBody = response.getContentText();
+
+  if (responseCode < 200 || responseCode >= 300) {
+    let errorMessage = `SP-API Error ${responseCode}`;
+    try {
+      const error = JSON.parse(responseBody);
+      errorMessage = error.errors?.[0]?.message || error.message || errorMessage;
+    } catch (e) {
+      errorMessage = responseBody;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return JSON.parse(responseBody);
+}
+
+// ========================================
+// NEW API PERMISSIONS TEST
+// ========================================
+
+/**
+ * Test newly granted Amazon API permissions:
+ * - Image Management
+ * - Upload and Manage Videos
+ * - A+ Content Manager (enhanced)
+ *
+ * Based on permissions granted 11.12.2025
+ */
+function testNewAPIPermissions() {
+  const ui = SpreadsheetApp.getUi();
+
+  try {
+    const client = getActiveClient();
+    const accessToken = getActiveAccessToken();
+    const marketplaceConfig = getMarketplaceConfig(client.marketplace || 'DE');
+    const endpoint = marketplaceConfig.endpoint;
+    const marketplaceId = marketplaceConfig.marketplaceId;
+
+    const results = [];
+
+    showProgress('Testing new API permissions...');
+
+    // Test 1: Uploads API - Create Upload Destination (for images)
+    Logger.log('\n=== TEST 1: Uploads API - Create Upload Destination ===');
+    try {
+      const uploadUrl = `${endpoint}/uploads/2020-11-01/uploadDestinations/${marketplaceId}`;
+      const uploadPayload = {
+        contentMD5: 'abc123', // Placeholder
+        resource: 'aplus/2020-11-01/contentDocuments',
+        contentType: 'image/jpeg'
+      };
+
+      const uploadOptions = {
+        method: 'post',
+        headers: {
+          'x-amz-access-token': accessToken,
+          'Content-Type': 'application/json'
+        },
+        payload: JSON.stringify(uploadPayload),
+        muteHttpExceptions: true
+      };
+
+      const uploadResponse = UrlFetchApp.fetch(uploadUrl, uploadOptions);
+      const uploadCode = uploadResponse.getResponseCode();
+      const uploadBody = uploadResponse.getContentText();
+
+      Logger.log(`Uploads API Response: ${uploadCode}`);
+      Logger.log(`Response body: ${uploadBody.substring(0, 500)}`);
+
+      results.push({
+        test: 'Uploads API (Image Upload)',
+        status: uploadCode === 201 ? '✅ SUCCESS' : `❌ ${uploadCode}`,
+        code: uploadCode,
+        details: uploadCode === 201 ? 'Upload destination created!' : uploadBody.substring(0, 200)
+      });
+    } catch (e) {
+      results.push({ test: 'Uploads API (Image Upload)', status: '❌ ERROR', details: e.toString() });
+    }
+
+    // Test 2: A+ Content API - List Content Documents
+    Logger.log('\n=== TEST 2: A+ Content API - List Documents ===');
+    try {
+      const aplusUrl = `${endpoint}/aplus/2020-11-01/contentDocuments?marketplaceId=${marketplaceId}&pageSize=1`;
+
+      const aplusOptions = {
+        method: 'get',
+        headers: {
+          'x-amz-access-token': accessToken
+        },
+        muteHttpExceptions: true
+      };
+
+      const aplusResponse = UrlFetchApp.fetch(aplusUrl, aplusOptions);
+      const aplusCode = aplusResponse.getResponseCode();
+      const aplusBody = aplusResponse.getContentText();
+
+      Logger.log(`A+ Content API Response: ${aplusCode}`);
+      Logger.log(`Response body: ${aplusBody.substring(0, 500)}`);
+
+      results.push({
+        test: 'A+ Content Manager',
+        status: aplusCode === 200 ? '✅ SUCCESS' : `❌ ${aplusCode}`,
+        code: aplusCode,
+        details: aplusCode === 200 ? 'A+ Content access confirmed!' : aplusBody.substring(0, 200)
+      });
+    } catch (e) {
+      results.push({ test: 'A+ Content Manager', status: '❌ ERROR', details: e.toString() });
+    }
+
+    // Test 3: Catalog Items API - Get Item (Images endpoint)
+    Logger.log('\n=== TEST 3: Catalog Items API (for image retrieval) ===');
+    try {
+      // Use a sample ASIN - this tests if we can access product images
+      const catalogUrl = `${endpoint}/catalog/2022-04-01/items?marketplaceIds=${marketplaceId}&includedData=images&pageSize=1`;
+
+      const catalogOptions = {
+        method: 'get',
+        headers: {
+          'x-amz-access-token': accessToken
+        },
+        muteHttpExceptions: true
+      };
+
+      const catalogResponse = UrlFetchApp.fetch(catalogUrl, catalogOptions);
+      const catalogCode = catalogResponse.getResponseCode();
+      const catalogBody = catalogResponse.getContentText();
+
+      Logger.log(`Catalog API Response: ${catalogCode}`);
+      Logger.log(`Response body: ${catalogBody.substring(0, 500)}`);
+
+      results.push({
+        test: 'Image Management (via Catalog)',
+        status: catalogCode === 200 ? '✅ SUCCESS' : `❌ ${catalogCode}`,
+        code: catalogCode,
+        details: catalogCode === 200 ? 'Image data access confirmed!' : catalogBody.substring(0, 200)
+      });
+    } catch (e) {
+      results.push({ test: 'Image Management (via Catalog)', status: '❌ ERROR', details: e.toString() });
+    }
+
+    // Test 4: Video Upload endpoint (if available)
+    Logger.log('\n=== TEST 4: Video Upload API ===');
+    try {
+      // Try to get upload destination for video
+      const videoUrl = `${endpoint}/uploads/2020-11-01/uploadDestinations/${marketplaceId}`;
+      const videoPayload = {
+        contentMD5: 'video123',
+        resource: 'media/2021-08-01/videos',
+        contentType: 'video/mp4'
+      };
+
+      const videoOptions = {
+        method: 'post',
+        headers: {
+          'x-amz-access-token': accessToken,
+          'Content-Type': 'application/json'
+        },
+        payload: JSON.stringify(videoPayload),
+        muteHttpExceptions: true
+      };
+
+      const videoResponse = UrlFetchApp.fetch(videoUrl, videoOptions);
+      const videoCode = videoResponse.getResponseCode();
+      const videoBody = videoResponse.getContentText();
+
+      Logger.log(`Video Upload API Response: ${videoCode}`);
+      Logger.log(`Response body: ${videoBody.substring(0, 500)}`);
+
+      results.push({
+        test: 'Video Upload',
+        status: videoCode === 201 ? '✅ SUCCESS' : `❌ ${videoCode}`,
+        code: videoCode,
+        details: videoCode === 201 ? 'Video upload destination created!' : videoBody.substring(0, 200)
+      });
+    } catch (e) {
+      results.push({ test: 'Video Upload', status: '❌ ERROR', details: e.toString() });
+    }
+
+    hideProgress();
+
+    // Show results
+    let summary = '🧪 NEW API PERMISSIONS TEST RESULTS\n\n';
+    summary += `Client: ${client.clientName}\n`;
+    summary += `Marketplace: ${client.marketplace}\n\n`;
+
+    for (const result of results) {
+      summary += `${result.status} ${result.test}\n`;
+      if (result.code && result.code !== 200 && result.code !== 201) {
+        summary += `   Details: ${result.details.substring(0, 100)}\n`;
+      }
+    }
+
+    summary += '\n\n📋 NASTĘPNE KROKI:\n';
+
+    const hasImageUpload = results.find(r => r.test.includes('Image Upload') && r.code === 201);
+    const hasVideoUpload = results.find(r => r.test.includes('Video Upload') && r.code === 201);
+
+    if (hasImageUpload) {
+      summary += '✅ Można wgrywać obrazy bezpośrednio przez API!\n';
+    } else {
+      summary += '❌ Wgrywanie obrazów nadal wymaga Seller Central\n';
+    }
+
+    if (hasVideoUpload) {
+      summary += '✅ Można wgrywać wideo bezpośrednio przez API!\n';
+    } else {
+      summary += '❌ Wgrywanie wideo nadal wymaga Seller Central\n';
+    }
+
+    summary += '\n💡 Sprawdź Extensions → Apps Script → Executions\n';
+    summary += 'dla szczegółowych logów.';
+
+    ui.alert('API Permissions Test', summary, ui.ButtonSet.OK);
+
+    Logger.log('\n=== TEST SUMMARY ===');
+    results.forEach(r => Logger.log(`${r.test}: ${r.status}`));
+
+    return results;
+
+  } catch (error) {
+    hideProgress();
+    Logger.log(`Error in testNewAPIPermissions: ${error.toString()}`);
+    Logger.log(`Stack: ${error.stack}`);
+    ui.alert('Test Error', error.toString(), ui.ButtonSet.OK);
+  }
+}
