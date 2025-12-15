@@ -669,8 +669,13 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     const headline = addTextComponent('headline', content.headline);
     if (headline) module.premiumFullBackgroundText.headline = headline;
 
-    const body = addParagraphComponent('body', content.body);
-    if (body) module.premiumFullBackgroundText.body = body;
+    // API uses 'description' not 'body' for this module type
+    const description = addParagraphComponent('description', content.body);
+    if (description) module.premiumFullBackgroundText.description = description;
+
+    // Optional subheadline
+    const subheadline = addTextComponent('subheadline', content.subheadline);
+    if (subheadline) module.premiumFullBackgroundText.subheadline = subheadline;
   }
 
   // 19. PREMIUM_FULL_BACKGROUND_IMAGE
