@@ -161,11 +161,32 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     return null;
   }
 
+  // Helper function to validate Amazon uploadDestinationId format
+  // Valid formats:
+  //   - "aplus-media-library-service-media/UUID.ext"
+  //   - "aplus/UUID.ext"
+  // Invalid (placeholder filenames): "amazon_a_plus_placeholder_970x600_header.png"
+  function isValidUploadDestinationId(id) {
+    if (!id || typeof id !== 'string') return false;
+
+    // Must contain "/" (path separator) to be a valid Amazon ID
+    if (!id.includes('/')) return false;
+
+    // Must start with "aplus" prefix
+    if (!id.startsWith('aplus')) return false;
+
+    // Should have a UUID-like pattern (optional but recommended check)
+    // Format: aplus-media-library-service-media/UUID.ext
+    const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+    return uuidPattern.test(id);
+  }
+
   // Helper function to get image ID or null
   // Enhanced to support image library lookup and placeholder mode
   // Uses APLUS_IMAGE_SIZES map to automatically determine expected size
   // Priority order:
-  //   1. Direct uploadDestinationId from sheet (explicit user input)
+  //   1. Direct uploadDestinationId from sheet (explicit user input) - must be valid Amazon ID
   //   2. Lookup by module type from Image Library (auto-suggest)
   //   3. Lookup by image URL from library
   //   4. Placeholder fallback (if placeholder mode enabled)
@@ -195,10 +216,13 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     }
 
     // First priority: Direct uploadDestinationId from sheet
+    // Must be a valid Amazon uploadDestinationId (contains "/" like "aplus-media-library-service-media/UUID.jpg")
     const directId = aplusData.images?.[`${fieldName}_id`];
-    if (directId) {
+    if (directId && isValidUploadDestinationId(directId)) {
       Logger.log(`Using direct uploadDestinationId for ${fieldName}: ${directId}`);
       return directId;
+    } else if (directId) {
+      Logger.log(`⚠️ Invalid uploadDestinationId format: ${directId} - skipping to auto-lookup`);
     }
 
     // Second priority: Auto-lookup by module type from Image Library
