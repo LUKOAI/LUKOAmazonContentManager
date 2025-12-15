@@ -535,11 +535,11 @@ FORBIDDEN:
 
 | # | Module Type | API Property Name | Description | Required Images |
 |---|---|---|---|---|
-| 1 | `PREMIUM_TEXT` | premiumText | Enhanced text | None |
-| 2 | `PREMIUM_IMAGE_TEXT` | premiumImageText | Image + text | 1x 1464x600 |
-| 3 | `PREMIUM_FULL_BACKGROUND_TEXT` | premiumFullBackgroundText | Background + overlay text | 1x 1940x600 |
-| 4 | `PREMIUM_FULL_BACKGROUND_IMAGE` | premiumFullBackgroundImage | Background only | 1x 1940x600 |
-| 5 | `PREMIUM_IMAGE_CAROUSEL` | premiumImageCarousel | Up to 8 carousel images | 8x 362x453 |
+| 1 | `PREMIUM_TEXT` | premiumText | Enhanced text block | None |
+| 2 | `PREMIUM_SINGLE_IMAGE` | premiumSingleImage | Large single image | 1x 1464x600 |
+| 3 | `PREMIUM_IMAGE_TEXT` | premiumImageText | Image + text side by side | 1x 1464x600 |
+| 4 | `PREMIUM_COMPARISON_CHART` | premiumComparisonChart | Product comparison table | Up to 6x 220x220 |
+| 5 | `PREMIUM_FULL_BACKGROUND_IMAGE` | premiumFullBackgroundImage | Full width background | 1x 1940x600 |
 
 ---
 
@@ -547,21 +547,17 @@ FORBIDDEN:
 
 **WARNING:** These module types exist in Seller Central web interface but are **NOT available through SP-API**:
 
+- PREMIUM_FULL_BACKGROUND_TEXT (use PREMIUM_IMAGE_TEXT instead)
+- PREMIUM_IMAGE_CAROUSEL (not in API)
+- PREMIUM_FOUR_IMAGE_CAROUSEL (not in API)
+- PREMIUM_HOTSPOT_IMAGE (not in API)
+- PREMIUM_THREE_IMAGE_TEXT (not in API)
+- PREMIUM_FOUR_IMAGE_TEXT (not in API)
 - PREMIUM_FULL_VIDEO
 - PREMIUM_VIDEO_WITH_TEXT
 - PREMIUM_VIDEO_IMAGE_CAROUSEL
 - PREMIUM_NAVIGATION_CAROUSEL
-- PREMIUM_REGIMEN_CAROUSEL
-- PREMIUM_SIMPLE_IMAGE_CAROUSEL
-- PREMIUM_HOTSPOTS_1
-- PREMIUM_HOTSPOTS_2
-- PREMIUM_COMPARISON_TABLE_1/2/3
-- PREMIUM_QA
-- PREMIUM_DUAL_IMAGES_WITH_TEXT
-- PREMIUM_FOUR_IMAGES_WITH_TEXT
-- PREMIUM_TECHNICAL_SPECIFICATIONS
-- PREMIUM_SINGLE_IMAGE_WITH_TEXT
-- Any other type not listed above
+- Any other PREMIUM type not listed above
 
 **DO NOT USE THESE IN JSON** - they will cause API errors!
 
