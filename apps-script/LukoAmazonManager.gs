@@ -1287,7 +1287,10 @@ function lukoPublishAPlusWithMode(exportMode) {
 
 /**
  * Sync placeholder images from Amazon Asset Library to Image Library sheet
- * User needs to have uploaded placeholder images to Amazon first
+ * User can either:
+ * 1. Enter a specific uploadDestinationId to add directly
+ * 2. Enter a prefix to search for in existing A+ Content
+ * 3. Leave empty to sync ALL images from A+ Content
  */
 function syncPlaceholderImagesToLibrary() {
   try {
@@ -1300,12 +1303,14 @@ function syncPlaceholderImagesToLibrary() {
       librarySheet = createImageLibrarySheet();
     }
 
-    // Prompt for placeholder naming convention
+    // Prompt for what to sync
     const response = ui.prompt(
       'Sync Placeholder Images',
-      'Podaj prefiks nazwy plików placeholder (np. "placeholder_" lub "aplus_placeholder_"):\n\n' +
-      'Pliki powinny być wgrane do Amazon Asset Library przez Seller Central.\n' +
-      'System wyszuka uploadDestinationId dla tych plików.',
+      'Opcje:\n' +
+      '1. Wklej pełny uploadDestinationId (np. "aplus-media-library-service-media/abc123.png")\n' +
+      '2. Wpisz prefiks do wyszukania (np. "placeholder_")\n' +
+      '3. Zostaw puste aby zsynchronizować WSZYSTKIE obrazy z A+ Content\n\n' +
+      'Co chcesz zrobić?',
       ui.ButtonSet.OK_CANCEL
     );
 
@@ -1313,39 +1318,48 @@ function syncPlaceholderImagesToLibrary() {
       return;
     }
 
-    const prefix = response.getResponseText() || 'placeholder_';
+    const input = response.getResponseText().trim();
 
-    showProgress('Szukam placeholder obrazów w A+ Content...');
+    // Check if input looks like a full uploadDestinationId
+    if (input.includes('aplus-media-library-service-media/') || input.includes('/') && input.includes('.')) {
+      // Direct ID - add it to library
+      addDirectUploadDestinationId(librarySheet, input, ui);
+      return;
+    }
+
+    // Otherwise, search through A+ Content
+    const prefix = input;
+
+    showProgress('Szukam obrazów w A+ Content...');
 
     // Get client and token
     const client = getActiveClient();
     const accessToken = getActiveAccessToken();
 
-    // Search for A+ Content documents that contain placeholders
+    // Search for A+ Content documents
     const documents = searchAPlusContentDocuments(accessToken, client.marketplace);
 
     Logger.log(`Found ${documents.length} A+ Content documents`);
 
+    if (documents.length === 0) {
+      hideProgress();
+      ui.alert('Brak dokumentów', 'Nie znaleziono żadnych A+ Content dokumentów.', ui.ButtonSet.OK);
+      return;
+    }
+
     const placeholderData = [];
 
-    // Expected placeholder sizes based on A+ modules
-    const expectedSizes = [
-      { name: '135x135', width: 135, height: 135 },
-      { name: '300x300', width: 300, height: 300 },
-      { name: '350x175', width: 350, height: 175 },
-      { name: '600x180', width: 600, height: 180 },
-      { name: '970x300', width: 970, height: 300 },
-      { name: '970x600', width: 970, height: 600 },
-      { name: '1464x600', width: 1464, height: 600 },
-      { name: '1940x600', width: 1940, height: 600 },
-      { name: '362x453', width: 362, height: 453 },
-      { name: '220x220', width: 220, height: 220 }
-    ];
-
-    // Process each document to find placeholder images
+    // Process each document to find images
     for (let i = 0; i < documents.length; i++) {
       const doc = documents[i];
       const contentRefKey = doc.contentReferenceKey;
+      const contentType = doc.badgeSet || [];
+
+      // Skip BRAND content (Brand Story) - API doesn't support fetching these
+      if (contentType.includes('BRAND')) {
+        Logger.log(`Skipping BRAND content: ${contentRefKey}`);
+        continue;
+      }
 
       showProgress(`Przetwarzam ${i + 1}/${documents.length}: ${contentRefKey}...`);
 
@@ -1353,32 +1367,43 @@ function syncPlaceholderImagesToLibrary() {
         const fullDocument = getAPlusContentDocument(contentRefKey, accessToken, client.marketplace);
         const images = extractImageIdsFromContentDocument(fullDocument);
 
-        // Check if any image looks like a placeholder
-        for (const img of images) {
-          // Check if altText or notes contain placeholder indicators
-          const isPlaceholder = img.altText?.toLowerCase().includes('placeholder') ||
-                               img.altText?.toLowerCase().includes('atrapa') ||
-                               img.uploadDestinationId?.includes(prefix);
+        Logger.log(`Found ${images.length} images in ${contentRefKey}`);
 
-          if (isPlaceholder || prefix === '') {
+        // Check if any image matches criteria
+        for (const img of images) {
+          let shouldAdd = false;
+
+          if (prefix === '') {
+            // Empty prefix = add ALL images
+            shouldAdd = true;
+          } else {
+            // Check if matches prefix or placeholder indicators
+            shouldAdd = img.altText?.toLowerCase().includes('placeholder') ||
+                       img.altText?.toLowerCase().includes('atrapa') ||
+                       img.uploadDestinationId?.includes(prefix) ||
+                       img.altText?.toLowerCase().includes(prefix.toLowerCase());
+          }
+
+          if (shouldAdd) {
             placeholderData.push([
               img.uploadDestinationId,
               '', // image_url
               '', // image_hash
-              img.altText || 'PLACEHOLDER',
-              '', // width - to be determined
-              '', // height - to be determined
+              img.altText || (prefix === '' ? 'SYNCED' : 'PLACEHOLDER'),
+              '', // width
+              '', // height
               contentRefKey,
               img.moduleType,
               new Date(),
-              'PLACEHOLDER',
-              `Synced as placeholder from ${contentRefKey}`
+              prefix === '' ? 'ACTIVE' : 'PLACEHOLDER',
+              `Synced from ${contentRefKey}`
             ]);
           }
         }
 
       } catch (error) {
         Logger.log(`Error processing ${contentRefKey}: ${error.toString()}`);
+        // Continue with next document
       }
 
       Utilities.sleep(500);
@@ -1399,29 +1424,101 @@ function syncPlaceholderImagesToLibrary() {
 
         ui.alert(
           'Sync Complete',
-          `Dodano ${newData.length} nowych placeholder obrazów do biblioteki.\n` +
+          `Dodano ${newData.length} nowych obrazów do biblioteki.\n` +
           `(${placeholderData.length - newData.length} duplikatów pominięto)\n\n` +
           'Sprawdź arkusz "A+ Image Library".',
           ui.ButtonSet.OK
         );
       } else {
-        ui.alert('Brak nowych', 'Wszystkie znalezione placeholdery już są w bibliotece.');
+        ui.alert('Brak nowych', 'Wszystkie znalezione obrazy już są w bibliotece.', ui.ButtonSet.OK);
       }
     } else {
       ui.alert(
-        'Brak placeholderów',
-        'Nie znaleziono obrazów placeholder w istniejących A+ Content.\n\n' +
-        'Aby dodać placeholdery:\n' +
-        '1. Wgraj atrapy obrazów do Amazon Seller Central → Asset Library\n' +
-        '2. Użyj ich w A+ Content\n' +
-        '3. Uruchom synchronizację ponownie'
+        'Brak obrazów',
+        'Nie znaleziono obrazów pasujących do kryteriów.\n\n' +
+        'Sprawdź czy:\n' +
+        '1. Masz A+ Content z obrazami\n' +
+        '2. Prefiks jest poprawny\n' +
+        '3. Obrazy mają odpowiedni altText',
+        ui.ButtonSet.OK
       );
     }
 
   } catch (error) {
     hideProgress();
     Logger.log(`Error in syncPlaceholderImagesToLibrary: ${error.toString()}`);
-    SpreadsheetApp.getUi().alert('Błąd: ' + error.toString());
+    Logger.log(`Stack: ${error.stack}`);
+    SpreadsheetApp.getUi().alert('Błąd', error.toString(), SpreadsheetApp.getUi().ButtonSet.OK);
+  }
+}
+
+/**
+ * Add a specific uploadDestinationId directly to the Image Library
+ */
+function addDirectUploadDestinationId(librarySheet, uploadDestinationId, ui) {
+  try {
+    // Check if already exists
+    const existingData = librarySheet.getDataRange().getValues();
+    const existingIds = existingData.slice(1).map(row => row[0]);
+
+    if (existingIds.includes(uploadDestinationId)) {
+      ui.alert('Już istnieje', `Ten uploadDestinationId już jest w bibliotece:\n${uploadDestinationId}`, ui.ButtonSet.OK);
+      return;
+    }
+
+    // Ask for additional info
+    const sizeResponse = ui.prompt(
+      'Rozmiar obrazu',
+      'Podaj rozmiar obrazu (np. "970x600" lub "300x300"):\n\n' +
+      'Popularne rozmiary:\n' +
+      '• 970x600 - Header Image\n' +
+      '• 300x300 - Side Image\n' +
+      '• 135x135 - Icon\n' +
+      '• 1464x600 - Premium Image',
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (sizeResponse.getSelectedButton() !== ui.Button.OK) {
+      return;
+    }
+
+    const sizeStr = sizeResponse.getResponseText().trim();
+    let width = '';
+    let height = '';
+
+    if (sizeStr.includes('x')) {
+      const parts = sizeStr.split('x');
+      width = parts[0].trim();
+      height = parts[1].trim();
+    }
+
+    // Add to library
+    const newRow = [
+      uploadDestinationId,
+      '', // image_url
+      '', // image_hash
+      'PLACEHOLDER ' + sizeStr,
+      width,
+      height,
+      'manual',
+      'MANUAL_ENTRY',
+      new Date(),
+      'PLACEHOLDER',
+      'Manually added placeholder'
+    ];
+
+    const startRow = librarySheet.getLastRow() + 1;
+    librarySheet.getRange(startRow, 1, 1, newRow.length).setValues([newRow]);
+
+    ui.alert(
+      'Dodano',
+      `Placeholder dodany do biblioteki:\n${uploadDestinationId}\n\nRozmiar: ${sizeStr || '(nie podano)'}`,
+      ui.ButtonSet.OK
+    );
+
+  } catch (error) {
+    Logger.log(`Error in addDirectUploadDestinationId: ${error.toString()}`);
+    ui.alert('Błąd', error.toString(), ui.ButtonSet.OK);
   }
 }
 
