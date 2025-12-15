@@ -616,15 +616,27 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   else if (aplusData.moduleType === 'PREMIUM_IMAGE_TEXT') {
     module.premiumImageText = {};
 
+    // positionType is REQUIRED - default to LEFT
+    module.premiumImageText.positionType = aplusData.images?.imagePositionType || 'LEFT';
+
     const imageId = getImageId('image');
     if (imageId) {
       module.premiumImageText.image = {
         uploadDestinationId: imageId
       };
+    } else {
+      // Image is REQUIRED - use empty placeholder structure
+      Logger.log('WARNING: PREMIUM_IMAGE_TEXT requires image - API will fail without it');
     }
 
+    // headline is REQUIRED
     const headline = addTextComponent('headline', content.headline);
-    if (headline) module.premiumImageText.headline = headline;
+    if (headline) {
+      module.premiumImageText.headline = headline;
+    } else {
+      // Default headline if missing
+      module.premiumImageText.headline = { value: ' ', decoratorSet: [] };
+    }
 
     const body = addParagraphComponent('body', content.body);
     if (body) module.premiumImageText.body = body;
@@ -634,11 +646,24 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   else if (aplusData.moduleType === 'PREMIUM_FULL_BACKGROUND_TEXT') {
     module.premiumFullBackgroundText = {};
 
+    // positionType is REQUIRED - default to LEFT (LEFT, CENTER, RIGHT)
+    module.premiumFullBackgroundText.positionType = aplusData.images?.positionType || 'LEFT';
+
+    // colorType is REQUIRED - LIGHT or DARK (for text overlay visibility)
+    module.premiumFullBackgroundText.colorType = aplusData.images?.colorType || aplusData.images?.overlayColorType || 'DARK';
+
+    // desktopImage is REQUIRED (previously was backgroundImage)
     const bgImageId = getImageId('backgroundImage');
     if (bgImageId) {
-      module.premiumFullBackgroundText.backgroundImage = {
+      module.premiumFullBackgroundText.desktopImage = {
         uploadDestinationId: bgImageId
       };
+      // mobileImage is also REQUIRED - use same image as desktop
+      module.premiumFullBackgroundText.mobileImage = {
+        uploadDestinationId: bgImageId
+      };
+    } else {
+      Logger.log('WARNING: PREMIUM_FULL_BACKGROUND_TEXT requires desktopImage and mobileImage - API will fail without them');
     }
 
     const headline = addTextComponent('headline', content.headline);
@@ -664,19 +689,38 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   else if (aplusData.moduleType === 'PREMIUM_IMAGE_CAROUSEL') {
     module.premiumImageCarousel = {};
 
-    // Add up to 8 carousel images
-    const carouselImages = [];
-    for (let i = 1; i <= 8; i++) {
+    // API expects carouselCards (not carouselImages), minimum 2, max 6
+    const carouselCards = [];
+    for (let i = 1; i <= 6; i++) {
       const imageId = getImageId(`image${i}`);
       if (imageId) {
-        carouselImages.push({
-          uploadDestinationId: imageId
+        carouselCards.push({
+          image: {
+            uploadDestinationId: imageId
+          }
         });
       }
     }
-    if (carouselImages.length > 0) {
-      module.premiumImageCarousel.carouselImages = carouselImages;
+
+    // Minimum 2 cards required
+    if (carouselCards.length >= 2) {
+      module.premiumImageCarousel.carouselCards = carouselCards;
+    } else if (carouselCards.length === 1) {
+      // Duplicate the single card to meet minimum
+      carouselCards.push(carouselCards[0]);
+      module.premiumImageCarousel.carouselCards = carouselCards;
+      Logger.log('WARNING: PREMIUM_IMAGE_CAROUSEL needs min 2 cards - duplicated single card');
+    } else {
+      Logger.log('WARNING: PREMIUM_IMAGE_CAROUSEL requires at least 2 carouselCards - API will fail');
     }
+
+    // Add headline if provided
+    const headline = addTextComponent('headline', content.headline);
+    if (headline) module.premiumImageCarousel.headline = headline;
+
+    // Add body if provided
+    const body = addParagraphComponent('body', content.body);
+    if (body) module.premiumImageCarousel.body = body;
   }
 
   // 21. PREMIUM_SINGLE_IMAGE

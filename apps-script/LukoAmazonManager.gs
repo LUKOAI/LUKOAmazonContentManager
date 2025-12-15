@@ -1554,8 +1554,16 @@ function extractAPlusData(sheet, rowNumber, contentType) {
   const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
   const moduleContent = {};
 
-  // Build prefix for this module (e.g., aplus_basic_m1_)
-  const prefix = `aplus_basic_m${moduleNumber}_`;
+  // Determine if this is a Premium module based on Module Type
+  const isPremium = moduleType && moduleType.toString().toUpperCase().startsWith('PREMIUM');
+
+  // Build prefix for this module (e.g., aplus_basic_m1_ or aplus_premium_m1_)
+  const prefix = isPremium
+    ? `aplus_premium_m${moduleNumber}_`
+    : `aplus_basic_m${moduleNumber}_`;
+
+  Logger.log(`Using prefix: ${prefix} (isPremium: ${isPremium})`);
+
 
   for (const lang of languages) {
     const langContent = {};
