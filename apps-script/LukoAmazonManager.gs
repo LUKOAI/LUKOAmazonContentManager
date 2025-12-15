@@ -173,6 +173,8 @@ function onOpen() {
       .addItem('📚 Create Image Library', 'createImageLibrarySheet')
       .addItem('🔄 Sync Images to Library', 'syncImagesToLibrary')
       .addItem('📥 Sync Placeholder IDs', 'syncPlaceholderImagesToLibrary')
+      .addItem('📤 Upload Placeholder Images', 'uploadPlaceholderImages')
+      .addItem('➕ Add Placeholder Manually', 'addPlaceholderToLibrary')
       .addSeparator()
       .addItem('🧪 Test New API Permissions', 'testNewAPIPermissions')
       // EXPERIMENTAL/DIAGNOSTIC FUNCTIONS - Zakomentowane bo nie działają (brak dostępu do Amazon S3 bucket)

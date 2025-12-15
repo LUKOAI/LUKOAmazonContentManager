@@ -203,7 +203,15 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     // Get expected size from map or use explicit size
     const moduleType = aplusData.moduleType;
     const sizeMap = APLUS_IMAGE_SIZES[moduleType] || {};
-    const expectedSize = explicitSize || sizeMap[fieldName] || null;
+
+    // Try multiple key formats: image1, image_1, image
+    // (map uses image_1 format but code calls with image1)
+    const fieldNameWithUnderscore = fieldName.replace(/(\d+)$/, '_$1'); // image1 -> image_1
+    const expectedSize = explicitSize ||
+                        sizeMap[fieldName] ||
+                        sizeMap[fieldNameWithUnderscore] ||
+                        sizeMap['image'] ||
+                        null;
 
     Logger.log(`getImageId called for ${fieldName}, moduleType: ${moduleType}, expectedSize: ${expectedSize}`);
 

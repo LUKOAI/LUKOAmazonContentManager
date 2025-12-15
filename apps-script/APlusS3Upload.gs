@@ -338,6 +338,8 @@ function createImageLibrarySheet() {
     }
 
     // Set up headers
+    // Columns: A=uploadDestinationId, B=image_url, C=image_hash, D=alt_text, E=width, F=height,
+    //          G=source_content_key, H=module_type, I=date_synced, J=status, K=notes, L=original_filename
     const headers = [
       'uploadDestinationId',
       'image_url',
@@ -349,7 +351,8 @@ function createImageLibrarySheet() {
       'module_type',
       'date_synced',
       'status',
-      'notes'
+      'notes',
+      'original_filename'
     ];
 
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -550,7 +553,7 @@ function lookupPlaceholderBySize(size) {
 
     // Search for placeholder with matching size
     // Columns: 0=uploadDestinationId, 1=image_url, 2=image_hash, 3=alt_text, 4=width, 5=height,
-    //          6=source_content_key, 7=module_type, 8=date_synced, 9=status, 10=notes
+    //          6=source_content_key, 7=module_type, 8=date_synced, 9=status, 10=notes, 11=original_filename
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
       const uploadDestinationId = row[0] ? row[0].toString() : '';
@@ -559,13 +562,15 @@ function lookupPlaceholderBySize(size) {
       const height = parseInt(row[5], 10) || 0;
       const status = row[9] ? row[9].toString() : '';
       const notes = row[10] ? row[10].toString() : '';
+      const originalFilename = row[11] ? row[11].toString() : '';
 
       // Check if this is a placeholder (multiple detection methods)
       const isPlaceholder = status === 'PLACEHOLDER' ||
                            status.toLowerCase().includes('placeholder') ||
                            altText.toLowerCase().includes('placeholder') ||
                            notes.toLowerCase().includes('placeholder') ||
-                           uploadDestinationId.toLowerCase().includes('placeholder');
+                           uploadDestinationId.toLowerCase().includes('placeholder') ||
+                           originalFilename.toLowerCase().includes('placeholder');
 
       if (!isPlaceholder) continue;
 
@@ -575,20 +580,27 @@ function lookupPlaceholderBySize(size) {
         return uploadDestinationId;
       }
 
-      // Method 2: Size pattern in uploadDestinationId (e.g., "placeholder_970x600.jpg")
+      // Method 2: Size pattern in original_filename (e.g., "placeholder_970x600.jpg")
+      if (originalFilename.includes(sizePattern) ||
+          originalFilename.includes(sizePatternUnderscore)) {
+        Logger.log(`✅ Found placeholder for ${size} by original_filename "${originalFilename}": ${uploadDestinationId}`);
+        return uploadDestinationId;
+      }
+
+      // Method 3: Size pattern in uploadDestinationId (e.g., "placeholder_970x600.jpg")
       if (uploadDestinationId.includes(sizePattern) ||
           uploadDestinationId.includes(sizePatternUnderscore)) {
         Logger.log(`✅ Found placeholder for ${size} in ID: ${uploadDestinationId}`);
         return uploadDestinationId;
       }
 
-      // Method 3: Size pattern in alt_text
+      // Method 4: Size pattern in alt_text
       if (altText.includes(sizePattern) || altText.includes(sizePatternSpaced)) {
         Logger.log(`✅ Found placeholder for ${size} by alt_text: ${uploadDestinationId}`);
         return uploadDestinationId;
       }
 
-      // Method 4: Size pattern in notes
+      // Method 5: Size pattern in notes
       if (notes.includes(sizePattern) || notes.includes(sizePatternSpaced)) {
         Logger.log(`✅ Found placeholder for ${size} by notes: ${uploadDestinationId}`);
         return uploadDestinationId;
@@ -609,12 +621,14 @@ function lookupPlaceholderBySize(size) {
       const height = parseInt(row[5], 10) || 0;
       const status = row[9] ? row[9].toString() : '';
       const notes = row[10] ? row[10].toString() : '';
+      const originalFilename = row[11] ? row[11].toString() : '';
 
       const isPlaceholder = status === 'PLACEHOLDER' ||
                            status.toLowerCase().includes('placeholder') ||
                            altText.toLowerCase().includes('placeholder') ||
                            notes.toLowerCase().includes('placeholder') ||
-                           uploadDestinationId.toLowerCase().includes('placeholder');
+                           uploadDestinationId.toLowerCase().includes('placeholder') ||
+                           originalFilename.toLowerCase().includes('placeholder');
 
       if (isPlaceholder && width > 0 && height > 0) {
         // Calculate similarity (aspect ratio match is important)
@@ -963,4 +977,282 @@ function suggestImagesForModule(moduleType, sourceContentKey) {
 
   Logger.log(`Suggested ${Object.keys(suggestions).length} images for ${moduleType}`);
   return suggestions;
+}
+
+/**
+ * Upload placeholder images to Amazon and save to Image Library
+ * Menu function: LUKO Amazon → A+ Content → Upload Placeholder Images
+ *
+ * User provides image URLs (one per line), the function:
+ * 1. Downloads each image
+ * 2. Uploads to Amazon (gets uploadDestinationId)
+ * 3. Saves to Image Library with: uploadDestinationId, original_filename, width, height, status=PLACEHOLDER
+ */
+function uploadPlaceholderImages() {
+  const ui = SpreadsheetApp.getUi();
+
+  try {
+    // Get image URLs from user
+    const response = ui.prompt(
+      '📤 Upload Placeholder Images',
+      'Wklej URL-e obrazów (jeden na linię).\n\n' +
+      'Nazwa pliku powinna zawierać rozmiar, np.:\n' +
+      '  placeholder_970x600.png\n' +
+      '  amazon_aplus_300x300.jpg\n\n' +
+      'Program automatycznie:\n' +
+      '✓ Uploaduje do Amazon\n' +
+      '✓ Pobiera wymiary\n' +
+      '✓ Zapisuje w Image Library\n\n' +
+      'URL-e (po jednym w linii):',
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (response.getSelectedButton() !== ui.Button.OK) {
+      return;
+    }
+
+    const urls = response.getResponseText().trim().split('\n').filter(url => url.trim());
+
+    if (urls.length === 0) {
+      ui.alert('Błąd', 'Nie podano żadnych URL-ów.', ui.ButtonSet.OK);
+      return;
+    }
+
+    // Get client credentials
+    const client = getActiveClient();
+    const accessToken = getActiveAccessToken();
+    const marketplace = client.marketplace;
+
+    // Get or create library sheet
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let librarySheet = ss.getSheetByName('A+ Image Library');
+    if (!librarySheet) {
+      librarySheet = createImageLibrarySheet();
+    }
+
+    showProgress(`Uploading ${urls.length} placeholder images...`);
+
+    const results = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < urls.length; i++) {
+      const imageUrl = urls[i].trim();
+      if (!imageUrl) continue;
+
+      showProgress(`Uploading ${i + 1}/${urls.length}: ${imageUrl.substring(0, 50)}...`);
+
+      try {
+        // Extract filename from URL
+        const urlParts = imageUrl.split('/');
+        const originalFilename = urlParts[urlParts.length - 1].split('?')[0]; // Remove query params
+
+        // Extract dimensions from filename (e.g., "placeholder_970x600.png" -> 970, 600)
+        const sizeMatch = originalFilename.match(/(\d+)x(\d+)/);
+        let expectedWidth = 0;
+        let expectedHeight = 0;
+        if (sizeMatch) {
+          expectedWidth = parseInt(sizeMatch[1], 10);
+          expectedHeight = parseInt(sizeMatch[2], 10);
+        }
+
+        Logger.log(`Uploading: ${originalFilename} (expected size: ${expectedWidth}x${expectedHeight})`);
+
+        // Upload to Amazon
+        const uploadResult = uploadImageToAmazon(imageUrl, originalFilename, accessToken, marketplace);
+
+        if (uploadResult.success) {
+          const uploadDestinationId = uploadResult.uploadDestinationId;
+
+          // Add to library
+          // Columns: A=uploadDestinationId, B=image_url, C=image_hash, D=alt_text, E=width, F=height,
+          //          G=source_content_key, H=module_type, I=date_synced, J=status, K=notes, L=original_filename
+          librarySheet.appendRow([
+            uploadDestinationId,     // uploadDestinationId
+            imageUrl,                // image_url
+            '',                      // image_hash
+            `Placeholder ${expectedWidth}x${expectedHeight}`, // alt_text
+            expectedWidth,           // width
+            expectedHeight,          // height
+            'PLACEHOLDER_UPLOAD',    // source_content_key
+            '',                      // module_type (empty for placeholders)
+            new Date(),              // date_synced
+            'PLACEHOLDER',           // status
+            `Uploaded as placeholder for size ${expectedWidth}x${expectedHeight}`, // notes
+            originalFilename         // original_filename
+          ]);
+
+          results.push({
+            filename: originalFilename,
+            uploadDestinationId: uploadDestinationId,
+            width: expectedWidth,
+            height: expectedHeight,
+            success: true
+          });
+          successCount++;
+
+          Logger.log(`✅ Uploaded: ${originalFilename} → ${uploadDestinationId}`);
+        } else {
+          results.push({
+            filename: originalFilename,
+            error: uploadResult.error,
+            success: false
+          });
+          errorCount++;
+
+          Logger.log(`❌ Failed: ${originalFilename} - ${uploadResult.error}`);
+        }
+
+      } catch (error) {
+        const urlParts = imageUrl.split('/');
+        const filename = urlParts[urlParts.length - 1];
+
+        results.push({
+          filename: filename,
+          error: error.toString(),
+          success: false
+        });
+        errorCount++;
+
+        Logger.log(`❌ Error: ${filename} - ${error.toString()}`);
+      }
+
+      // Small delay between uploads to avoid rate limiting
+      Utilities.sleep(500);
+    }
+
+    hideProgress();
+
+    // Show summary
+    let summary = `📤 Upload Placeholder Images - Results\n\n`;
+    summary += `✅ Sukces: ${successCount}\n`;
+    summary += `❌ Błędy: ${errorCount}\n\n`;
+
+    if (successCount > 0) {
+      summary += `Uploadowane placeholdery:\n`;
+      results.filter(r => r.success).forEach(r => {
+        summary += `• ${r.filename} (${r.width}x${r.height})\n`;
+        summary += `  ID: ${r.uploadDestinationId}\n`;
+      });
+    }
+
+    if (errorCount > 0) {
+      summary += `\nBłędy:\n`;
+      results.filter(r => !r.success).forEach(r => {
+        summary += `• ${r.filename}: ${r.error}\n`;
+      });
+    }
+
+    ui.alert('Upload Placeholder Images', summary, ui.ButtonSet.OK);
+
+  } catch (error) {
+    hideProgress();
+    Logger.log(`Error in uploadPlaceholderImages: ${error.toString()}`);
+    ui.alert('Błąd', error.toString(), ui.ButtonSet.OK);
+  }
+}
+
+/**
+ * Add placeholder to library manually (without upload)
+ * For when you already have the uploadDestinationId from Amazon
+ */
+function addPlaceholderToLibrary() {
+  const ui = SpreadsheetApp.getUi();
+
+  try {
+    // Get uploadDestinationId
+    const idResponse = ui.prompt(
+      '➕ Add Placeholder to Library',
+      'Wklej uploadDestinationId z Amazon:\n' +
+      '(np. "aplus-media-library-service-media/abc123-def456.png")',
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (idResponse.getSelectedButton() !== ui.Button.OK) return;
+    const uploadDestinationId = idResponse.getResponseText().trim();
+
+    if (!uploadDestinationId || !uploadDestinationId.includes('/')) {
+      ui.alert('Błąd', 'Nieprawidłowy uploadDestinationId. Musi zawierać "/" (np. aplus-media-library-service-media/UUID.ext)', ui.ButtonSet.OK);
+      return;
+    }
+
+    // Get original filename
+    const filenameResponse = ui.prompt(
+      'Oryginalna nazwa pliku',
+      'Podaj oryginalną nazwę pliku (z rozmiarem):\n' +
+      '(np. "placeholder_970x600.png")',
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (filenameResponse.getSelectedButton() !== ui.Button.OK) return;
+    const originalFilename = filenameResponse.getResponseText().trim();
+
+    // Extract dimensions from filename
+    const sizeMatch = originalFilename.match(/(\d+)x(\d+)/);
+    let width = 0;
+    let height = 0;
+    if (sizeMatch) {
+      width = parseInt(sizeMatch[1], 10);
+      height = parseInt(sizeMatch[2], 10);
+    } else {
+      // Ask for dimensions manually
+      const sizeResponse = ui.prompt(
+        'Rozmiar obrazu',
+        'Nie udało się wyciągnąć rozmiaru z nazwy. Podaj rozmiar:\n' +
+        '(np. "970x600")',
+        ui.ButtonSet.OK_CANCEL
+      );
+
+      if (sizeResponse.getSelectedButton() !== ui.Button.OK) return;
+      const sizeStr = sizeResponse.getResponseText().trim();
+      const manualMatch = sizeStr.match(/(\d+)x(\d+)/);
+      if (manualMatch) {
+        width = parseInt(manualMatch[1], 10);
+        height = parseInt(manualMatch[2], 10);
+      }
+    }
+
+    // Get or create library sheet
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let librarySheet = ss.getSheetByName('A+ Image Library');
+    if (!librarySheet) {
+      librarySheet = createImageLibrarySheet();
+    }
+
+    // Check if already exists
+    const existingData = librarySheet.getDataRange().getValues();
+    const existingIds = existingData.slice(1).map(row => row[0]);
+    if (existingIds.includes(uploadDestinationId)) {
+      ui.alert('Info', 'Ten uploadDestinationId już istnieje w bibliotece.', ui.ButtonSet.OK);
+      return;
+    }
+
+    // Add to library
+    librarySheet.appendRow([
+      uploadDestinationId,
+      '',  // image_url
+      '',  // image_hash
+      `Placeholder ${width}x${height}`,  // alt_text
+      width,
+      height,
+      'MANUAL_ADD',  // source_content_key
+      '',  // module_type
+      new Date(),
+      'PLACEHOLDER',  // status
+      `Manually added placeholder for size ${width}x${height}`,
+      originalFilename
+    ]);
+
+    ui.alert('Sukces',
+      `✅ Dodano placeholder do biblioteki:\n\n` +
+      `ID: ${uploadDestinationId}\n` +
+      `Nazwa: ${originalFilename}\n` +
+      `Rozmiar: ${width}x${height}`,
+      ui.ButtonSet.OK
+    );
+
+  } catch (error) {
+    Logger.log(`Error in addPlaceholderToLibrary: ${error.toString()}`);
+    ui.alert('Błąd', error.toString(), ui.ButtonSet.OK);
+  }
 }
