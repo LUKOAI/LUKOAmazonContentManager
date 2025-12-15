@@ -430,8 +430,8 @@ function syncImagesToLibrary() {
             '', // image_url - to be filled manually or via lookup
             '', // image_hash
             img.altText || '',
-            '', // width
-            '', // height
+            img.width || '', // width from imageCropSpecification
+            img.height || '', // height from imageCropSpecification
             contentRefKey,
             img.moduleType,
             new Date(),

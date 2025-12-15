@@ -85,16 +85,22 @@ function getAPlusContentDocument(contentReferenceKey, accessToken, marketplace) 
 function extractImageIdsFromContentDocument(contentDocument) {
   const images = [];
 
-  // Helper function to extract image data
+  // Helper function to extract image data including dimensions
   function addImage(moduleType, imageObj, fieldName) {
     if (imageObj && imageObj.uploadDestinationId) {
+      // Extract width and height from imageCropSpecification
+      const width = imageObj.imageCropSpecification?.size?.width?.value || null;
+      const height = imageObj.imageCropSpecification?.size?.height?.value || null;
+
       images.push({
         moduleType: moduleType,
         fieldName: fieldName || 'image',
         uploadDestinationId: imageObj.uploadDestinationId,
-        altText: imageObj.altText || ''
+        altText: imageObj.altText || '',
+        width: width,
+        height: height
       });
-      Logger.log(`  Found image: ${fieldName || 'image'} = ${imageObj.uploadDestinationId}`);
+      Logger.log(`  Found image: ${fieldName || 'image'} = ${imageObj.uploadDestinationId}${width && height ? ` (${width}x${height})` : ''}`);
     }
   }
 

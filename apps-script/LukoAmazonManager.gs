@@ -1263,9 +1263,19 @@ function lukoPublishAPlusWithMode(exportMode) {
     logOperations(results, 'ALL', `PUBLISH_APLUS_${contentType}_${exportMode}`);
     hideProgress();
 
+    // Count successes and failures
+    const successResults = results.filter(r => r.success === true);
+    const failedResults = results.filter(r => r.success !== true);
+
     // Enhanced summary
     let summary = `A+ Content Publishing Results (${modeDescriptions[exportMode]})\n\n`;
-    summary += `✅ Opublikowano: ${asinCount} dokumentów A+\n`;
+
+    if (successResults.length > 0) {
+      summary += `✅ Opublikowano: ${successResults.length} dokumentów A+\n`;
+    }
+    if (failedResults.length > 0) {
+      summary += `❌ Błędy: ${failedResults.length} dokumentów\n`;
+    }
     summary += `📦 Łącznie modułów: ${filteredRows.length}\n`;
     if (skippedModules.length > 0) {
       summary += `⏭️ Pominięto: ${skippedModules.length} modułów\n`;
@@ -1274,10 +1284,17 @@ function lukoPublishAPlusWithMode(exportMode) {
 
     for (const asin in modulesByAsin) {
       const modules = modulesByAsin[asin];
-      summary += `  ${asin}: ${modules.length} moduł(ów)\n`;
+      const asinResult = results.find(r => r.asin === asin);
+      const status = asinResult?.success ? '✅' : '❌';
+      summary += `  ${status} ${asin}: ${modules.length} moduł(ów)`;
+      if (asinResult && !asinResult.success && asinResult.error) {
+        summary += ` - ${asinResult.error.substring(0, 50)}...`;
+      }
+      summary += `\n`;
     }
 
-    ui.alert('Publikowanie zakończone', summary, ui.ButtonSet.OK);
+    const dialogTitle = failedResults.length > 0 ? 'Publikowanie zakończone z błędami' : 'Publikowanie zakończone';
+    ui.alert(dialogTitle, summary, ui.ButtonSet.OK);
 
   } catch (error) {
     hideProgress();
@@ -1702,6 +1719,7 @@ function publishMultiModuleAPlusContent(modules, contentType, exportMode) {
       moduleCount: moduleCount,
       contentReferenceKey: contentRefKey,
       status: 'SUCCESS',
+      success: true,
       message: `A+ Content with ${moduleCount} modules submitted successfully`,
       timestamp: new Date()
     };
@@ -1715,6 +1733,8 @@ function publishMultiModuleAPlusContent(modules, contentType, exportMode) {
       moduleNumbers: modules.map(m => m.data.moduleNumber).join(', '),
       moduleCount: modules.length,
       status: 'ERROR',
+      success: false,
+      error: error.toString(),
       message: error.toString(),
       timestamp: new Date()
     };
