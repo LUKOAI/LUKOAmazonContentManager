@@ -224,7 +224,7 @@ aplus_premium_m1_image8_id
 **Execute before content creation:**
 1. View knowledge base documents using view tool
 2. **Read GOOGLE_FORMS_INTEGRATION_V2.md for exact column names**
-3. Identify ALL available modules (Basic + Premium including video, FAQ, carousel, etc.)
+3. Identify ALL available modules (Basic + Premium)
 4. Note exact column structure and naming
 5. Extract exact character limits per module type - DO NOT assume or invent limits
 6. Review compliance rules for target marketplace
@@ -255,11 +255,11 @@ Consider:
 - Customer information needs from reviews
 - Visual storytelling requirements
 - Category best practices
-- Available content (images, videos, specs)
+- Available content (images, specs)
 
 **Choose appropriate number of modules (typically 3-7):**
 - Consult knowledge base for ALL available options
-- Include Premium modules if appropriate (video, FAQ, interactive)
+- Include Premium modules if appropriate
 - Don't force arbitrary counts - let product needs drive selection
 - Document rationale for each module choice
 
@@ -474,32 +474,25 @@ Remember: You're piloting an A380 - follow exact procedures, consult instruments
 
 ---
 
-# Claude AI System Instructions - Amazon A+ Content Manager v2.0
+# Amazon SP-API A+ Content Module Reference
 
-## Critical Updates (December 2024)
+## CRITICAL: API-Supported Module Types Only
 
-**MAJOR CHANGE:** Amazon A+ Content now supports **34 total module types** (15 Basic + 19 Premium)
+**IMPORTANT:** The Amazon SP-API A+ Content endpoint supports **exactly 20 module types**.
 
-Previous documentation listed only 20 modules (15 Basic + 5 Premium). This has been expanded based on Amazon Seller Central interface discovery.
+The Seller Central web interface may show additional module types (video, hotspots, Q&A, etc.) but these are **NOT available through the API**. Only use the module types listed below!
 
 ---
 
 ## Module Count Summary
 
 ### Basic A+ Modules: 15 types
-- Text-only: 3 types
-- With images: 12 types
 - Max modules per ASIN: 7
 
-### Premium A+ Modules: 19 types
-- Text & Images: 6 types
-- Comparison Tables: 3 types
-- Interactive: 2 types (Hotspots)
-- Carousels: 4 types
-- Video: 2 types
-- Q&A: 1 type
-- Technical: 1 type
-- Max modules per ASIN: 3 (typical)
+### Premium A+ Modules: 5 types
+- Max modules per ASIN: 7
+
+**Total API-supported modules: 20**
 
 ---
 
@@ -516,101 +509,61 @@ FORBIDDEN:
 
 ---
 
-## New Premium Modules Discovered
+## Basic Module Types (15) - ALL API-SUPPORTED
 
-### Video Modules (2 types)
+| # | Module Type | API Property Name | Description | Required Images |
+|---|---|---|---|---|
+| 1 | `STANDARD_TEXT` | standardText | Text only | None |
+| 2 | `STANDARD_SINGLE_SIDE_IMAGE` | standardSingleSideImage | Image + text side by side | 1x 300x300 |
+| 3 | `STANDARD_HEADER_IMAGE_TEXT` | standardHeaderImageText | Header image + text below | 1x 970x600 |
+| 4 | `STANDARD_COMPANY_LOGO` | standardCompanyLogo | Logo + description | 1x 600x180 |
+| 5 | `STANDARD_IMAGE_TEXT_OVERLAY` | standardImageTextOverlay | Image with text overlay | 1x 970x300 |
+| 6 | `STANDARD_SINGLE_IMAGE_HIGHLIGHTS` | standardSingleImageHighlights | Image + 4 bullet points | 1x 300x300 |
+| 7 | `STANDARD_MULTIPLE_IMAGE_TEXT` | standardMultipleImageText | Text + up to 4 images | 4x 220x220 |
+| 8 | `STANDARD_FOUR_IMAGE_TEXT` | standardFourImageText | 4 images with text blocks | 4x 220x220 |
+| 9 | `STANDARD_FOUR_IMAGE_TEXT_QUADRANT` | standardFourImageTextQuadrant | 4 images in grid | 4x 135x135 |
+| 10 | `STANDARD_THREE_IMAGE_TEXT` | standardThreeImageText | 3 images with text blocks | 3x 300x300 |
+| 11 | `STANDARD_COMPARISON_TABLE` | standardComparisonTable | Product comparison | 6x 150x300 |
+| 12 | `STANDARD_PRODUCT_DESCRIPTION` | standardProductDescription | Long text description | None |
+| 13 | `STANDARD_SINGLE_IMAGE_SPECS_DETAIL` | standardSingleImageSpecsDetail | Image + specs table | 1x 300x400 |
+| 14 | `STANDARD_IMAGE_SIDEBAR` | standardImageSidebar | Text + sidebar image | 1x 300x300 |
+| 15 | `STANDARD_TECH_SPECS` | standardTechSpecs | Technical specifications | None |
 
-**1. PREMIUM_FULL_VIDEO**
-- Full-width video player
-- 1920x1080 MP4 (1080p)
-- 15 seconds - 3 minutes
-- Thumbnail: 1464x600px
-- Up to 48 hours review time
+---
 
-**2. PREMIUM_VIDEO_WITH_TEXT**
-- Video beside text
-- 800x600 MP4 minimum
-- 15 seconds - 2 minutes
-- Thumbnail: 800x600px
+## Premium Module Types (5) - ALL API-SUPPORTED
 
-### Carousel Modules (4 types)
+| # | Module Type | API Property Name | Description | Required Images |
+|---|---|---|---|---|
+| 1 | `PREMIUM_TEXT` | premiumText | Enhanced text | None |
+| 2 | `PREMIUM_IMAGE_TEXT` | premiumImageText | Image + text | 1x 1464x600 |
+| 3 | `PREMIUM_FULL_BACKGROUND_TEXT` | premiumFullBackgroundText | Background + overlay text | 1x 1940x600 |
+| 4 | `PREMIUM_FULL_BACKGROUND_IMAGE` | premiumFullBackgroundImage | Background only | 1x 1940x600 |
+| 5 | `PREMIUM_IMAGE_CAROUSEL` | premiumImageCarousel | Up to 8 carousel images | 8x 362x453 |
 
-**1. PREMIUM_NAVIGATION_CAROUSEL**
-- Horizontal navigation (left/right arrows)
-- 2-5 panels
-- 1464x600px per panel
-- Each panel: headline + body + image
+---
 
-**2. PREMIUM_REGIMEN_CAROUSEL**
-- Vertical navigation (numbered steps)
-- 2-5 steps
-- 1464x600px per step
-- Use case: Step-by-step guides
+## NOT SUPPORTED BY API (Seller Central Only)
 
-**3. PREMIUM_SIMPLE_IMAGE_CAROUSEL**
-- Auto-rotating
-- Up to 8 images
-- 1464x600px per image
-- No per-slide text
+**WARNING:** These module types exist in Seller Central web interface but are **NOT available through SP-API**:
 
-**4. PREMIUM_VIDEO_IMAGE_CAROUSEL**
-- Mix video + images
-- Up to 6 panels
-- 800x600px per panel
-- Each can be video OR image
+- PREMIUM_FULL_VIDEO
+- PREMIUM_VIDEO_WITH_TEXT
+- PREMIUM_VIDEO_IMAGE_CAROUSEL
+- PREMIUM_NAVIGATION_CAROUSEL
+- PREMIUM_REGIMEN_CAROUSEL
+- PREMIUM_SIMPLE_IMAGE_CAROUSEL
+- PREMIUM_HOTSPOTS_1
+- PREMIUM_HOTSPOTS_2
+- PREMIUM_COMPARISON_TABLE_1/2/3
+- PREMIUM_QA
+- PREMIUM_DUAL_IMAGES_WITH_TEXT
+- PREMIUM_FOUR_IMAGES_WITH_TEXT
+- PREMIUM_TECHNICAL_SPECIFICATIONS
+- PREMIUM_SINGLE_IMAGE_WITH_TEXT
+- Any other type not listed above
 
-### Interactive Modules (2 types)
-
-**1. PREMIUM_HOTSPOTS_1**
-- NO module headline
-- Up to 6 hotspots
-- 1464x600px background
-- Interactive click zones
-
-**2. PREMIUM_HOTSPOTS_2**
-- WITH module headline
-- Up to 6 hotspots
-- 1464x600px background
-- Same as Hotspots 1 but with top headline
-
-### Enhanced Comparison Tables (3 types)
-
-**1. PREMIUM_COMPARISON_TABLE_1**
-- 4-7 products
-- 5-12 features
-- 200x225px per product
-
-**2. PREMIUM_COMPARISON_TABLE_2**
-- 2-3 products
-- 2-5 features
-- 300x225px per product
-
-**3. PREMIUM_COMPARISON_TABLE_3**
-- 3 products
-- 2-5 features
-- 300x225px per product
-
-### Other Premium Modules
-
-**1. PREMIUM_QA**
-- Up to 6 Q&A pairs
-- Optional 300x300px image per pair
-- Expandable/collapsible UI
-
-**2. PREMIUM_DUAL_IMAGES_WITH_TEXT**
-- Two images side by side
-- 650x350px each
-- Use case: Before/after, comparison
-
-**3. PREMIUM_FOUR_IMAGES_WITH_TEXT**
-- Four images with text blocks
-- 300x225px each
-- Individual headlines per image
-
-**4. PREMIUM_TECHNICAL_SPECIFICATIONS**
-- Up to 15 specs (vs 12 in Basic)
-- Enhanced layout
-- Optional product image
+**DO NOT USE THESE IN JSON** - they will cause API errors!
 
 ---
 
@@ -620,159 +573,18 @@ FORBIDDEN:
 
 **Use Premium when:**
 - First impression critical (Module 1)
-- Need video demonstrations
-- Interactive features important
+- Large hero images needed
+- Image carousel beneficial
 - Premium brand positioning
-- Complex product explanation
-- Available: Video content, high-quality images
+- High-quality visual assets available
 
 **Use Basic when:**
 - Standard product pages
 - Text-heavy content
-- Multiple similar products (save Premium for hero products)
-- Limited visual assets
+- Multiple similar products
+- Detailed specifications needed
+- Comparison tables required
 - Quick updates needed
-- Cost-conscious approach
-
----
-
-## Video Module Workflow
-
-### 1. Content Creation Strategy
-
-**For PREMIUM_FULL_VIDEO:**
-- 30-60 seconds optimal
-- First 3 seconds CRITICAL (grab attention)
-- Show product in use (not just product shots)
-- Add captions (many watch muted)
-- Professional quality required
-
-**For PREMIUM_VIDEO_WITH_TEXT:**
-- 20-45 seconds optimal
-- Focus on one feature/benefit
-- Text beside video provides context
-- Video loops automatically
-
-**For PREMIUM_VIDEO_IMAGE_CAROUSEL:**
-- 15-30 seconds per video panel
-- Mix 1-2 videos with 4-5 images
-- Tell cohesive story across panels
-
-### 2. Technical Preparation
-
-**Before Creating JSON:**
-1. Confirm video files exist and meet specs
-2. Create thumbnails (extract frame or custom design)
-3. Upload video to Amazon Content Assets
-4. Upload thumbnail to Content Assets
-5. Get uploadDestinationId for both
-6. Store IDs in JSON
-
-**Column Structure:**
-```
-aplus_premium_m1_video_url: "" (leave empty)
-aplus_premium_m1_video_id: "uploadDestinationId_from_amazon"
-aplus_premium_m1_videoThumbnail_url: "" (leave empty)
-aplus_premium_m1_videoThumbnail_id: "uploadDestinationId_from_amazon"
-```
-
-### 3. Video Compliance
-
-**Amazon Reviews ALL Videos:**
-- Review time: Up to 48 hours
-- Check for: Pricing, competitor mentions, claims
-- Silent audio track OK (required if no audio)
-- No external links in video
-- No watermarks allowed
-
----
-
-## Carousel Module Best Practices
-
-### PREMIUM_NAVIGATION_CAROUSEL
-**Use for:** Feature storytelling, product benefits showcase
-**Structure:** Linear narrative (Panel 1->2->3->4->5)
-**Each panel:** Headline (50 chars) + Body (400 chars) + Image
-**Example flow:**
-- Panel 1: Problem
-- Panel 2: Solution
-- Panel 3: Features
-- Panel 4: Benefits
-- Panel 5: Quality/Trust
-
-### PREMIUM_REGIMEN_CAROUSEL
-**Use for:** How-to guides, routines, setup instructions
-**Structure:** Numbered steps (Step 1->2->3->4->5)
-**Each step:** Step number + Headline + Instructions + Image
-**Example:** Skincare routine, product assembly, usage guide
-
-### PREMIUM_SIMPLE_IMAGE_CAROUSEL
-**Use for:** Product gallery, lifestyle shots, angles
-**Structure:** Auto-rotating, no manual text per slide
-**Images only:** 8 maximum, 1464x600px each
-**Example:** 8 different product angles, lifestyle contexts
-
-### PREMIUM_VIDEO_IMAGE_CAROUSEL
-**Use for:** Mixed media storytelling
-**Structure:** 6 panels max, each video OR image
-**Strategy:**
-- Panel 1: Video (product demo)
-- Panel 2-4: Images (features)
-- Panel 5: Video (customer testimonial)
-- Panel 6: Image (CTA)
-
----
-
-## Interactive Module Strategy
-
-### PREMIUM_HOTSPOTS_1/2
-
-**When to use:**
-- Complex products with multiple features
-- Interactive exploration beneficial
-- Desktop users (mobile less effective)
-- Premium positioning
-
-**Hotspot Content:**
-- Up to 6 hotspots per image
-- Each: Icon + Headline + Body text
-- Base image: 1464x600px (product photo)
-
-**Difference between 1 and 2:**
-- Hotspots 1: NO module headline (clean look)
-- Hotspots 2: WITH module headline (context)
-
-**Best practices:**
-- Place hotspots on logical product areas
-- Keep text concise (headline: 30 chars, body: 200 chars)
-- Use contrasting colors for visibility
-- Test on mobile (smaller hit targets)
-
----
-
-## Premium Q&A Module
-
-**PREMIUM_QA Strategy:**
-
-**Use when:**
-- Common customer questions identified
-- Reduce support queries
-- Address objections pre-purchase
-- Build trust through transparency
-
-**Content Structure:**
-- 6 Q&A pairs maximum
-- Question: 100 chars (customer language)
-- Answer: 400 chars (clear, helpful)
-- Optional image per Q&A (300x300px)
-
-**Example Q&As:**
-1. "Is this waterproof?" -> Technical answer + test image
-2. "What size should I order?" -> Size guide + diagram
-3. "How do I clean it?" -> Care instructions + process image
-4. "Is this compatible with...?" -> Compatibility list + image
-5. "What's included in the box?" -> Contents list + unboxing image
-6. "How long does shipping take?" -> Timeline + map image
 
 ---
 
@@ -832,7 +644,29 @@ aplus_premium_m1_videoThumbnail_id: "uploadDestinationId_from_amazon"
 }
 ```
 
-### Example 3: Premium PREMIUM_IMAGE_CAROUSEL
+### Example 3: Basic STANDARD_HEADER_IMAGE_TEXT
+
+```json
+{
+  "modules": [
+    {
+      "row": null,
+      "columns": {
+        "ASIN": "B0ABC123XYZ",
+        "Module Number": 1,
+        "Module Type": "STANDARD_HEADER_IMAGE_TEXT",
+        "aplus_basic_m1_headline_DE": "ULLMYS Premium Merinowolle",
+        "aplus_basic_m1_headline_EN": "ULLMYS Premium Merino Wool",
+        "aplus_basic_m1_body_DE": "Erleben Sie den Unterschied von echtem Merino.",
+        "aplus_basic_m1_body_EN": "Experience the difference of real merino.",
+        "aplus_basic_m1_image_id": "aplus-media-library-service-media/header.jpg"
+      }
+    }
+  ]
+}
+```
+
+### Example 4: Premium PREMIUM_IMAGE_CAROUSEL
 
 ```json
 {
@@ -859,7 +693,7 @@ aplus_premium_m1_videoThumbnail_id: "uploadDestinationId_from_amazon"
 }
 ```
 
-### Example 4: Premium PREMIUM_FULL_BACKGROUND_TEXT
+### Example 5: Premium PREMIUM_FULL_BACKGROUND_TEXT
 
 ```json
 {
@@ -881,7 +715,80 @@ aplus_premium_m1_videoThumbnail_id: "uploadDestinationId_from_amazon"
 }
 ```
 
-### Example 5: Multiple Premium Modules
+### Example 6: Premium PREMIUM_IMAGE_TEXT
+
+```json
+{
+  "modules": [
+    {
+      "row": null,
+      "columns": {
+        "ASIN": "B0ABC123XYZ",
+        "Module Number": 2,
+        "Module Type": "PREMIUM_IMAGE_TEXT",
+        "aplus_premium_m2_headline_DE": "Warum Merinowolle?",
+        "aplus_premium_m2_headline_EN": "Why Merino Wool?",
+        "aplus_premium_m2_body_DE": "Merinowolle ist naturlich antibakteriell und temperaturregulierend.",
+        "aplus_premium_m2_body_EN": "Merino wool is naturally antibacterial and temperature regulating.",
+        "aplus_premium_m2_image_id": "aplus-media-library-service-media/feature.jpg"
+      }
+    }
+  ]
+}
+```
+
+### Example 7: Multiple Basic Modules
+
+```json
+{
+  "modules": [
+    {
+      "row": null,
+      "columns": {
+        "ASIN": "B0ABC123XYZ",
+        "Module Number": 1,
+        "Module Type": "STANDARD_HEADER_IMAGE_TEXT",
+        "aplus_basic_m1_headline_DE": "Hero Banner",
+        "aplus_basic_m1_body_DE": "Erleben Sie Premium Qualitat.",
+        "aplus_basic_m1_image_id": "aplus-media-library-service-media/hero.jpg"
+      }
+    },
+    {
+      "row": null,
+      "columns": {
+        "ASIN": "B0ABC123XYZ",
+        "Module Number": 2,
+        "Module Type": "STANDARD_FOUR_IMAGE_TEXT",
+        "aplus_basic_m2_headline_DE": "4 Vorteile",
+        "aplus_basic_m2_block1_headline_DE": "Vorteil 1",
+        "aplus_basic_m2_block1_body_DE": "Beschreibung...",
+        "aplus_basic_m2_image1_id": "aplus-media-library-service-media/f1.jpg",
+        "aplus_basic_m2_block2_headline_DE": "Vorteil 2",
+        "aplus_basic_m2_block2_body_DE": "Beschreibung...",
+        "aplus_basic_m2_image2_id": "aplus-media-library-service-media/f2.jpg",
+        "aplus_basic_m2_block3_headline_DE": "Vorteil 3",
+        "aplus_basic_m2_block3_body_DE": "Beschreibung...",
+        "aplus_basic_m2_image3_id": "aplus-media-library-service-media/f3.jpg",
+        "aplus_basic_m2_block4_headline_DE": "Vorteil 4",
+        "aplus_basic_m2_block4_body_DE": "Beschreibung...",
+        "aplus_basic_m2_image4_id": "aplus-media-library-service-media/f4.jpg"
+      }
+    },
+    {
+      "row": null,
+      "columns": {
+        "ASIN": "B0ABC123XYZ",
+        "Module Number": 3,
+        "Module Type": "STANDARD_TECH_SPECS",
+        "aplus_basic_m3_headline_DE": "Technische Daten",
+        "aplus_basic_m3_body_DE": "Material: 80% Merinowolle, 20% Polyamid..."
+      }
+    }
+  ]
+}
+```
+
+### Example 8: Multiple Premium Modules
 
 ```json
 {
@@ -893,9 +800,7 @@ aplus_premium_m1_videoThumbnail_id: "uploadDestinationId_from_amazon"
         "Module Number": 1,
         "Module Type": "PREMIUM_FULL_BACKGROUND_TEXT",
         "aplus_premium_m1_headline_DE": "Hero Banner",
-        "aplus_premium_m1_headline_EN": "Hero Banner",
         "aplus_premium_m1_body_DE": "Erleben Sie Premium Qualitat.",
-        "aplus_premium_m1_body_EN": "Experience premium quality.",
         "aplus_premium_m1_backgroundImage_id": "aplus-media-library-service-media/hero.jpg"
       }
     },
@@ -906,9 +811,7 @@ aplus_premium_m1_videoThumbnail_id: "uploadDestinationId_from_amazon"
         "Module Number": 2,
         "Module Type": "PREMIUM_IMAGE_TEXT",
         "aplus_premium_m2_headline_DE": "Zweites Modul",
-        "aplus_premium_m2_headline_EN": "Second Module",
         "aplus_premium_m2_body_DE": "Beschreibung hier...",
-        "aplus_premium_m2_body_EN": "Description here...",
         "aplus_premium_m2_image_id": "aplus-media-library-service-media/feature.jpg"
       }
     },
@@ -935,13 +838,16 @@ aplus_premium_m1_videoThumbnail_id: "uploadDestinationId_from_amazon"
 
 **Current Placeholders Available:**
 - 300x300 (square - most common)
-- 650x350 (premium single/dual)
-- 800x600 (video thumbnails)
-- 1464x600 (fullwidth/carousel)
 - 970x600 (header)
 - 220x220 (multiple images)
 - 135x135 (quadrant)
-- ... (see complete spec document)
+- 1464x600 (premium image)
+- 1940x600 (premium background)
+- 362x453 (carousel)
+- 600x180 (company logo)
+- 970x300 (overlay)
+- 150x300 (comparison)
+- 300x400 (specs detail)
 
 **Usage in JSON:**
 - image_url: "" (empty string)
@@ -954,150 +860,60 @@ aplus_premium_m1_videoThumbnail_id: "uploadDestinationId_from_amazon"
 
 ---
 
-## Updated Best Practices
-
-### Content Strategy
-
-**Module 1 (Hero):**
-- Premium whenever possible
-- Video if available (PREMIUM_FULL_VIDEO or PREMIUM_VIDEO_IMAGE_CAROUSEL)
-- Else: PREMIUM_BACKGROUND_IMAGE_WITH_TEXT
-- Fallback: STANDARD_HEADER_IMAGE_TEXT
-
-**Module 2 (Features):**
-- Premium: PREMIUM_NAVIGATION_CAROUSEL or PREMIUM_FOUR_IMAGES_WITH_TEXT
-- Basic: STANDARD_FOUR_IMAGE_TEXT or STANDARD_SINGLE_IMAGE_HIGHLIGHTS
-
-**Module 3 (Trust/Technical):**
-- Premium: PREMIUM_QA or PREMIUM_TECHNICAL_SPECIFICATIONS
-- Basic: STANDARD_TECH_SPECS or STANDARD_COMPARISON_TABLE
-
-**Modules 4-7 (Optional):**
-- Deep dives, use cases, comparisons
-- Mix of text and image modules
-- Always maintain Premium OR Basic consistency
-
----
-
-## Updated Compliance Rules
-
-### Video-Specific Compliance
-
-**PROHIBITED in videos:**
-- Pricing information
-- Time-sensitive claims ("New!", "Limited time")
-- Competitor products shown
-- External website URLs
-- Unsubstantiated claims ("Best", "#1")
-- Poor quality footage (shaky, pixelated)
-
-**REQUIRED in videos:**
-- Professional quality
-- Clear product demonstration
-- Accurate representation
-- Silent audio track OR quality audio
-- Appropriate length (15s-3min)
-
-### Interactive Module Compliance
-
-**Hotspots:**
-- All text must follow standard compliance
-- Images must not contain prohibited content
-- Hotspot placements must be accurate (point to correct product area)
-
-**Q&A:**
-- Answers must be factual
-- Cannot make unsubstantiated claims
-- No warranty information without documentation
-- Must be actual customer questions (not made up)
-
----
-
 ## Character Limits by Module Type
+
+### Basic Text Limits
+
+| Module Type | Headline | Body | Notes |
+|-------------|----------|------|-------|
+| STANDARD_TEXT | 160 | 6000 | Text only |
+| STANDARD_SINGLE_SIDE_IMAGE | 160 | 1000 | With image |
+| STANDARD_HEADER_IMAGE_TEXT | 160 | 6000 | Below header |
+| STANDARD_COMPANY_LOGO | 160 | 6000 | With logo |
+| STANDARD_IMAGE_TEXT_OVERLAY | 160 | 1000 | Overlay text |
+| STANDARD_SINGLE_IMAGE_HIGHLIGHTS | 160 | 1000 | Per highlight |
+| STANDARD_FOUR_IMAGE_TEXT | 160 | 1000 | Per block |
+| STANDARD_THREE_IMAGE_TEXT | 160 | 1000 | Per block |
+| STANDARD_TECH_SPECS | 160 | 6000 | Specs text |
 
 ### Premium Text Limits
 
 | Module Type | Headline | Body | Notes |
 |-------------|----------|------|-------|
 | PREMIUM_TEXT | 160 | 5000 | Text only |
-| PREMIUM_SINGLE_IMAGE_WITH_TEXT | 120 | 3000 | With image |
-| PREMIUM_BACKGROUND_IMAGE_WITH_TEXT | 100 | 2000 | Overlay text |
-| PREMIUM_FULL_VIDEO | 120 | 1500 | Below video |
-| PREMIUM_VIDEO_WITH_TEXT | 100 | 2500 | Beside video |
-| PREMIUM_CAROUSEL (per panel) | 80 | 600 | Per panel |
-| PREMIUM_QA (per Q&A) | 100 | 400 | Per answer |
+| PREMIUM_IMAGE_TEXT | 160 | 5000 | With image |
+| PREMIUM_FULL_BACKGROUND_TEXT | 160 | 2000 | Overlay text |
+| PREMIUM_IMAGE_CAROUSEL | 160 | 1000 | Carousel caption |
 
 ---
 
-## Module Types Quick Reference
+## Image Dimension Requirements
 
-### Basic Module Types (15)
+### Basic Module Images
 
-| Module Type | Description | Required Images |
+| Module Type | Image Field | Dimensions |
 |---|---|---|
-| `STANDARD_TEXT` | Text only | None |
-| `STANDARD_SINGLE_SIDE_IMAGE` | Image + text side by side | 1x 300x300 |
-| `STANDARD_HEADER_IMAGE_TEXT` | Header image + text below | 1x 970x600 |
-| `STANDARD_COMPANY_LOGO` | Logo + description | 1x 600x180 |
-| `STANDARD_IMAGE_TEXT_OVERLAY` | Image with text overlay | 1x 970x300 |
-| `STANDARD_SINGLE_IMAGE_HIGHLIGHTS` | Image + 4 bullet points | 1x 300x300 |
-| `STANDARD_MULTIPLE_IMAGE_TEXT` | Text + up to 4 images | 4x 220x220 |
-| `STANDARD_FOUR_IMAGE_TEXT` | 4 images with text blocks | 4x 220x220 |
-| `STANDARD_FOUR_IMAGE_TEXT_QUADRANT` | 4 images in grid | 4x 135x135 |
-| `STANDARD_THREE_IMAGE_TEXT` | 3 images with text blocks | 3x 300x300 |
-| `STANDARD_COMPARISON_TABLE` | Product comparison | 6x 150x300 |
-| `STANDARD_PRODUCT_DESCRIPTION` | Long text description | None |
-| `STANDARD_SINGLE_IMAGE_SPECS_DETAIL` | Image + specs table | 1x 300x400 |
-| `STANDARD_IMAGE_SIDEBAR` | Text + sidebar image | 1x 300x300 |
-| `STANDARD_TECH_SPECS` | Technical specifications | None |
+| STANDARD_SINGLE_SIDE_IMAGE | image | 300x300 |
+| STANDARD_HEADER_IMAGE_TEXT | image | 970x600 |
+| STANDARD_COMPANY_LOGO | companyLogo | 600x180 |
+| STANDARD_IMAGE_TEXT_OVERLAY | image | 970x300 |
+| STANDARD_SINGLE_IMAGE_HIGHLIGHTS | image | 300x300 |
+| STANDARD_MULTIPLE_IMAGE_TEXT | image1-4 | 220x220 |
+| STANDARD_FOUR_IMAGE_TEXT | image1-4 | 220x220 |
+| STANDARD_FOUR_IMAGE_TEXT_QUADRANT | image1-4 | 135x135 |
+| STANDARD_THREE_IMAGE_TEXT | image1-3 | 300x300 |
+| STANDARD_COMPARISON_TABLE | image1-6 | 150x300 |
+| STANDARD_SINGLE_IMAGE_SPECS_DETAIL | image | 300x400 |
+| STANDARD_IMAGE_SIDEBAR | image | 300x300 |
 
-### Premium Module Types (19)
+### Premium Module Images
 
-| Module Type | Description | Required Images |
+| Module Type | Image Field | Dimensions |
 |---|---|---|
-| `PREMIUM_TEXT` | Enhanced text | None |
-| `PREMIUM_SINGLE_IMAGE` | Large single image | 1x 1464x600 |
-| `PREMIUM_IMAGE_TEXT` | Image + text | 1x 1464x600 |
-| `PREMIUM_FULL_BACKGROUND_TEXT` | Background + overlay text | 1x 1940x600 |
-| `PREMIUM_FULL_BACKGROUND_IMAGE` | Background only | 1x 1940x600 |
-| `PREMIUM_IMAGE_CAROUSEL` | Up to 8 carousel images | 8x 362x453 |
-| `PREMIUM_FOUR_IMAGE_CAROUSEL` | 4 carousel images | 4x 362x453 |
-| `PREMIUM_THREE_IMAGE_TEXT` | 3 images with text | 3x 362x453 |
-| `PREMIUM_FOUR_IMAGE_TEXT` | 4 images with text | 4x 362x453 |
-| `PREMIUM_COMPARISON_CHART` | Product comparison | 6x 220x220 |
-| `PREMIUM_HOTSPOT_IMAGE` | Interactive hotspots | 1x 1940x600 |
-| `PREMIUM_NAVIGATION_CAROUSEL` | Multi-panel carousel | 5x 1464x600 |
-| `PREMIUM_REGIMEN_CAROUSEL` | Step-by-step carousel | 5x 1464x600 |
-| `PREMIUM_SIMPLE_IMAGE_CAROUSEL` | Auto-rotating images | 8x 1464x600 |
-| `PREMIUM_VIDEO_IMAGE_CAROUSEL` | Video + images | 6x 800x600 |
-| `PREMIUM_FULL_VIDEO` | Full-width video | Video + thumbnail |
-| `PREMIUM_VIDEO_WITH_TEXT` | Video + text | Video + thumbnail |
-| `PREMIUM_QA` | Q&A section | 6x 300x300 (optional) |
-| `PREMIUM_TECHNICAL_SPECIFICATIONS` | Enhanced tech specs | None |
-
----
-
-## Testing Strategy
-
-### Before Publishing
-
-**Checklist:**
-1. All modules same type (Premium OR Basic)
-2. Video files uploaded and IDs obtained
-3. All required columns filled
-4. Character limits respected
-5. Image dimensions correct
-6. Placeholder IDs or real IDs present
-7. No compliance violations
-8. Mobile preview checked
-
-### After Publishing
-
-**Monitor:**
-- Check status after 24 hours
-- Video approval (up to 48 hours)
-- Note any rejection reasons
-- Update content if needed
+| PREMIUM_IMAGE_TEXT | image | 1464x600 |
+| PREMIUM_FULL_BACKGROUND_TEXT | backgroundImage | 1940x600 |
+| PREMIUM_FULL_BACKGROUND_IMAGE | backgroundImage | 1940x600 |
+| PREMIUM_IMAGE_CAROUSEL | image1-8 | 362x453 |
 
 ---
 
@@ -1105,61 +921,49 @@ aplus_premium_m1_videoThumbnail_id: "uploadDestinationId_from_amazon"
 
 ### DON'T:
 1. Mix Premium and Basic in same ASIN
-2. Leave video_url field with text description
+2. Use module types not supported by API
 3. Use database URLs in image_url fields
 4. Forget language variants for multi-language products
 5. Exceed character limits
 6. Use Basic modules for premium products
-7. Create videos over 3 minutes
-8. Skip thumbnail creation for videos
-9. Use unsubstantiated claims
-10. Include pricing information
-11. **Use column letters (A, B, C) instead of column names**
+7. Use unsubstantiated claims
+8. Include pricing information
+9. **Use column letters (A, B, C) instead of column names**
+10. **Use PREMIUM_FULL_VIDEO, PREMIUM_VIDEO_IMAGE_CAROUSEL, etc.**
 
 ### DO:
-1. Check module type compatibility
+1. Check module type compatibility with API list
 2. Use empty strings for URL fields with placeholders
-3. Provide real uploadDestinationIds for images/videos
+3. Provide real uploadDestinationIds for images
 4. Create all language variants needed
 5. Count characters before finalizing
 6. Match module type to product positioning
-7. Keep videos under 2 minutes ideally
-8. Create high-quality thumbnails
-9. Use factual, benefit-focused language
-10. Focus on customer pain points
-11. **Use column names from GOOGLE_FORMS_INTEGRATION_V2.md**
+7. Use factual, benefit-focused language
+8. Focus on customer pain points
+9. **Use column names from GOOGLE_FORMS_INTEGRATION_V2.md**
+10. **Only use the 20 API-supported module types**
 
 ---
 
-## Summary of Changes from v1.0
+## Summary
 
-**Added:**
-- 14 new Premium module types
-- Video module specifications
-- Carousel module details
-- Interactive module guidelines
-- Q&A module structure
-- Enhanced comparison tables
-- Updated character limits
-- Video compliance rules
-- Placeholder system expanded
-- **Column NAME mapping (not letters)**
-- **GOOGLE_FORMS_INTEGRATION_V2.md reference**
+**API-Supported Module Types:**
+- **15 Basic modules** (STANDARD_*)
+- **5 Premium modules** (PREMIUM_TEXT, PREMIUM_IMAGE_TEXT, PREMIUM_FULL_BACKGROUND_TEXT, PREMIUM_FULL_BACKGROUND_IMAGE, PREMIUM_IMAGE_CAROUSEL)
+- **Total: 20 modules**
 
-**Changed:**
-- Total module count: 20 -> 34
-- Premium modules: 5 -> 19
-- Max Premium modules per ASIN: 3 (recommended, 7 max)
-- Image dimension specifications expanded
-- **JSON format uses column NAMES not letters**
-
-**Removed:**
-- Nothing (backwards compatible)
+**NOT Supported by API:**
+- Video modules
+- Hotspots
+- Navigation carousels
+- Q&A modules
+- Comparison tables (premium)
+- Technical specs (premium)
 
 ---
 
-**Version:** 2.0
+**Version:** 2.1
 **Last Updated:** December 2024
-**Breaking Changes:** None (v1.0 modules still work)
-**Status:** Production Ready
+**Breaking Changes:** Removed non-API-supported module types
+**Status:** Production Ready - API Verified
 **Reference:** docs/GOOGLE_FORMS_INTEGRATION_V2.md

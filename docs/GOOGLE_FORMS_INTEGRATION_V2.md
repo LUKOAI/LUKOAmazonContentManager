@@ -399,49 +399,59 @@ aplus_premium_m3_backgroundImage_id
 
 ## Module Types Reference
 
-### Basic Module Types (15)
+### CRITICAL: API-Supported Module Types Only!
 
-| Module Type | Description | Required Images |
-|---|---|---|
-| `STANDARD_TEXT` | Text only | None |
-| `STANDARD_SINGLE_SIDE_IMAGE` | Image + text side by side | 1x 300x300 |
-| `STANDARD_HEADER_IMAGE_TEXT` | Header image + text below | 1x 970x600 |
-| `STANDARD_COMPANY_LOGO` | Logo + description | 1x 600x180 |
-| `STANDARD_IMAGE_TEXT_OVERLAY` | Image with text overlay | 1x 970x300 |
-| `STANDARD_SINGLE_IMAGE_HIGHLIGHTS` | Image + 4 bullet points | 1x 300x300 |
-| `STANDARD_MULTIPLE_IMAGE_TEXT` | Text + up to 4 images | 4x 220x220 |
-| `STANDARD_FOUR_IMAGE_TEXT` | 4 images with text blocks | 4x 220x220 |
-| `STANDARD_FOUR_IMAGE_TEXT_QUADRANT` | 4 images in grid | 4x 135x135 |
-| `STANDARD_THREE_IMAGE_TEXT` | 3 images with text blocks | 3x 300x300 |
-| `STANDARD_COMPARISON_TABLE` | Product comparison | 6x 150x300 |
-| `STANDARD_PRODUCT_DESCRIPTION` | Long text description | None |
-| `STANDARD_SINGLE_IMAGE_SPECS_DETAIL` | Image + specs table | 1x 300x400 |
-| `STANDARD_IMAGE_SIDEBAR` | Text + sidebar image | 1x 300x300 |
-| `STANDARD_TECH_SPECS` | Technical specifications | None |
+**The Amazon SP-API supports exactly 20 module types (15 Basic + 5 Premium).**
 
-### Premium Module Types (19)
+Module types like PREMIUM_FULL_VIDEO, PREMIUM_HOTSPOTS, etc. are visible in Seller Central but **NOT available through SP-API**.
 
-| Module Type | Description | Required Images |
-|---|---|---|
-| `PREMIUM_TEXT` | Enhanced text | None |
-| `PREMIUM_SINGLE_IMAGE` | Large single image | 1x 1464x600 |
-| `PREMIUM_IMAGE_TEXT` | Image + text | 1x 1464x600 |
-| `PREMIUM_FULL_BACKGROUND_TEXT` | Background + overlay text | 1x 1940x600 |
-| `PREMIUM_FULL_BACKGROUND_IMAGE` | Background only | 1x 1940x600 |
-| `PREMIUM_IMAGE_CAROUSEL` | Up to 8 carousel images | 8x 362x453 |
-| `PREMIUM_FOUR_IMAGE_CAROUSEL` | 4 carousel images | 4x 362x453 |
-| `PREMIUM_THREE_IMAGE_TEXT` | 3 images with text | 3x 362x453 |
-| `PREMIUM_FOUR_IMAGE_TEXT` | 4 images with text | 4x 362x453 |
-| `PREMIUM_COMPARISON_CHART` | Product comparison | 6x 220x220 |
-| `PREMIUM_HOTSPOT_IMAGE` | Interactive hotspots | 1x 1940x600 |
-| `PREMIUM_NAVIGATION_CAROUSEL` | Multi-panel carousel | 5x 1464x600 |
-| `PREMIUM_REGIMEN_CAROUSEL` | Step-by-step carousel | 5x 1464x600 |
-| `PREMIUM_SIMPLE_IMAGE_CAROUSEL` | Auto-rotating images | 8x 1464x600 |
-| `PREMIUM_VIDEO_IMAGE_CAROUSEL` | Video + images | 6x 800x600 |
-| `PREMIUM_FULL_VIDEO` | Full-width video | Video + thumbnail |
-| `PREMIUM_VIDEO_WITH_TEXT` | Video + text | Video + thumbnail |
-| `PREMIUM_QA` | Q&A section | 6x 300x300 (optional) |
-| `PREMIUM_TECHNICAL_SPECIFICATIONS` | Enhanced tech specs | None |
+### Basic Module Types (15) - ALL API-SUPPORTED
+
+| Module Type | API Property Name | Description | Required Images |
+|---|---|---|---|
+| `STANDARD_TEXT` | standardText | Text only | None |
+| `STANDARD_SINGLE_SIDE_IMAGE` | standardSingleSideImage | Image + text side by side | 1x 300x300 |
+| `STANDARD_HEADER_IMAGE_TEXT` | standardHeaderImageText | Header image + text below | 1x 970x600 |
+| `STANDARD_COMPANY_LOGO` | standardCompanyLogo | Logo + description | 1x 600x180 |
+| `STANDARD_IMAGE_TEXT_OVERLAY` | standardImageTextOverlay | Image with text overlay | 1x 970x300 |
+| `STANDARD_SINGLE_IMAGE_HIGHLIGHTS` | standardSingleImageHighlights | Image + 4 bullet points | 1x 300x300 |
+| `STANDARD_MULTIPLE_IMAGE_TEXT` | standardMultipleImageText | Text + up to 4 images | 4x 220x220 |
+| `STANDARD_FOUR_IMAGE_TEXT` | standardFourImageText | 4 images with text blocks | 4x 220x220 |
+| `STANDARD_FOUR_IMAGE_TEXT_QUADRANT` | standardFourImageTextQuadrant | 4 images in grid | 4x 135x135 |
+| `STANDARD_THREE_IMAGE_TEXT` | standardThreeImageText | 3 images with text blocks | 3x 300x300 |
+| `STANDARD_COMPARISON_TABLE` | standardComparisonTable | Product comparison | 6x 150x300 |
+| `STANDARD_PRODUCT_DESCRIPTION` | standardProductDescription | Long text description | None |
+| `STANDARD_SINGLE_IMAGE_SPECS_DETAIL` | standardSingleImageSpecsDetail | Image + specs table | 1x 300x400 |
+| `STANDARD_IMAGE_SIDEBAR` | standardImageSidebar | Text + sidebar image | 1x 300x300 |
+| `STANDARD_TECH_SPECS` | standardTechSpecs | Technical specifications | None |
+
+### Premium Module Types (5) - ALL API-SUPPORTED
+
+| Module Type | API Property Name | Description | Required Images |
+|---|---|---|---|
+| `PREMIUM_TEXT` | premiumText | Enhanced text | None |
+| `PREMIUM_IMAGE_TEXT` | premiumImageText | Image + text | 1x 1464x600 |
+| `PREMIUM_FULL_BACKGROUND_TEXT` | premiumFullBackgroundText | Background + overlay text | 1x 1940x600 |
+| `PREMIUM_FULL_BACKGROUND_IMAGE` | premiumFullBackgroundImage | Background only | 1x 1940x600 |
+| `PREMIUM_IMAGE_CAROUSEL` | premiumImageCarousel | Up to 8 carousel images | 8x 362x453 |
+
+### NOT SUPPORTED BY API (Will Cause Errors!)
+
+These module types exist in Seller Central but are **NOT available through SP-API**:
+
+- PREMIUM_FULL_VIDEO
+- PREMIUM_VIDEO_WITH_TEXT
+- PREMIUM_VIDEO_IMAGE_CAROUSEL
+- PREMIUM_NAVIGATION_CAROUSEL
+- PREMIUM_REGIMEN_CAROUSEL
+- PREMIUM_SIMPLE_IMAGE_CAROUSEL
+- PREMIUM_HOTSPOTS_1 / PREMIUM_HOTSPOTS_2
+- PREMIUM_COMPARISON_TABLE_1/2/3
+- PREMIUM_QA
+- PREMIUM_SINGLE_IMAGE_WITH_TEXT
+- PREMIUM_FOUR_IMAGES_WITH_TEXT
+- PREMIUM_TECHNICAL_SPECIFICATIONS
+- Any other type not listed in the supported tables above
 
 ---
 
