@@ -638,8 +638,13 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       module.premiumImageText.headline = { value: ' ', decoratorSet: [] };
     }
 
-    const body = addParagraphComponent('body', content.body);
-    if (body) module.premiumImageText.body = body;
+    // API uses 'bodyText' not 'body' for this module type
+    const bodyText = addParagraphComponent('bodyText', content.body);
+    if (bodyText) module.premiumImageText.bodyText = bodyText;
+
+    // Optional subheadline
+    const subheadline = addTextComponent('subheadline', content.subheadline);
+    if (subheadline) module.premiumImageText.subheadline = subheadline;
   }
 
   // 18. PREMIUM_FULL_BACKGROUND_TEXT
