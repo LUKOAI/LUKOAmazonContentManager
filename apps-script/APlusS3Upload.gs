@@ -2103,3 +2103,166 @@ function fixInvalidPlaceholders() {
     ui.alert('Błąd', error.toString(), ui.ButtonSet.OK);
   }
 }
+
+/**
+ * Import Asset Library data from JSON (from bookmarklet)
+ * Allows importing all assets from Amazon Asset Library at once
+ *
+ * The bookmarklet extracts: assetId (UUID), filename, tags, width, height
+ * We convert assetId to full uploadDestinationId format
+ */
+function importAssetLibraryData() {
+  const ui = SpreadsheetApp.getUi();
+
+  try {
+    const response = ui.prompt(
+      '📥 Import Asset Library',
+      'Wklej dane JSON z bookmarklet:\n\n' +
+      '(Użyj bookmarklet "Extract Asset Library" w Seller Central)\n\n' +
+      'Format: [{"assetId":"UUID","filename":"name.png","tags":["tag1"],"width":970,"height":600}, ...]\n\n' +
+      'JSON:',
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (response.getSelectedButton() !== ui.Button.OK) return;
+
+    const jsonText = response.getResponseText().trim();
+    if (!jsonText) {
+      ui.alert('Błąd', 'Nie podano danych JSON.', ui.ButtonSet.OK);
+      return;
+    }
+
+    let assets;
+    try {
+      assets = JSON.parse(jsonText);
+    } catch (e) {
+      ui.alert('Błąd JSON', 'Nieprawidłowy format JSON:\n' + e.message, ui.ButtonSet.OK);
+      return;
+    }
+
+    if (!Array.isArray(assets) || assets.length === 0) {
+      ui.alert('Błąd', 'Brak danych do importu lub nieprawidłowy format.', ui.ButtonSet.OK);
+      return;
+    }
+
+    // Get or create library sheet
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let librarySheet = ss.getSheetByName('A+ Image Library');
+    if (!librarySheet) {
+      librarySheet = createImageLibrarySheet();
+    }
+
+    // Get existing IDs to avoid duplicates
+    const existingData = librarySheet.getDataRange().getValues();
+    const existingIds = new Set();
+    const existingFilenames = new Map(); // filename -> row number
+
+    for (let i = 1; i < existingData.length; i++) {
+      if (existingData[i][0]) {
+        existingIds.add(existingData[i][0]);
+      }
+      if (existingData[i][11]) { // original_filename column (L = 11)
+        existingFilenames.set(existingData[i][11], i + 1);
+      }
+    }
+
+    let added = 0;
+    let updated = 0;
+    let skipped = 0;
+    const newRows = [];
+
+    for (const asset of assets) {
+      // Build full uploadDestinationId
+      const assetId = asset.assetId || asset.id || '';
+      const filename = asset.filename || asset.name || '';
+      const extension = filename.split('.').pop() || 'png';
+
+      // Full ID format: aplus-media-library-service-media/UUID.ext
+      let uploadDestinationId = '';
+      if (assetId.includes('/')) {
+        // Already full path
+        uploadDestinationId = assetId;
+      } else if (assetId.includes('.')) {
+        // Has extension
+        uploadDestinationId = `aplus-media-library-service-media/${assetId}`;
+      } else {
+        // Need to add extension
+        uploadDestinationId = `aplus-media-library-service-media/${assetId}.${extension}`;
+      }
+
+      const width = asset.width || 0;
+      const height = asset.height || 0;
+      const tags = Array.isArray(asset.tags) ? asset.tags.join(', ') : (asset.tags || '');
+
+      // Check if ID already exists
+      if (existingIds.has(uploadDestinationId)) {
+        skipped++;
+        continue;
+      }
+
+      // Check if we can update by filename
+      if (existingFilenames.has(filename)) {
+        const rowNum = existingFilenames.get(filename);
+        // Update the row with the correct uploadDestinationId
+        librarySheet.getRange(rowNum, 1).setValue(uploadDestinationId); // A: uploadDestinationId
+        if (width) librarySheet.getRange(rowNum, 5).setValue(width); // E: width
+        if (height) librarySheet.getRange(rowNum, 6).setValue(height); // F: height
+        if (tags) librarySheet.getRange(rowNum, 13).setValue(tags); // M: tags
+        librarySheet.getRange(rowNum, 11).setValue(`Updated from Asset Library import`); // K: notes
+        updated++;
+        existingIds.add(uploadDestinationId);
+        continue;
+      }
+
+      // Determine alt text from filename or tags
+      let altText = '';
+      if (tags) {
+        altText = tags.split(',')[0].trim();
+      } else if (filename) {
+        altText = filename.replace(/\.[^.]+$/, '').replace(/_/g, ' ');
+      }
+
+      // Add new row
+      newRows.push([
+        uploadDestinationId,           // A: uploadDestinationId
+        '',                            // B: image_url
+        '',                            // C: image_hash
+        altText,                       // D: alt_text
+        width || '',                   // E: width
+        height || '',                  // F: height
+        '',                            // G: source_content_key
+        '',                            // H: module_type
+        new Date().toLocaleString(),   // I: date_synced
+        'ASSET_LIBRARY',               // J: status
+        'Imported from Asset Library', // K: notes
+        filename,                      // L: original_filename
+        tags                           // M: tags
+      ]);
+
+      added++;
+      existingIds.add(uploadDestinationId);
+    }
+
+    // Add new rows to sheet
+    if (newRows.length > 0) {
+      const lastRow = librarySheet.getLastRow();
+      librarySheet.getRange(lastRow + 1, 1, newRows.length, 13).setValues(newRows);
+    }
+
+    ui.alert('Import zakończony',
+      `📥 Import Asset Library Complete\n\n` +
+      `✅ Dodano nowych: ${added}\n` +
+      `🔄 Zaktualizowano: ${updated}\n` +
+      `⏭️ Pominięto (duplikaty): ${skipped}\n` +
+      `📊 Razem w bibliotece: ${existingIds.size}`,
+      ui.ButtonSet.OK
+    );
+
+    Logger.log(`Asset Library import: added=${added}, updated=${updated}, skipped=${skipped}`);
+
+  } catch (error) {
+    Logger.log(`Error in importAssetLibraryData: ${error.toString()}`);
+    Logger.log(`Stack: ${error.stack}`);
+    ui.alert('Błąd', error.toString(), ui.ButtonSet.OK);
+  }
+}

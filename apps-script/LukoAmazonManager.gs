@@ -173,6 +173,7 @@ function onOpen() {
       .addItem('📚 Create Image Library', 'createImageLibrarySheet')
       .addItem('🔄 Sync ALL Images to Library', 'syncAllImagesToLibrary')
       .addItem('🔄 Quick Sync (first 5 docs)', 'syncImagesToLibrary')
+      .addItem('📥 Import from Asset Library', 'importAssetLibraryData')
       .addSeparator()
       .addItem('🗺️ Map Single Placeholder', 'mapSinglePlaceholder')
       .addItem('📋 Bulk Map Placeholders', 'bulkMapPlaceholders')
