@@ -872,20 +872,76 @@ function generateAPlusPremiumSheet(ss) {
 }
 
 function getAPlusPremiumHeaders() {
-  const control = ['☑️ Export', 'ASIN', 'Brand Story ID'];
-  const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
-
-  const hero = [
-    'aplus_premium_hero_brandLogo_URL',
-    'aplus_premium_hero_heroImage_URL',
-    'aplus_premium_hero_heroVideo_URL',
-    ...languages.map(lang => `aplus_premium_hero_tagline_${lang}`),
-    'aplus_premium_hero_backgroundColor_HEX'
+  // Control columns (same as APlusBasic)
+  const control = [
+    '☑️ Export',
+    'ASIN',
+    'Module Number',
+    'Module Type',
+    'contentReferenceKey',
+    'Marketplace',
+    'Language'
   ];
 
-  const status = ['Status', 'ExportDateTime', 'ErrorMessage'];
+  // Generate columns for each module slot (m1-m7) - SAME structure as Basic
+  // Premium modules use the same column structure
+  const allModuleColumns = [];
 
-  return [...control, ...hero, ...status];
+  for (let m = 1; m <= 7; m++) {
+    const p = `m${m}_`;
+
+    // Common text fields
+    allModuleColumns.push(`${p}headline`);
+    allModuleColumns.push(`${p}subheadline`);
+    allModuleColumns.push(`${p}body`);
+
+    // Main image
+    allModuleColumns.push(`${p}image_url`, `${p}image_id`, `${p}image_altText`, `${p}imagePositionType`);
+
+    // Background image (Premium)
+    allModuleColumns.push(`${p}backgroundImage_url`, `${p}backgroundImage_id`, `${p}backgroundImage_altText`);
+    allModuleColumns.push(`${p}positionType`, `${p}colorType`, `${p}overlayColorType`);
+
+    // Company logo
+    allModuleColumns.push(`${p}companyLogo_url`, `${p}companyLogo_id`, `${p}companyDescription`);
+
+    // Highlights (5)
+    for (let h = 1; h <= 5; h++) allModuleColumns.push(`${p}highlight${h}`);
+
+    // Multiple images (8 for Premium carousels)
+    for (let i = 1; i <= 8; i++) {
+      allModuleColumns.push(`${p}image${i}_url`, `${p}image${i}_id`, `${p}image${i}_altText`);
+    }
+
+    // Blocks (4)
+    for (let b = 1; b <= 4; b++) {
+      allModuleColumns.push(`${p}block${b}_headline`, `${p}block${b}_body`);
+    }
+
+    // Specs (12)
+    for (let s = 1; s <= 12; s++) {
+      allModuleColumns.push(`${p}spec${s}_name`, `${p}spec${s}_value`);
+    }
+
+    // Comparison table (4 products, 5 metrics)
+    for (let c = 1; c <= 4; c++) {
+      allModuleColumns.push(`${p}product${c}_title`, `${p}product${c}_asin`,
+                            `${p}product${c}_image_id`, `${p}product${c}_highlight`);
+    }
+    for (let r = 1; r <= 5; r++) {
+      allModuleColumns.push(`${p}metric${r}_name`);
+      for (let c = 1; c <= 4; c++) allModuleColumns.push(`${p}metric${r}_product${c}`);
+    }
+
+    // Hotspots (4)
+    for (let h = 1; h <= 4; h++) {
+      allModuleColumns.push(`${p}hotspot${h}_x`, `${p}hotspot${h}_y`,
+                            `${p}hotspot${h}_title`, `${p}hotspot${h}_text`);
+    }
+  }
+
+  const status = ['Status', 'ExportDateTime', 'ErrorMessage'];
+  return [...control, ...allModuleColumns, ...status];
 }
 
 // ========================================
@@ -1608,4 +1664,77 @@ function generateErrorLogSheet(ss) {
   }
 
   Logger.log('ErrorLog sheet generated');
+}
+
+// ========================================
+// SAFE UPDATE FUNCTION - ONLY UPDATES A+ SHEETS
+// ========================================
+
+/**
+ * SAFE: Only updates APlusBasic and APlusPremium column headers
+ * Does NOT delete any sheets!
+ *
+ * Use this instead of lukoGenerateFullSpreadsheet to preserve existing data.
+ */
+function lukoUpdateAPlusColumnsOnly() {
+  const ui = SpreadsheetApp.getUi();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  const response = ui.alert(
+    'Update A+ Column Headers',
+    'This will ONLY update the column headers in APlusBasic and APlusPremium sheets.\n\n' +
+    '⚠️ Existing data in these sheets may be lost!\n' +
+    'All other sheets will NOT be touched.\n\n' +
+    'Continue?',
+    ui.ButtonSet.YES_NO
+  );
+
+  if (response !== ui.Button.YES) return;
+
+  try {
+    // Update APlusBasic
+    let basicSheet = ss.getSheetByName('APlusBasic');
+    if (basicSheet) {
+      // Clear only headers row (row 3)
+      const basicHeaders = getAPlusBasicHeaders();
+      const lastCol = basicSheet.getLastColumn();
+      if (lastCol > 0) {
+        basicSheet.getRange(3, 1, 1, lastCol).clear();
+      }
+      basicSheet.getRange(3, 1, 1, basicHeaders.length).setValues([basicHeaders]);
+      basicSheet.getRange(3, 1, 1, basicHeaders.length)
+        .setFontWeight('bold')
+        .setBackground('#8E24AA')
+        .setFontColor('#FFFFFF')
+        .setWrap(true);
+      Logger.log('APlusBasic headers updated: ' + basicHeaders.length + ' columns');
+    } else {
+      Logger.log('APlusBasic sheet not found - skipping');
+    }
+
+    // Update APlusPremium
+    let premiumSheet = ss.getSheetByName('APlusPremium');
+    if (premiumSheet) {
+      const premiumHeaders = getAPlusPremiumHeaders();
+      const lastCol = premiumSheet.getLastColumn();
+      if (lastCol > 0) {
+        premiumSheet.getRange(3, 1, 1, lastCol).clear();
+      }
+      premiumSheet.getRange(3, 1, 1, premiumHeaders.length).setValues([premiumHeaders]);
+      premiumSheet.getRange(3, 1, 1, premiumHeaders.length)
+        .setFontWeight('bold')
+        .setBackground('#D81B60')
+        .setFontColor('#FFFFFF')
+        .setWrap(true);
+      Logger.log('APlusPremium headers updated: ' + premiumHeaders.length + ' columns');
+    } else {
+      Logger.log('APlusPremium sheet not found - skipping');
+    }
+
+    ui.alert('✅ Done!', 'A+ column headers updated successfully.\n\nAll other sheets were preserved.', ui.ButtonSet.OK);
+
+  } catch (error) {
+    ui.alert('❌ Error', error.message, ui.ButtonSet.OK);
+    Logger.log('Error in lukoUpdateAPlusColumnsOnly: ' + error.message);
+  }
 }
