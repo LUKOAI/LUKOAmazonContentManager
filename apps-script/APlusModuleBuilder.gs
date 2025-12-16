@@ -361,6 +361,7 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   // ========== STANDARD MODULES ==========
 
   // 1. STANDARD_TEXT
+  // NOTE: Amazon API REQUIRES body field - it cannot be null/empty
   if (aplusData.moduleType === 'STANDARD_TEXT') {
     module.standardText = {};
 
@@ -368,7 +369,22 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     if (headline) module.standardText.headline = headline;
 
     const body = addParagraphComponent('body', content.body);
-    if (body) module.standardText.body = body;
+    if (body) {
+      module.standardText.body = body;
+    } else {
+      // STANDARD_TEXT REQUIRES body - use headline as body if no body provided
+      // or use a placeholder space if completely empty
+      if (content.headline) {
+        Logger.log(`⚠️ STANDARD_TEXT has headline but no body - using headline as body`);
+        module.standardText.body = addParagraphComponent('body', content.headline);
+      } else {
+        // Completely empty module - this will likely fail but we log a clear error
+        Logger.log(`❌ ERROR: STANDARD_TEXT module is empty (no headline or body). Amazon API requires body.`);
+        Logger.log(`   Please add content to aplus_basic_m${aplusData.moduleNumber}_body_XX columns`);
+        // Add minimal placeholder to prevent API crash (but module should be removed)
+        module.standardText.body = addParagraphComponent('body', ' ');
+      }
+    }
   }
 
   // 2. STANDARD_SINGLE_SIDE_IMAGE
