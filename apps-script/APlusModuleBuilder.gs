@@ -445,6 +445,8 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   }
 
   // 6. STANDARD_SINGLE_IMAGE_HIGHLIGHTS
+  // Structure: image, headline, block (StandardTextBlock)
+  // StandardTextBlock has: headline, bodyText, bulletedListBlock
   else if (aplusData.moduleType === 'STANDARD_SINGLE_IMAGE_HIGHLIGHTS') {
     module.standardSingleImageHighlights = {};
 
@@ -457,9 +459,12 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     const headline = addTextComponent('headline', content.headline);
     if (headline) module.standardSingleImageHighlights.headline = headline;
 
-    // Add bullet points (highlights) - bulletedListBlock is a single StandardTextBlock, not an array
+    // Build block (StandardTextBlock) which contains bulletedListBlock
+    const block = {};
+
+    // Add bullet points (highlights) inside block.bulletedListBlock
     const bulletTextList = [];
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 1; i <= 8; i++) {  // API allows up to 8 bullets
       const bulletText = content[`highlight${i}`];
       if (bulletText) {
         bulletTextList.push({
@@ -469,9 +474,14 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
       }
     }
     if (bulletTextList.length > 0) {
-      module.standardSingleImageHighlights.bulletedListBlock = {
+      block.bulletedListBlock = {
         textList: bulletTextList
       };
+    }
+
+    // Add block to module if it has content
+    if (Object.keys(block).length > 0) {
+      module.standardSingleImageHighlights.block = block;
     }
   }
 
