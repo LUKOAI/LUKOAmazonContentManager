@@ -258,7 +258,70 @@ function onFormSubmit(e) {
  * @returns {Object} - Result with count, startRow, endRow
  */
 function importModulesToSheet(sheet, modules, sheetName) {
+  // Step 1: Collect ALL column names from ALL modules
+  var allColumnNames = new Set();
+  modules.forEach(function(module) {
+    if (module.columns) {
+      for (var colKey in module.columns) {
+        // Skip column letters (A, B, etc.) - only track named columns
+        if (!(colKey.length <= 2 && /^[A-Z]+$/.test(colKey))) {
+          allColumnNames.add(colKey);
+        }
+      }
+    }
+  });
+  Logger.log('Found ' + allColumnNames.size + ' unique column names in JSON');
+
+  // Step 2: Build header map and find missing columns
   var headerMap = buildHeaderMap(sheet);
+  var existingColumns = new Set(Object.keys(headerMap));
+
+  var missingColumns = [];
+  allColumnNames.forEach(function(colName) {
+    if (!existingColumns.has(colName)) {
+      missingColumns.push(colName);
+    }
+  });
+
+  Logger.log('Missing columns: ' + missingColumns.length);
+  if (missingColumns.length > 0) {
+    Logger.log('Missing: ' + missingColumns.slice(0, 10).join(', ') + (missingColumns.length > 10 ? '...' : ''));
+  }
+
+  // Step 3: Add missing columns to the sheet (before Status column)
+  if (missingColumns.length > 0) {
+    var statusIndex = -1;
+    var headers = sheet.getRange(3, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    for (var i = 0; i < headers.length; i++) {
+      if (headers[i] === 'Status') {
+        statusIndex = i + 1; // 1-based
+        break;
+      }
+    }
+
+    var insertPosition = statusIndex > 0 ? statusIndex : sheet.getLastColumn() + 1;
+
+    // Sort missing columns for better organization (group by module number)
+    missingColumns.sort();
+
+    // Insert columns
+    sheet.insertColumnsAfter(insertPosition - 1, missingColumns.length);
+
+    // Set headers for new columns
+    sheet.getRange(3, insertPosition, 1, missingColumns.length).setValues([missingColumns]);
+    sheet.getRange(3, insertPosition, 1, missingColumns.length)
+      .setFontWeight('bold')
+      .setBackground('#8E24AA')
+      .setFontColor('#FFFFFF')
+      .setWrap(true);
+
+    Logger.log('✅ Added ' + missingColumns.length + ' new columns at position ' + insertPosition);
+
+    // Rebuild header map after adding columns
+    headerMap = buildHeaderMap(sheet);
+  }
+
   Logger.log('Header map created for ' + sheetName + ' with ' + Object.keys(headerMap).length + ' columns');
 
   var targetRow = findFirstEmptyRow(sheet);
