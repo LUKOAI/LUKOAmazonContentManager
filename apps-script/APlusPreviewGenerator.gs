@@ -8,6 +8,7 @@
 /**
  * Generate A+ Preview for selected ASIN
  * Menu: NetAnaliza Manager → Tools → Generate A+ Preview
+ * Shows preview in modal dialog (renders HTML properly!)
  */
 function lukoGenerateAPlusPreview() {
   const ui = SpreadsheetApp.getUi();
@@ -54,47 +55,36 @@ function lukoGenerateAPlusPreview() {
     return;
   }
 
-  showProgress(`Generating preview for ${asinCount} ASIN(s)...`);
-
   try {
-    const results = [];
+    // For simplicity, show first ASIN preview in modal
+    const firstAsin = Object.keys(asinGroups)[0];
+    const modules = asinGroups[firstAsin];
 
-    for (const asin of Object.keys(asinGroups)) {
-      const modules = asinGroups[asin];
+    // Sort modules by module number
+    modules.sort((a, b) => (a.data.moduleNumber || 0) - (b.data.moduleNumber || 0));
 
-      // Sort modules by module number
-      modules.sort((a, b) => (a.data.moduleNumber || 0) - (b.data.moduleNumber || 0));
+    // Generate HTML preview
+    const html = generateAPlusHTML(firstAsin, modules);
 
-      // Generate HTML preview
-      const html = generateAPlusHTML(asin, modules);
+    // Show preview in modal dialog (this renders the HTML properly!)
+    const htmlOutput = HtmlService.createHtmlOutput(html)
+      .setWidth(1000)
+      .setHeight(700);
 
-      // Save to Google Drive
-      const file = saveHTMLToDrive(asin, html);
-      const fileUrl = file.getUrl();
+    ui.showModalDialog(htmlOutput, `A+ Preview: ${firstAsin} (${modules.length} modules)`);
 
-      // Update the first row of this ASIN with the preview link
-      const previewColIndex = headers.indexOf('PreviewURL');
-      if (previewColIndex >= 0) {
-        sheet.getRange(modules[0].row, previewColIndex + 1).setValue(fileUrl);
-      }
+    // Also save to Drive for sharing
+    const file = saveHTMLToDrive(firstAsin, html);
+    Logger.log(`Preview saved to Drive: ${file.getUrl()}`);
 
-      results.push({
-        asin: asin,
-        moduleCount: modules.length,
-        url: fileUrl
-      });
-
-      Logger.log(`Generated preview for ${asin}: ${fileUrl}`);
+    // If multiple ASINs, show info
+    if (asinCount > 1) {
+      SpreadsheetApp.getActiveSpreadsheet().toast(
+        `Showing ${firstAsin}. Preview saved to Drive: LUKO-A+-Previews. Total ASINs: ${asinCount}`,
+        'Preview Generated',
+        10
+      );
     }
-
-    // Show results
-    let message = `Generated ${results.length} preview(s):\n\n`;
-    for (const r of results) {
-      message += `${r.asin} (${r.moduleCount} modules)\n`;
-    }
-    message += `\nFiles saved to Google Drive folder: LUKO-A+-Previews`;
-
-    ui.alert('Preview Generated!', message, ui.ButtonSet.OK);
 
   } catch (error) {
     ui.alert('Error', error.message, ui.ButtonSet.OK);
