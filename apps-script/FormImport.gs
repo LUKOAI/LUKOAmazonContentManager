@@ -516,30 +516,33 @@ function logOperation(operation, status, details) {
  * To run: Extensions → Apps Script → Select testFormImport → Run
  */
 function testFormImport() {
-  // Sample JSON matching the expected format
+  // Sample JSON matching the expected format (with Marketplace and Language)
   var sampleJSON = {
     "modules": [
       {
         "row": null,
         "columns": {
-          "A": true,
-          "B": "B0FNRLYQ3G",
-          "C": 1,
-          "D": "STANDARD_COMPANY_LOGO",
-          "E": "aplus-media-library-service-media/test-logo.jpg",
-          "F": "Test German text",
-          "G": "Test English text"
+          "☑️ Export": true,
+          "ASIN": "B0FNRLYQ3G",
+          "Module Number": 1,
+          "Module Type": "STANDARD_COMPANY_LOGO",
+          "Marketplace": "DE",
+          "Language": "EN",
+          "aplus_basic_m1_headline_EN": "Test English headline",
+          "aplus_basic_m1_body_EN": "Test English body text"
         }
       },
       {
         "row": null,
         "columns": {
-          "A": true,
-          "B": "B0FNRLYQ3G",
-          "C": 2,
-          "D": "STANDARD_TEXT",
-          "F": "German description",
-          "G": "English description"
+          "☑️ Export": true,
+          "ASIN": "B0FNRLYQ3G",
+          "Module Number": 2,
+          "Module Type": "STANDARD_TEXT",
+          "Marketplace": "DE",
+          "Language": "EN",
+          "aplus_basic_m2_headline_EN": "Second module headline",
+          "aplus_basic_m2_body_EN": "Second module body"
         }
       }
     ]
@@ -553,7 +556,7 @@ function testFormImport() {
     ]
   };
 
-  Logger.log('Running test import with sample JSON...');
+  Logger.log('Running test import with sample JSON (includes Marketplace & Language)...');
   onFormSubmit(mockEvent);
   Logger.log('Test complete. Check APlusBasic sheet and Logs sheet.');
 }
