@@ -479,7 +479,8 @@ function generateAPlusBasicSheet(ss) {
 }
 
 function getAPlusBasicHeaders() {
-  const control = ['☑️ Export', 'ASIN', 'Module Number', 'Module Type', 'contentReferenceKey'];
+  // Control columns - Marketplace and Language added after contentReferenceKey
+  const control = ['☑️ Export', 'ASIN', 'Module Number', 'Module Type', 'contentReferenceKey', 'Marketplace', 'Language'];
   const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
 
   // Helper to generate fields for all languages

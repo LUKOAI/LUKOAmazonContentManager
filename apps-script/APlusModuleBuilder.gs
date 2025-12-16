@@ -102,39 +102,27 @@ const APLUS_IMAGE_SIZES = {
  * Supports ALL module types from Amazon SP-API A+ Content v2020-11-01
  */
 function buildAPlusContentDocumentComplete(aplusData, marketplace) {
-  // Detect the language with MOST content (not just first alphabetical key!)
-  const moduleContentKeys = Object.keys(aplusData.moduleContent || {});
-  if (moduleContentKeys.length === 0) {
-    Logger.log(`⚠️ Warning: No module content found for ${aplusData.moduleType}. Using empty content.`);
-  }
+  // Use explicit language from column (set in extractAPlusData)
+  const explicitLang = aplusData.language || 'DE';
 
-  // Find language with most non-empty fields
-  let bestLang = moduleContentKeys[0] || 'EN';
-  let maxFields = 0;
+  // Get content for the specified language
+  const content = aplusData.moduleContent?.[explicitLang] || {};
 
-  for (const lang of moduleContentKeys) {
-    const langData = aplusData.moduleContent[lang] || {};
-    let fieldCount = 0;
-    for (const key in langData) {
-      if (langData[key] && langData[key].toString().trim() !== '') {
-        fieldCount++;
-      }
-    }
-    Logger.log(`🔍 Language "${lang}" has ${fieldCount} non-empty fields`);
-    if (fieldCount > maxFields) {
-      maxFields = fieldCount;
-      bestLang = lang;
+  // If no content for explicit language, try to find any available content
+  if (Object.keys(content).length === 0) {
+    const moduleContentKeys = Object.keys(aplusData.moduleContent || {});
+    if (moduleContentKeys.length > 0) {
+      const fallbackLang = moduleContentKeys[0];
+      Logger.log(`⚠️ No content for language "${explicitLang}", using fallback: "${fallbackLang}"`);
+      // Note: We still use explicit language for locale, just use fallback content
     }
   }
-
-  const firstLang = bestLang;
-  const content = aplusData.moduleContent?.[firstLang] || {};
 
   // Generate unique content reference key
   const contentRefKey = `${aplusData.asin}_module${aplusData.moduleNumber}_${Date.now()}`;
 
-  Logger.log(`✅ Best language: "${firstLang}" with ${maxFields} fields (from: ${moduleContentKeys.join(', ')})`);
-  Logger.log(`Building ${aplusData.moduleType} for ASIN ${aplusData.asin}, language: ${firstLang}`);
+  Logger.log(`Building ${aplusData.moduleType} for ASIN ${aplusData.asin}`);
+  Logger.log(`📍 Explicit Language: "${explicitLang}", Marketplace: "${marketplace}"`);
   Logger.log(`Content keys: ${Object.keys(content).join(', ') || '(empty)'}`);
   Logger.log(`Export mode: ${aplusData.exportMode || 'default'}`);
   Logger.log(`Images available: ${Object.keys(aplusData.images || {}).join(', ') || '(none)'}`);
@@ -147,15 +135,15 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   const isPremium = aplusData.moduleType.startsWith('PREMIUM');
   const contentSubType = isPremium ? 'PREMIUM' : 'STANDARD';
 
-  // Use detected language for locale, fallback to marketplace
-  const detectedLocale = convertLanguageToLocale(firstLang, marketplace) || convertMarketplaceToLocale(marketplace);
-  Logger.log(`📍 Locale: "${firstLang}" → "${detectedLocale}"`);
+  // Use explicit language from column for locale
+  const locale = convertLanguageToLocale(explicitLang, marketplace) || convertMarketplaceToLocale(marketplace);
+  Logger.log(`📍 Locale: "${explicitLang}" → "${locale}"`);
 
   const contentDocument = {
     name: contentRefKey,
     contentType: 'EBC',  // Enhanced Brand Content
     contentSubType: contentSubType,
-    locale: detectedLocale,
+    locale: locale,
     contentModuleList: []
   };
 

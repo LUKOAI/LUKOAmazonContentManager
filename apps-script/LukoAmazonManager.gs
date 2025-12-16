@@ -128,6 +128,106 @@ const MARKETPLACE_LANGUAGES = {
     languages: ['en-GB', 'ga-IE'],
     primary: 'en-GB',
     currency: 'EUR'
+  },
+  // Turkey
+  'TR': {
+    marketplaceId: 'A33AVAJ2PDY3EV',
+    endpoint: 'https://sellingpartnerapi-eu.amazon.com',
+    region: 'eu-west-1',
+    languages: ['tr-TR', 'en-GB'],
+    primary: 'tr-TR',
+    currency: 'TRY'
+  },
+  // Middle East
+  'AE': {
+    marketplaceId: 'A2VIGQ35RCS4UG',
+    endpoint: 'https://sellingpartnerapi-eu.amazon.com',
+    region: 'eu-west-1',
+    languages: ['en-GB', 'ar-AE'],
+    primary: 'en-GB',
+    currency: 'AED'
+  },
+  'SA': {
+    marketplaceId: 'A17E79C6D8DWNP',
+    endpoint: 'https://sellingpartnerapi-eu.amazon.com',
+    region: 'eu-west-1',
+    languages: ['en-GB', 'ar-SA'],
+    primary: 'en-GB',
+    currency: 'SAR'
+  },
+  'EG': {
+    marketplaceId: 'ARBP9OOSHTCHU',
+    endpoint: 'https://sellingpartnerapi-eu.amazon.com',
+    region: 'eu-west-1',
+    languages: ['en-GB', 'ar-EG'],
+    primary: 'en-GB',
+    currency: 'EGP'
+  },
+  // North America
+  'US': {
+    marketplaceId: 'ATVPDKIKX0DER',
+    endpoint: 'https://sellingpartnerapi-na.amazon.com',
+    region: 'us-east-1',
+    languages: ['en-US', 'es-US'],
+    primary: 'en-US',
+    currency: 'USD'
+  },
+  'CA': {
+    marketplaceId: 'A2EUQ1WTGCTBG2',
+    endpoint: 'https://sellingpartnerapi-na.amazon.com',
+    region: 'us-east-1',
+    languages: ['en-CA', 'fr-CA'],
+    primary: 'en-CA',
+    currency: 'CAD'
+  },
+  'MX': {
+    marketplaceId: 'A1AM78C64UM0Y8',
+    endpoint: 'https://sellingpartnerapi-na.amazon.com',
+    region: 'us-east-1',
+    languages: ['es-MX'],
+    primary: 'es-MX',
+    currency: 'MXN'
+  },
+  'BR': {
+    marketplaceId: 'A2Q3Y263D00KWC',
+    endpoint: 'https://sellingpartnerapi-na.amazon.com',
+    region: 'us-east-1',
+    languages: ['pt-BR'],
+    primary: 'pt-BR',
+    currency: 'BRL'
+  },
+  // Far East / Asia Pacific
+  'JP': {
+    marketplaceId: 'A1VC38T7YXB528',
+    endpoint: 'https://sellingpartnerapi-fe.amazon.com',
+    region: 'us-west-2',
+    languages: ['ja-JP'],
+    primary: 'ja-JP',
+    currency: 'JPY'
+  },
+  'AU': {
+    marketplaceId: 'A39IBJ37TRP1C6',
+    endpoint: 'https://sellingpartnerapi-fe.amazon.com',
+    region: 'us-west-2',
+    languages: ['en-AU'],
+    primary: 'en-AU',
+    currency: 'AUD'
+  },
+  'SG': {
+    marketplaceId: 'A19VAU5U5O7RUS',
+    endpoint: 'https://sellingpartnerapi-fe.amazon.com',
+    region: 'us-west-2',
+    languages: ['en-SG', 'zh-CN'],
+    primary: 'en-SG',
+    currency: 'SGD'
+  },
+  'IN': {
+    marketplaceId: 'A21TJRUUN4KGV',
+    endpoint: 'https://sellingpartnerapi-eu.amazon.com',
+    region: 'eu-west-1',
+    languages: ['en-IN', 'hi-IN'],
+    primary: 'en-IN',
+    currency: 'INR'
   }
 };
 
@@ -1597,8 +1697,10 @@ function extractAPlusData(sheet, rowNumber, contentType) {
   const asin = getColumnValue(values, headers, 'ASIN');
   const moduleNumber = getColumnValue(values, headers, 'Module Number');
   const moduleType = getColumnValue(values, headers, 'Module Type');
+  const marketplace = getColumnValue(values, headers, 'Marketplace') || 'DE';
+  const language = getColumnValue(values, headers, 'Language') || 'DE';
 
-  Logger.log(`Extracted - ASIN: "${asin}", Module: "${moduleNumber}", Type: "${moduleType}"`);
+  Logger.log(`Extracted - ASIN: "${asin}", Module: "${moduleNumber}", Type: "${moduleType}", Marketplace: "${marketplace}", Language: "${language}"`);
 
   if (!asin || asin === '') {
     throw new Error(`ASIN is empty in row ${rowNumber}. Please fill in the ASIN column.`);
@@ -1673,6 +1775,8 @@ function extractAPlusData(sheet, rowNumber, contentType) {
     asin: asin,
     moduleNumber: moduleNumber,
     moduleType: moduleType,
+    marketplace: marketplace,
+    language: language,
     moduleContent: moduleContent,
     images: images
   };
@@ -1687,50 +1791,32 @@ function extractAPlusData(sheet, rowNumber, contentType) {
  */
 function publishMultiModuleAPlusContent(modules, contentType, exportMode) {
   try {
-    const client = getActiveClient();
-    const marketplace = client.marketplace || 'DE';
-    const marketplaceConfig = getMarketplaceConfig(marketplace);
-
-    if (!marketplaceConfig) {
-      throw new Error(`Invalid marketplace: ${marketplace}`);
-    }
-
     if (!modules || modules.length === 0) {
       throw new Error('No modules provided');
     }
 
+    // Get Marketplace and Language from the first module's row data (explicit from columns)
+    const firstModuleData = modules[0].data;
+    const marketplace = firstModuleData.marketplace || 'DE';
+    const language = firstModuleData.language || 'DE';
+
+    const marketplaceConfig = getMarketplaceConfig(marketplace);
+    if (!marketplaceConfig) {
+      throw new Error(`Invalid marketplace: ${marketplace}. Check the Marketplace column.`);
+    }
+
     // All modules are for the same ASIN
-    const asin = modules[0].data.asin;
+    const asin = firstModuleData.asin;
     const moduleCount = modules.length;
 
-    Logger.log(`Building multi-module A+ Content for ${asin} with ${moduleCount} modules (mode: ${exportMode || 'DEFAULT'})`);
+    Logger.log(`Building multi-module A+ Content for ${asin} with ${moduleCount} modules`);
+    Logger.log(`📍 Explicit Marketplace: "${marketplace}", Language: "${language}" (from columns)`);
 
     const accessToken = getActiveAccessToken();
 
-    // Detect language with MOST content across all modules
-    let bestLang = 'EN';
-    let maxFields = 0;
-
-    for (const m of modules) {
-      const moduleContent = m.data.moduleContent || {};
-      for (const lang of Object.keys(moduleContent)) {
-        const langData = moduleContent[lang] || {};
-        let fieldCount = 0;
-        for (const key in langData) {
-          if (langData[key] && langData[key].toString().trim() !== '') {
-            fieldCount++;
-          }
-        }
-        if (fieldCount > maxFields) {
-          maxFields = fieldCount;
-          bestLang = lang;
-        }
-      }
-    }
-
-    Logger.log(`✅ Best language detected: "${bestLang}" with ${maxFields} fields`);
-    const locale = convertLanguageToLocale(bestLang, marketplace) || convertMarketplaceToLocale(marketplace);
-    Logger.log(`📍 Locale: "${bestLang}" → "${locale}"`);
+    // Use explicit language from column for locale
+    const locale = convertLanguageToLocale(language, marketplace) || convertMarketplaceToLocale(marketplace);
+    Logger.log(`📍 Locale: "${language}" → "${locale}"`);
 
     // Build content document with ALL modules
     const contentRefKey = `${asin}_complete_${Date.now()}`;

@@ -814,7 +814,10 @@ function convertMarketplaceToLocale(marketplace) {
  * Convert language code to locale for specific marketplace
  */
 function convertLanguageToLocale(lang, marketplace) {
+  // Complete language to locale mapping
+  // Supports all language codes from the form dropdown
   const localeMap = {
+    // Main European languages
     'DE': 'de-DE',
     'EN': 'en-GB',
     'FR': 'fr-FR',
@@ -822,9 +825,27 @@ function convertLanguageToLocale(lang, marketplace) {
     'ES': 'es-ES',
     'NL': 'nl-NL',
     'PL': 'pl-PL',
-    'SE': 'sv-SE'
+    'SV': 'sv-SE',    // Swedish
+    'SE': 'sv-SE',    // Swedish (alternative code)
+    // Additional languages
+    'PT': 'pt-BR',    // Portuguese (Brazil)
+    'TR': 'tr-TR',    // Turkish
+    'CZ': 'cs-CZ',    // Czech (user uses CZ, Amazon uses cs-CZ)
+    'CS': 'cs-CZ',    // Czech (alternative)
+    'DK': 'da-DK',    // Danish (user uses DK, Amazon uses da-DK)
+    'DA': 'da-DK',    // Danish (alternative)
+    'FI': 'fi-FI',    // Finnish
+    'JP': 'ja-JP',    // Japanese (user uses JP, Amazon uses ja-JP)
+    'JA': 'ja-JP',    // Japanese (alternative)
+    'CN': 'zh-CN',    // Chinese (user uses CN, Amazon uses zh-CN)
+    'ZH': 'zh-CN',    // Chinese (alternative)
+    'AR': 'ar-AE',    // Arabic (UAE)
+    'HI': 'hi-IN',    // Hindi
+    // US English variant
+    'EN-US': 'en-US',
+    'US': 'en-US'
   };
-  return localeMap[lang] || null;
+  return localeMap[lang] || localeMap[lang.toUpperCase()] || null;
 }
 
 /**
