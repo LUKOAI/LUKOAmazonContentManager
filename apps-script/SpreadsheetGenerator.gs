@@ -478,38 +478,332 @@ function generateAPlusBasicSheet(ss) {
   Logger.log('APlusBasic sheet generated');
 }
 
+/**
+ * Generate dynamic A+ Basic headers
+ * Each row represents ONE module (any type)
+ * Headers support ALL module types with all their specific fields
+ */
 function getAPlusBasicHeaders() {
-  const control = ['☑️ Export', 'ASIN', 'Module Number', 'Module Type'];
+  const control = ['☑️ Export', 'ASIN', 'Module Number', 'Module Type', 'contentReferenceKey'];
   const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
 
-  // Module 1: Company Logo
-  const m1 = [
-    'aplus_basic_m1_companyLogoImage_URL',
-    ...languages.map(lang => `aplus_basic_m1_companyDescription_${lang}`)
-  ];
+  // Dynamic module fields - supports modules 1-7 (Amazon max)
+  // Each module uses prefix: aplus_basic_m{N}_
+  // The module number in the row determines which prefix columns to use
+  const moduleFields = [];
 
-  // Module 2: Image Text Overlay
-  const m2 = [
-    'aplus_basic_m2_overlayImage_URL',
-    'aplus_basic_m2_overlayColorType',
-    ...languages.map(lang => `aplus_basic_m2_headline_${lang}`),
-    ...languages.map(lang => `aplus_basic_m2_body_${lang}`)
-  ];
+  for (let m = 1; m <= 7; m++) {
+    const prefix = `aplus_basic_m${m}_`;
 
-  // Module 3: Single Image Highlights
-  const m3 = [
-    'aplus_basic_m3_image_URL',
-    ...languages.map(lang => `aplus_basic_m3_headline_${lang}`),
-    ...languages.map(lang => `aplus_basic_m3_highlight1_${lang}`),
-    ...languages.map(lang => `aplus_basic_m3_highlight2_${lang}`),
-    ...languages.map(lang => `aplus_basic_m3_highlight3_${lang}`),
-    ...languages.map(lang => `aplus_basic_m3_highlight4_${lang}`)
-  ];
+    // Common fields for all module types
+    moduleFields.push(`${prefix}image_id`);
+    moduleFields.push(`${prefix}image_url`);
+    moduleFields.push(`${prefix}imagePositionType`);
+    moduleFields.push(`${prefix}overlayColorType`);
 
-  // Status
+    // Multi-language text fields
+    languages.forEach(lang => {
+      moduleFields.push(`${prefix}headline_${lang}`);
+      moduleFields.push(`${prefix}body_${lang}`);
+      moduleFields.push(`${prefix}subheadline_${lang}`);
+    });
+
+    // Block fields (for STANDARD_FOUR_IMAGE_TEXT, STANDARD_THREE_IMAGE_TEXT, etc.)
+    for (let b = 1; b <= 4; b++) {
+      moduleFields.push(`${prefix}image${b}_id`);
+      moduleFields.push(`${prefix}image${b}_url`);
+      languages.forEach(lang => {
+        moduleFields.push(`${prefix}block${b}_headline_${lang}`);
+        moduleFields.push(`${prefix}block${b}_body_${lang}`);
+      });
+    }
+
+    // Highlight fields (for STANDARD_SINGLE_IMAGE_HIGHLIGHTS, etc.)
+    for (let h = 1; h <= 8; h++) {
+      languages.forEach(lang => {
+        moduleFields.push(`${prefix}highlight${h}_${lang}`);
+      });
+    }
+
+    // Text block fields (for STANDARD_SINGLE_IMAGE_HIGHLIGHTS)
+    for (let t = 1; t <= 3; t++) {
+      languages.forEach(lang => {
+        moduleFields.push(`${prefix}textBlock${t}_headline_${lang}`);
+        moduleFields.push(`${prefix}textBlock${t}_body_${lang}`);
+      });
+    }
+
+    // Bullet fields (explicit bullets)
+    for (let bt = 1; bt <= 8; bt++) {
+      languages.forEach(lang => {
+        moduleFields.push(`${prefix}bullet${bt}_${lang}`);
+      });
+    }
+
+    // Spec fields (for STANDARD_TECH_SPECS, STANDARD_SINGLE_IMAGE_SPECS_DETAIL)
+    for (let s = 1; s <= 12; s++) {
+      languages.forEach(lang => {
+        moduleFields.push(`${prefix}spec${s}_name_${lang}`);
+        moduleFields.push(`${prefix}spec${s}_value_${lang}`);
+      });
+    }
+
+    // Company logo specific
+    moduleFields.push(`${prefix}companyLogo_id`);
+    moduleFields.push(`${prefix}companyLogo_url`);
+    languages.forEach(lang => {
+      moduleFields.push(`${prefix}companyDescription_${lang}`);
+    });
+
+    // Comparison table fields (product columns)
+    for (let p = 1; p <= 6; p++) {
+      moduleFields.push(`${prefix}productImage${p}_id`);
+      languages.forEach(lang => {
+        moduleFields.push(`${prefix}productName${p}_${lang}`);
+      });
+      for (let met = 1; met <= 10; met++) {
+        languages.forEach(lang => {
+          moduleFields.push(`${prefix}metric${met}_product${p}_${lang}`);
+        });
+      }
+    }
+
+    // Metric headings
+    for (let mh = 1; mh <= 10; mh++) {
+      languages.forEach(lang => {
+        moduleFields.push(`${prefix}metricHeading${mh}_${lang}`);
+      });
+    }
+  }
+
+  // Status columns
   const status = ['Status', 'ExportDateTime', 'ErrorMessage'];
 
-  return [...control, ...m1, ...m2, ...m3, ...status];
+  return [...control, ...moduleFields, ...status];
+}
+
+/**
+ * Get compact A+ Basic headers (only essential fields)
+ * Use this for smaller, more manageable spreadsheet
+ */
+function getAPlusBasicHeadersCompact() {
+  const control = ['☑️ Export', 'ASIN', 'Module Number', 'Module Type', 'contentReferenceKey'];
+  const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
+  const moduleFields = [];
+
+  for (let m = 1; m <= 7; m++) {
+    const prefix = `aplus_basic_m${m}_`;
+
+    // Essential image fields
+    moduleFields.push(`${prefix}image_id`);
+    for (let i = 1; i <= 4; i++) {
+      moduleFields.push(`${prefix}image${i}_id`);
+    }
+    moduleFields.push(`${prefix}imagePositionType`);
+
+    // Essential text fields (headline, body, blocks, highlights)
+    languages.forEach(lang => {
+      moduleFields.push(`${prefix}headline_${lang}`);
+      moduleFields.push(`${prefix}body_${lang}`);
+      for (let b = 1; b <= 4; b++) {
+        moduleFields.push(`${prefix}block${b}_headline_${lang}`);
+        moduleFields.push(`${prefix}block${b}_body_${lang}`);
+      }
+      for (let h = 1; h <= 4; h++) {
+        moduleFields.push(`${prefix}highlight${h}_${lang}`);
+      }
+    });
+  }
+
+  const status = ['Status', 'ExportDateTime', 'ErrorMessage'];
+  return [...control, ...moduleFields, ...status];
+}
+
+/**
+ * Add missing columns to existing APlusBasic sheet
+ * Use this to add specific columns without regenerating the entire sheet
+ */
+function addMissingAPlusColumns() {
+  const ui = SpreadsheetApp.getUi();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('APlusBasic');
+
+  if (!sheet) {
+    ui.alert('Error', 'APlusBasic sheet not found!', ui.ButtonSet.OK);
+    return;
+  }
+
+  const response = ui.prompt(
+    'Add Missing A+ Columns',
+    'Enter the module number (1-7) to add columns for:\n\n' +
+    'This will add all missing fields for that module.\n' +
+    'Your existing data will be preserved.',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() !== ui.Button.OK) return;
+
+  const moduleNum = parseInt(response.getResponseText());
+  if (isNaN(moduleNum) || moduleNum < 1 || moduleNum > 7) {
+    ui.alert('Error', 'Please enter a number between 1 and 7', ui.ButtonSet.OK);
+    return;
+  }
+
+  const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
+  const prefix = `aplus_basic_m${moduleNum}_`;
+
+  // Get existing headers
+  const existingHeaders = sheet.getRange(3, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const existingSet = new Set(existingHeaders);
+
+  // Define columns to add for this module
+  const columnsToAdd = [];
+
+  // Image fields
+  ['image_id', 'image_url', 'imagePositionType', 'overlayColorType'].forEach(field => {
+    const colName = prefix + field;
+    if (!existingSet.has(colName)) columnsToAdd.push(colName);
+  });
+
+  // Multi-image fields
+  for (let i = 1; i <= 4; i++) {
+    [`image${i}_id`, `image${i}_url`].forEach(field => {
+      const colName = prefix + field;
+      if (!existingSet.has(colName)) columnsToAdd.push(colName);
+    });
+  }
+
+  // Text fields per language
+  languages.forEach(lang => {
+    ['headline', 'body', 'subheadline'].forEach(field => {
+      const colName = `${prefix}${field}_${lang}`;
+      if (!existingSet.has(colName)) columnsToAdd.push(colName);
+    });
+
+    // Block fields
+    for (let b = 1; b <= 4; b++) {
+      [`block${b}_headline`, `block${b}_body`].forEach(field => {
+        const colName = `${prefix}${field}_${lang}`;
+        if (!existingSet.has(colName)) columnsToAdd.push(colName);
+      });
+    }
+
+    // Highlight fields
+    for (let h = 1; h <= 8; h++) {
+      const colName = `${prefix}highlight${h}_${lang}`;
+      if (!existingSet.has(colName)) columnsToAdd.push(colName);
+    }
+
+    // TextBlock fields
+    for (let t = 1; t <= 3; t++) {
+      [`textBlock${t}_headline`, `textBlock${t}_body`].forEach(field => {
+        const colName = `${prefix}${field}_${lang}`;
+        if (!existingSet.has(colName)) columnsToAdd.push(colName);
+      });
+    }
+  });
+
+  if (columnsToAdd.length === 0) {
+    ui.alert('Info', `All columns for module ${moduleNum} already exist!`, ui.ButtonSet.OK);
+    return;
+  }
+
+  // Find Status column position to insert before it
+  const statusIndex = existingHeaders.indexOf('Status');
+  const insertPosition = statusIndex > 0 ? statusIndex + 1 : sheet.getLastColumn() + 1;
+
+  // Insert new columns
+  sheet.insertColumnsAfter(insertPosition - 1, columnsToAdd.length);
+
+  // Set headers for new columns
+  sheet.getRange(3, insertPosition, 1, columnsToAdd.length).setValues([columnsToAdd]);
+  sheet.getRange(3, insertPosition, 1, columnsToAdd.length)
+    .setFontWeight('bold')
+    .setBackground('#8E24AA')
+    .setFontColor('#FFFFFF')
+    .setWrap(true);
+
+  ui.alert('Success', `Added ${columnsToAdd.length} columns for module ${moduleNum}:\n\n` +
+    columnsToAdd.slice(0, 10).join('\n') + (columnsToAdd.length > 10 ? '\n...' : ''), ui.ButtonSet.OK);
+
+  Logger.log(`Added ${columnsToAdd.length} columns for module ${moduleNum}`);
+}
+
+/**
+ * Quick add essential columns for a module
+ * Adds only the most commonly used fields
+ */
+function addEssentialAPlusColumns() {
+  const ui = SpreadsheetApp.getUi();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('APlusBasic');
+
+  if (!sheet) {
+    ui.alert('Error', 'APlusBasic sheet not found!', ui.ButtonSet.OK);
+    return;
+  }
+
+  const response = ui.prompt(
+    'Add Essential A+ Columns',
+    'Enter module number (1-7) and language (e.g., "2 EN" or "1 DE"):\n\n' +
+    'This adds headline, body, block1-4 headline/body for that module and language.',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() !== ui.Button.OK) return;
+
+  const parts = response.getResponseText().trim().split(/\s+/);
+  const moduleNum = parseInt(parts[0]);
+  const lang = (parts[1] || 'EN').toUpperCase();
+
+  if (isNaN(moduleNum) || moduleNum < 1 || moduleNum > 7) {
+    ui.alert('Error', 'Invalid module number. Use 1-7.', ui.ButtonSet.OK);
+    return;
+  }
+
+  if (!['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'].includes(lang)) {
+    ui.alert('Error', 'Invalid language. Use: DE, EN, FR, IT, ES, NL, PL, SE', ui.ButtonSet.OK);
+    return;
+  }
+
+  const prefix = `aplus_basic_m${moduleNum}_`;
+  const existingHeaders = sheet.getRange(3, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const existingSet = new Set(existingHeaders);
+
+  // Essential columns only
+  const essentialFields = [
+    `${prefix}image_id`,
+    `${prefix}image1_id`, `${prefix}image2_id`, `${prefix}image3_id`, `${prefix}image4_id`,
+    `${prefix}imagePositionType`,
+    `${prefix}headline_${lang}`,
+    `${prefix}body_${lang}`,
+    `${prefix}block1_headline_${lang}`, `${prefix}block1_body_${lang}`,
+    `${prefix}block2_headline_${lang}`, `${prefix}block2_body_${lang}`,
+    `${prefix}block3_headline_${lang}`, `${prefix}block3_body_${lang}`,
+    `${prefix}block4_headline_${lang}`, `${prefix}block4_body_${lang}`,
+    `${prefix}highlight1_${lang}`, `${prefix}highlight2_${lang}`,
+    `${prefix}highlight3_${lang}`, `${prefix}highlight4_${lang}`
+  ];
+
+  const columnsToAdd = essentialFields.filter(col => !existingSet.has(col));
+
+  if (columnsToAdd.length === 0) {
+    ui.alert('Info', `All essential columns for module ${moduleNum} (${lang}) already exist!`, ui.ButtonSet.OK);
+    return;
+  }
+
+  const statusIndex = existingHeaders.indexOf('Status');
+  const insertPosition = statusIndex > 0 ? statusIndex + 1 : sheet.getLastColumn() + 1;
+
+  sheet.insertColumnsAfter(insertPosition - 1, columnsToAdd.length);
+  sheet.getRange(3, insertPosition, 1, columnsToAdd.length).setValues([columnsToAdd]);
+  sheet.getRange(3, insertPosition, 1, columnsToAdd.length)
+    .setFontWeight('bold')
+    .setBackground('#8E24AA')
+    .setFontColor('#FFFFFF')
+    .setWrap(true);
+
+  ui.alert('Success', `Added ${columnsToAdd.length} columns for module ${moduleNum} (${lang})`, ui.ButtonSet.OK);
 }
 
 // ========================================

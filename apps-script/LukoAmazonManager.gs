@@ -226,6 +226,8 @@ function onOpen() {
       .addSeparator()
       .addItem('🎨 Generate Spreadsheet', 'lukoGenerateFullSpreadsheet')
       .addItem('🔧 Regenerate Config Only', 'lukoRegenerateConfigOnly')
+      .addItem('➕ Add A+ Module Columns', 'addMissingAPlusColumns')
+      .addItem('➕ Add Essential A+ Columns', 'addEssentialAPlusColumns')
       .addSeparator()
       .addItem('📋 Setup Google Forms Import', 'showGoogleFormsSetupInstructions')
       .addSeparator()
