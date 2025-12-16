@@ -1707,10 +1707,30 @@ function publishMultiModuleAPlusContent(modules, contentType, exportMode) {
 
     const accessToken = getActiveAccessToken();
 
-    // Get first language to determine locale (all modules should use same language)
-    const firstModule = modules[0].data;
-    const firstLang = Object.keys(firstModule.moduleContent)[0];
-    const locale = convertMarketplaceToLocale(marketplace);
+    // Detect language with MOST content across all modules
+    let bestLang = 'EN';
+    let maxFields = 0;
+
+    for (const m of modules) {
+      const moduleContent = m.data.moduleContent || {};
+      for (const lang of Object.keys(moduleContent)) {
+        const langData = moduleContent[lang] || {};
+        let fieldCount = 0;
+        for (const key in langData) {
+          if (langData[key] && langData[key].toString().trim() !== '') {
+            fieldCount++;
+          }
+        }
+        if (fieldCount > maxFields) {
+          maxFields = fieldCount;
+          bestLang = lang;
+        }
+      }
+    }
+
+    Logger.log(`✅ Best language detected: "${bestLang}" with ${maxFields} fields`);
+    const locale = convertLanguageToLocale(bestLang, marketplace) || convertMarketplaceToLocale(marketplace);
+    Logger.log(`📍 Locale: "${bestLang}" → "${locale}"`);
 
     // Build content document with ALL modules
     const contentRefKey = `${asin}_complete_${Date.now()}`;
