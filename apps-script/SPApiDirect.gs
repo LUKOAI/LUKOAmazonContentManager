@@ -529,9 +529,31 @@ function publishAPlusContentDirect(aplusData, marketplace, marketplaceConfig) {
  * Build A+ Content document from module data
  */
 function buildAPlusContentDocument(aplusData, marketplace) {
-  // Get the first language from moduleContent (since locale is at document level)
-  const firstLang = Object.keys(aplusData.moduleContent)[0];
-  const content = aplusData.moduleContent[firstLang];
+  // Detect the language with MOST content (not just first alphabetical key!)
+  const moduleContentKeys = Object.keys(aplusData.moduleContent || {});
+  let bestLang = moduleContentKeys[0] || 'DE';
+  let maxFields = 0;
+
+  for (const lang of moduleContentKeys) {
+    const langData = aplusData.moduleContent[lang] || {};
+    // Count non-empty fields
+    let fieldCount = 0;
+    for (const key in langData) {
+      if (langData[key] && langData[key].toString().trim() !== '') {
+        fieldCount++;
+      }
+    }
+    Logger.log(`🔍 Language "${lang}" has ${fieldCount} non-empty fields`);
+    if (fieldCount > maxFields) {
+      maxFields = fieldCount;
+      bestLang = lang;
+    }
+  }
+
+  const firstLang = bestLang;
+  const content = aplusData.moduleContent[firstLang] || {};
+
+  Logger.log(`✅ Best language detected: "${firstLang}" with ${maxFields} fields (from: ${moduleContentKeys.join(', ')})`);
 
   // Generate unique content reference key
   const contentRefKey = `${aplusData.asin}_module${aplusData.moduleNumber}_${Date.now()}`;
@@ -542,7 +564,7 @@ function buildAPlusContentDocument(aplusData, marketplace) {
 
   // Use content language for locale detection, fallback to marketplace if not detected
   const detectedLocale = convertLanguageToLocale(firstLang, marketplace) || convertMarketplaceToLocale(marketplace);
-  Logger.log(`📍 Locale detection: Content language="${firstLang}" → Locale="${detectedLocale}" (marketplace=${marketplace})`);
+  Logger.log(`📍 Locale: "${firstLang}" → "${detectedLocale}" (marketplace=${marketplace})`);
 
   const contentDocument = {
     name: contentRefKey,
