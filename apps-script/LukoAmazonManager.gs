@@ -333,6 +333,8 @@ function onOpen() {
       .addItem('➕ Add Missing A+ Columns', 'addMissingAPlusBasicColumns')
       .addItem('➕ Add Essential A+ Columns...', 'addEssentialAPlusColumns')
       .addSeparator()
+      .addItem('👀 Generate A+ Preview (HTML)', 'lukoGenerateAPlusPreview')
+      .addSeparator()
       .addItem('Translate Content', 'lukoTranslateContent')
       .addItem('Generate Variants', 'lukoGenerateVariants')
       .addSeparator()

@@ -1,0 +1,976 @@
+/**
+ * A+ Content Preview Generator
+ *
+ * Generates HTML preview of A+ Content that looks like Amazon's preview
+ * Saves to Google Drive and returns shareable link
+ */
+
+/**
+ * Generate A+ Preview for selected ASIN
+ * Menu: NetAnaliza Manager → Tools → Generate A+ Preview
+ */
+function lukoGenerateAPlusPreview() {
+  const ui = SpreadsheetApp.getUi();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('APlusBasic');
+
+  if (!sheet) {
+    ui.alert('Error', 'APlusBasic sheet not found!', ui.ButtonSet.OK);
+    return;
+  }
+
+  // Get selected rows with checkbox
+  const selectedRows = getSelectedCheckboxRows(sheet);
+
+  if (selectedRows.length === 0) {
+    ui.alert('No Selection', 'Please check ☑️ Export for rows you want to preview.', ui.ButtonSet.OK);
+    return;
+  }
+
+  // Group by ASIN
+  const asinGroups = {};
+  const headers = sheet.getRange(3, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+  for (const row of selectedRows) {
+    const values = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const asin = getColumnValue(values, headers, 'ASIN');
+
+    if (!asin) continue;
+
+    if (!asinGroups[asin]) {
+      asinGroups[asin] = [];
+    }
+
+    asinGroups[asin].push({
+      row: row,
+      data: extractModuleDataForPreview(values, headers)
+    });
+  }
+
+  const asinCount = Object.keys(asinGroups).length;
+
+  if (asinCount === 0) {
+    ui.alert('Error', 'No valid ASINs found in selected rows.', ui.ButtonSet.OK);
+    return;
+  }
+
+  showProgress(`Generating preview for ${asinCount} ASIN(s)...`);
+
+  try {
+    const results = [];
+
+    for (const asin of Object.keys(asinGroups)) {
+      const modules = asinGroups[asin];
+
+      // Sort modules by module number
+      modules.sort((a, b) => (a.data.moduleNumber || 0) - (b.data.moduleNumber || 0));
+
+      // Generate HTML preview
+      const html = generateAPlusHTML(asin, modules);
+
+      // Save to Google Drive
+      const file = saveHTMLToDrive(asin, html);
+      const fileUrl = file.getUrl();
+
+      // Update the first row of this ASIN with the preview link
+      const previewColIndex = headers.indexOf('PreviewURL');
+      if (previewColIndex >= 0) {
+        sheet.getRange(modules[0].row, previewColIndex + 1).setValue(fileUrl);
+      }
+
+      results.push({
+        asin: asin,
+        moduleCount: modules.length,
+        url: fileUrl
+      });
+
+      Logger.log(`Generated preview for ${asin}: ${fileUrl}`);
+    }
+
+    // Show results
+    let message = `Generated ${results.length} preview(s):\n\n`;
+    for (const r of results) {
+      message += `${r.asin} (${r.moduleCount} modules)\n`;
+    }
+    message += `\nFiles saved to Google Drive folder: LUKO-A+-Previews`;
+
+    ui.alert('Preview Generated!', message, ui.ButtonSet.OK);
+
+  } catch (error) {
+    ui.alert('Error', error.message, ui.ButtonSet.OK);
+    Logger.log('Error in lukoGenerateAPlusPreview: ' + error.message);
+  }
+}
+
+/**
+ * Extract module data for preview from row values
+ */
+function extractModuleDataForPreview(values, headers) {
+  const data = {
+    moduleNumber: getColumnValue(values, headers, 'Module Number'),
+    moduleType: getColumnValue(values, headers, 'Module Type'),
+    marketplace: getColumnValue(values, headers, 'Marketplace') || 'DE',
+    language: getColumnValue(values, headers, 'Language') || 'DE'
+  };
+
+  // Find the module prefix (m1_, m2_, etc.)
+  const prefix = `m${data.moduleNumber}_`;
+
+  // Extract all fields for this module
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i];
+    if (header && header.startsWith(prefix)) {
+      const fieldName = header.substring(prefix.length);
+      const value = values[i];
+      if (value !== null && value !== undefined && value !== '') {
+        data[fieldName] = value;
+      }
+    }
+  }
+
+  return data;
+}
+
+/**
+ * Generate complete HTML document for A+ Content preview
+ */
+function generateAPlusHTML(asin, modules) {
+  const marketplace = modules[0]?.data?.marketplace || 'DE';
+  const language = modules[0]?.data?.language || 'DE';
+
+  let modulesHTML = '';
+
+  for (const module of modules) {
+    modulesHTML += generateModuleHTML(module.data);
+  }
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A+ Content Preview - ${asin}</title>
+  <style>
+    ${getPreviewCSS()}
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <div class="preview-header">
+      <div class="preview-badge">A+ Content Preview</div>
+      <div class="preview-info">
+        <span class="asin">ASIN: ${asin}</span>
+        <span class="marketplace">${marketplace}</span>
+        <span class="language">${language}</span>
+      </div>
+      <div class="preview-note">This is a preview. Actual appearance may vary slightly on Amazon.</div>
+    </div>
+
+    <div class="aplus-content">
+      ${modulesHTML}
+    </div>
+
+    <div class="preview-footer">
+      <div class="generated-by">Generated by LUKO Amazon Content Manager</div>
+      <div class="timestamp">${new Date().toLocaleString()}</div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * Generate HTML for a single module based on its type
+ */
+function generateModuleHTML(data) {
+  const moduleType = data.moduleType || 'STANDARD_TEXT';
+
+  switch (moduleType) {
+    case 'STANDARD_TEXT':
+      return generateStandardTextHTML(data);
+
+    case 'STANDARD_SINGLE_SIDE_IMAGE':
+      return generateSingleSideImageHTML(data);
+
+    case 'STANDARD_HEADER_IMAGE_TEXT':
+      return generateHeaderImageTextHTML(data);
+
+    case 'STANDARD_COMPANY_LOGO':
+      return generateCompanyLogoHTML(data);
+
+    case 'STANDARD_SINGLE_IMAGE_HIGHLIGHTS':
+      return generateSingleImageHighlightsHTML(data);
+
+    case 'STANDARD_FOUR_IMAGE_TEXT':
+    case 'STANDARD_FOUR_IMAGE_TEXT_QUADRANT':
+      return generateFourImageTextHTML(data);
+
+    case 'STANDARD_THREE_IMAGE_TEXT':
+      return generateThreeImageTextHTML(data);
+
+    case 'STANDARD_MULTIPLE_IMAGE_TEXT':
+      return generateMultipleImageTextHTML(data);
+
+    case 'STANDARD_TECH_SPECS':
+    case 'STANDARD_SINGLE_IMAGE_SPECS_DETAIL':
+      return generateTechSpecsHTML(data);
+
+    case 'STANDARD_COMPARISON_TABLE':
+      return generateComparisonTableHTML(data);
+
+    default:
+      return generateGenericModuleHTML(data);
+  }
+}
+
+/**
+ * STANDARD_TEXT module - Simple text block
+ */
+function generateStandardTextHTML(data) {
+  const headline = data.headline || '';
+  const body = formatTextWithStyles(data.body || '');
+
+  return `
+    <div class="module standard-text">
+      ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
+      <div class="module-body">${body}</div>
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_SINGLE_SIDE_IMAGE - Image on left or right with text
+ */
+function generateSingleSideImageHTML(data) {
+  const headline = data.headline || '';
+  const body = formatTextWithStyles(data.body || '');
+  const imageUrl = data.image_url || getPlaceholderImage(300, 300);
+  const imageAlt = data.image_altText || 'Product image';
+  const position = (data.imagePositionType || 'LEFT').toLowerCase();
+
+  return `
+    <div class="module single-side-image ${position}">
+      <div class="image-container">
+        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" onerror="this.src='${getPlaceholderImage(300, 300)}'">
+      </div>
+      <div class="text-container">
+        ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
+        <div class="module-body">${body}</div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_HEADER_IMAGE_TEXT - Full-width header image with text overlay
+ */
+function generateHeaderImageTextHTML(data) {
+  const headline = data.headline || '';
+  const body = formatTextWithStyles(data.body || '');
+  const imageUrl = data.image_url || getPlaceholderImage(970, 600);
+  const imageAlt = data.image_altText || 'Header image';
+
+  return `
+    <div class="module header-image-text">
+      <div class="header-image">
+        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" onerror="this.src='${getPlaceholderImage(970, 600)}'">
+      </div>
+      <div class="header-text">
+        ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
+        <div class="module-body">${body}</div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_COMPANY_LOGO - Company logo with description
+ */
+function generateCompanyLogoHTML(data) {
+  const headline = data.headline || '';
+  const body = formatTextWithStyles(data.body || data.companyDescription || '');
+  const logoUrl = data.companyLogo_url || data.image_url || getPlaceholderImage(600, 180);
+
+  return `
+    <div class="module company-logo">
+      <div class="logo-container">
+        <img src="${escapeHtml(logoUrl)}" alt="Company logo" onerror="this.src='${getPlaceholderImage(600, 180)}'">
+      </div>
+      ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
+      <div class="module-body">${body}</div>
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_SINGLE_IMAGE_HIGHLIGHTS - Image with bullet points
+ */
+function generateSingleImageHighlightsHTML(data) {
+  const headline = data.headline || '';
+  const imageUrl = data.image_url || getPlaceholderImage(300, 300);
+
+  // Collect highlights
+  const highlights = [];
+  for (let i = 1; i <= 5; i++) {
+    const h = data[`highlight${i}`];
+    if (h) highlights.push(h);
+  }
+
+  return `
+    <div class="module single-image-highlights">
+      <div class="image-container">
+        <img src="${escapeHtml(imageUrl)}" alt="Product image" onerror="this.src='${getPlaceholderImage(300, 300)}'">
+      </div>
+      <div class="highlights-container">
+        ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
+        <ul class="highlights-list">
+          ${highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_FOUR_IMAGE_TEXT - Four images with text
+ */
+function generateFourImageTextHTML(data) {
+  const headline = data.headline || '';
+  const blocks = [];
+
+  for (let i = 1; i <= 4; i++) {
+    blocks.push({
+      imageUrl: data[`image${i}_url`] || getPlaceholderImage(135, 135),
+      headline: data[`block${i}_headline`] || '',
+      body: data[`block${i}_body`] || ''
+    });
+  }
+
+  return `
+    <div class="module four-image-text">
+      ${headline ? `<h2 class="module-headline center">${escapeHtml(headline)}</h2>` : ''}
+      <div class="four-grid">
+        ${blocks.map(b => `
+          <div class="grid-item">
+            <img src="${escapeHtml(b.imageUrl)}" alt="Feature image" onerror="this.src='${getPlaceholderImage(135, 135)}'">
+            ${b.headline ? `<h3>${escapeHtml(b.headline)}</h3>` : ''}
+            ${b.body ? `<p>${escapeHtml(b.body)}</p>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_THREE_IMAGE_TEXT - Three images with text
+ */
+function generateThreeImageTextHTML(data) {
+  const headline = data.headline || '';
+  const blocks = [];
+
+  for (let i = 1; i <= 3; i++) {
+    blocks.push({
+      imageUrl: data[`image${i}_url`] || getPlaceholderImage(300, 300),
+      headline: data[`block${i}_headline`] || '',
+      body: data[`block${i}_body`] || ''
+    });
+  }
+
+  return `
+    <div class="module three-image-text">
+      ${headline ? `<h2 class="module-headline center">${escapeHtml(headline)}</h2>` : ''}
+      <div class="three-grid">
+        ${blocks.map(b => `
+          <div class="grid-item">
+            <img src="${escapeHtml(b.imageUrl)}" alt="Feature image" onerror="this.src='${getPlaceholderImage(300, 300)}'">
+            ${b.headline ? `<h3>${escapeHtml(b.headline)}</h3>` : ''}
+            ${b.body ? `<p>${escapeHtml(b.body)}</p>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_MULTIPLE_IMAGE_TEXT - Multiple images in a row
+ */
+function generateMultipleImageTextHTML(data) {
+  const headline = data.headline || '';
+  const body = formatTextWithStyles(data.body || '');
+  const images = [];
+
+  for (let i = 1; i <= 8; i++) {
+    const url = data[`image${i}_url`];
+    if (url) {
+      images.push({
+        url: url,
+        alt: data[`image${i}_altText`] || `Image ${i}`
+      });
+    }
+  }
+
+  return `
+    <div class="module multiple-image-text">
+      ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
+      <div class="image-row">
+        ${images.map(img => `
+          <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt)}" onerror="this.src='${getPlaceholderImage(300, 300)}'">
+        `).join('')}
+      </div>
+      ${body ? `<div class="module-body">${body}</div>` : ''}
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_TECH_SPECS - Technical specifications table
+ */
+function generateTechSpecsHTML(data) {
+  const headline = data.headline || 'Technical Specifications';
+  const specs = [];
+
+  for (let i = 1; i <= 12; i++) {
+    const name = data[`spec${i}_name`];
+    const value = data[`spec${i}_value`];
+    if (name && value) {
+      specs.push({ name, value });
+    }
+  }
+
+  return `
+    <div class="module tech-specs">
+      <h2 class="module-headline">${escapeHtml(headline)}</h2>
+      <table class="specs-table">
+        <tbody>
+          ${specs.map(s => `
+            <tr>
+              <th>${escapeHtml(s.name)}</th>
+              <td>${escapeHtml(s.value)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_COMPARISON_TABLE - Product comparison table
+ */
+function generateComparisonTableHTML(data) {
+  const headline = data.headline || 'Product Comparison';
+
+  // Collect products
+  const products = [];
+  for (let i = 1; i <= 4; i++) {
+    const title = data[`product${i}_title`];
+    if (title) {
+      products.push({
+        title: title,
+        asin: data[`product${i}_asin`] || '',
+        highlight: data[`product${i}_highlight`] === 'TRUE' || data[`product${i}_highlight`] === true
+      });
+    }
+  }
+
+  // Collect metrics
+  const metrics = [];
+  for (let i = 1; i <= 5; i++) {
+    const name = data[`metric${i}_name`];
+    if (name) {
+      const values = [];
+      for (let j = 1; j <= 4; j++) {
+        values.push(data[`metric${i}_product${j}`] || '');
+      }
+      metrics.push({ name, values });
+    }
+  }
+
+  return `
+    <div class="module comparison-table">
+      <h2 class="module-headline center">${escapeHtml(headline)}</h2>
+      <table class="comparison">
+        <thead>
+          <tr>
+            <th></th>
+            ${products.map(p => `<th class="${p.highlight ? 'highlight' : ''}">${escapeHtml(p.title)}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${metrics.map(m => `
+            <tr>
+              <th>${escapeHtml(m.name)}</th>
+              ${m.values.slice(0, products.length).map((v, i) => `
+                <td class="${products[i]?.highlight ? 'highlight' : ''}">${escapeHtml(v)}</td>
+              `).join('')}
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+/**
+ * Generic module for unknown types
+ */
+function generateGenericModuleHTML(data) {
+  const headline = data.headline || '';
+  const body = formatTextWithStyles(data.body || '');
+  const imageUrl = data.image_url;
+
+  return `
+    <div class="module generic">
+      <div class="module-type-badge">${escapeHtml(data.moduleType || 'Unknown')}</div>
+      ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="Module image" class="generic-image" onerror="this.src='${getPlaceholderImage(300, 300)}'">` : ''}
+      ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
+      ${body ? `<div class="module-body">${body}</div>` : ''}
+    </div>
+  `;
+}
+
+/**
+ * Format text with markdown-like styles to HTML
+ */
+function formatTextWithStyles(text) {
+  if (!text) return '';
+
+  let html = escapeHtml(text);
+
+  // Bold: **text** or __text__
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+
+  // Italic: *text* or _text_
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+  // Line breaks
+  html = html.replace(/\n/g, '<br>');
+
+  // Bullet lists: - item
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+
+  return html;
+}
+
+/**
+ * Get placeholder image URL
+ */
+function getPlaceholderImage(width, height) {
+  return `https://via.placeholder.com/${width}x${height}/f5f5f5/333333?text=${width}x${height}`;
+}
+
+/**
+ * Escape HTML special characters
+ */
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Get CSS styles for preview
+ */
+function getPreviewCSS() {
+  return `
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Amazon Ember", Arial, sans-serif;
+      background: #f5f5f5;
+      color: #0F1111;
+      line-height: 1.5;
+    }
+
+    .preview-container {
+      max-width: 970px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .preview-header {
+      background: linear-gradient(135deg, #232f3e 0%, #37475a 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .preview-badge {
+      display: inline-block;
+      background: #ff9900;
+      color: #0F1111;
+      padding: 5px 15px;
+      border-radius: 3px;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .preview-info {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 10px 0;
+    }
+
+    .preview-info span {
+      background: rgba(255,255,255,0.1);
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+
+    .preview-note {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-top: 10px;
+    }
+
+    .aplus-content {
+      padding: 0;
+    }
+
+    .module {
+      padding: 30px 20px;
+      border-bottom: 1px solid #e7e7e7;
+    }
+
+    .module:last-child {
+      border-bottom: none;
+    }
+
+    .module-headline {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #0F1111;
+    }
+
+    .module-headline.center {
+      text-align: center;
+    }
+
+    .module-body {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .module-body ul {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+
+    .module-body li {
+      margin: 5px 0;
+    }
+
+    /* Single Side Image */
+    .single-side-image {
+      display: flex;
+      gap: 30px;
+      align-items: flex-start;
+    }
+
+    .single-side-image.right {
+      flex-direction: row-reverse;
+    }
+
+    .single-side-image .image-container {
+      flex: 0 0 300px;
+    }
+
+    .single-side-image .image-container img {
+      width: 100%;
+      height: auto;
+    }
+
+    .single-side-image .text-container {
+      flex: 1;
+    }
+
+    /* Header Image Text */
+    .header-image-text .header-image {
+      margin: -30px -20px 20px -20px;
+    }
+
+    .header-image-text .header-image img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Company Logo */
+    .company-logo {
+      text-align: center;
+    }
+
+    .company-logo .logo-container {
+      margin-bottom: 20px;
+    }
+
+    .company-logo .logo-container img {
+      max-width: 600px;
+      max-height: 180px;
+    }
+
+    /* Single Image Highlights */
+    .single-image-highlights {
+      display: flex;
+      gap: 30px;
+      align-items: flex-start;
+    }
+
+    .single-image-highlights .image-container {
+      flex: 0 0 300px;
+    }
+
+    .single-image-highlights .image-container img {
+      width: 100%;
+      height: auto;
+    }
+
+    .highlights-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .highlights-list li {
+      padding: 10px 0 10px 30px;
+      position: relative;
+      border-bottom: 1px solid #eee;
+    }
+
+    .highlights-list li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #007600;
+      font-weight: bold;
+    }
+
+    /* Grid layouts */
+    .four-grid, .three-grid {
+      display: grid;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .four-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .three-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .grid-item {
+      text-align: center;
+    }
+
+    .grid-item img {
+      width: 100%;
+      height: auto;
+      margin-bottom: 10px;
+    }
+
+    .grid-item h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .grid-item p {
+      font-size: 12px;
+      color: #555;
+    }
+
+    /* Image row */
+    .image-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .image-row img {
+      max-width: 200px;
+      height: auto;
+    }
+
+    /* Tech Specs */
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    .specs-table th, .specs-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e7e7e7;
+    }
+
+    .specs-table th {
+      background: #f7f7f7;
+      font-weight: 600;
+      width: 40%;
+    }
+
+    /* Comparison Table */
+    .comparison {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .comparison th, .comparison td {
+      padding: 12px;
+      text-align: center;
+      border: 1px solid #e7e7e7;
+    }
+
+    .comparison thead th {
+      background: #f7f7f7;
+      font-weight: 600;
+    }
+
+    .comparison tbody th {
+      text-align: left;
+      background: #fafafa;
+    }
+
+    .comparison .highlight {
+      background: #fffbea;
+    }
+
+    .comparison thead .highlight {
+      background: #ff9900;
+      color: white;
+    }
+
+    /* Generic module */
+    .generic {
+      background: #fafafa;
+    }
+
+    .module-type-badge {
+      display: inline-block;
+      background: #232f3e;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      margin-bottom: 10px;
+    }
+
+    .generic-image {
+      max-width: 100%;
+      height: auto;
+      margin: 15px 0;
+    }
+
+    /* Footer */
+    .preview-footer {
+      background: #f7f7f7;
+      padding: 15px 20px;
+      text-align: center;
+      font-size: 11px;
+      color: #666;
+      border-top: 1px solid #e7e7e7;
+    }
+
+    .generated-by {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .single-side-image,
+      .single-image-highlights {
+        flex-direction: column;
+      }
+
+      .single-side-image .image-container,
+      .single-image-highlights .image-container {
+        flex: none;
+        width: 100%;
+      }
+
+      .four-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .three-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      .preview-header,
+      .preview-footer {
+        background: white !important;
+        color: black !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .preview-badge {
+        border: 2px solid #ff9900;
+        background: white !important;
+        color: #ff9900 !important;
+      }
+    }
+  `;
+}
+
+/**
+ * Save HTML content to Google Drive
+ */
+function saveHTMLToDrive(asin, htmlContent) {
+  // Get or create folder
+  const folderName = 'LUKO-A+-Previews';
+  let folder;
+
+  const folders = DriveApp.getFoldersByName(folderName);
+  if (folders.hasNext()) {
+    folder = folders.next();
+  } else {
+    folder = DriveApp.createFolder(folderName);
+  }
+
+  // Create file name with timestamp
+  const timestamp = Utilities.formatDate(new Date(), 'Europe/Berlin', 'yyyy-MM-dd_HH-mm');
+  const fileName = `A+_Preview_${asin}_${timestamp}.html`;
+
+  // Check if file exists and delete old one
+  const existingFiles = folder.getFilesByName(fileName);
+  while (existingFiles.hasNext()) {
+    existingFiles.next().setTrashed(true);
+  }
+
+  // Create new file
+  const blob = Utilities.newBlob(htmlContent, 'text/html', fileName);
+  const file = folder.createFile(blob);
+
+  // Make it viewable by anyone with link
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  return file;
+}
