@@ -445,24 +445,54 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   }
 
   // 6. STANDARD_SINGLE_IMAGE_HIGHLIGHTS
-  // Structure: image, headline, textBlock1, textBlock2, textBlock3, bulletedListBlock
-  // bulletedListBlock is an array of objects with headline property
+  // Amazon API structure: image, headline, textBlock1, textBlock2, textBlock3, bulletedListBlock
+  // Each textBlock is StandardTextBlock: { headline?: TextComponent, body?: ParagraphComponent }
+  // bulletedListBlock is an array of StandardTextPairBlock: { headline?: TextComponent, body?: ParagraphComponent }
   else if (aplusData.moduleType === 'STANDARD_SINGLE_IMAGE_HIGHLIGHTS') {
     module.standardSingleImageHighlights = {};
 
+    // 1. Image (required)
     const imageId = getImageId('image');
     const imageObj = buildImageObject(imageId, 'image');
     if (imageObj) {
       module.standardSingleImageHighlights.image = imageObj;
     }
 
+    // 2. Headline (optional, but recommended)
     const headline = addTextComponent('headline', content.headline);
     if (headline) module.standardSingleImageHighlights.headline = headline;
 
-    // Add bullet points (highlights) directly at module level
-    // bulletedListBlock is an array of StandardTextPairBlock with headline property
+    // 3. Text blocks (optional) - for sub-headlines with descriptions
+    // textBlock1, textBlock2, textBlock3 are StandardTextBlock with optional headline and body
+    for (let i = 1; i <= 3; i++) {
+      const blockHeadline = content[`textBlock${i}_headline`] || content[`subHeadline${i}`] || content[`highlight${i}`];
+      const blockBody = content[`textBlock${i}_body`] || content[`description${i}`];
+
+      if (blockHeadline || blockBody) {
+        const textBlock = {};
+        if (blockHeadline) {
+          textBlock.headline = {
+            value: blockHeadline,
+            decoratorSet: []
+          };
+        }
+        if (blockBody) {
+          textBlock.body = {
+            textList: [{
+              value: blockBody,
+              decoratorSet: []
+            }]
+          };
+        }
+        module.standardSingleImageHighlights[`textBlock${i}`] = textBlock;
+      }
+    }
+
+    // 4. Bulleted list (optional) - array of StandardTextPairBlock
+    // NOTE: bulletedListBlock items can have headline and/or body
+    // Using highlights 4-8 for bullet points (after textBlocks use 1-3)
     const bullets = [];
-    for (let i = 1; i <= 8; i++) {  // API allows up to 8 bullets
+    for (let i = 4; i <= 8; i++) {
       const bulletText = content[`highlight${i}`];
       if (bulletText) {
         bullets.push({
@@ -473,9 +503,25 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
         });
       }
     }
+
+    // Also check for explicit bullet fields
+    for (let i = 1; i <= 8; i++) {
+      const bulletText = content[`bullet${i}`];
+      if (bulletText) {
+        bullets.push({
+          headline: {
+            value: bulletText,
+            decoratorSet: []
+          }
+        });
+      }
+    }
+
     if (bullets.length > 0) {
       module.standardSingleImageHighlights.bulletedListBlock = bullets;
     }
+
+    Logger.log(`STANDARD_SINGLE_IMAGE_HIGHLIGHTS built: image=${!!imageObj}, headline=${!!headline}, textBlocks=${Object.keys(module.standardSingleImageHighlights).filter(k => k.startsWith('textBlock')).length}, bullets=${bullets.length}`);
   }
 
   // 7. STANDARD_MULTIPLE_IMAGE_TEXT

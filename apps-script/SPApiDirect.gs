@@ -769,34 +769,36 @@ function createAPlusContent(contentDocument, contentReferenceKey, marketplaceCon
 
 /**
  * Convert marketplace code to locale
+ * NOTE: Amazon A+ Content API uses underscore format: de_DE (not de-DE)
  */
 function convertMarketplaceToLocale(marketplace) {
   const localeMap = {
-    'DE': 'de-DE',
-    'FR': 'fr-FR',
-    'IT': 'it-IT',
-    'ES': 'es-ES',
-    'UK': 'en-GB',
-    'NL': 'nl-NL',
-    'PL': 'pl-PL',
-    'SE': 'sv-SE'
+    'DE': 'de_DE',
+    'FR': 'fr_FR',
+    'IT': 'it_IT',
+    'ES': 'es_ES',
+    'UK': 'en_GB',
+    'NL': 'nl_NL',
+    'PL': 'pl_PL',
+    'SE': 'sv_SE'
   };
-  return localeMap[marketplace] || 'en-GB';
+  return localeMap[marketplace] || 'en_GB';
 }
 
 /**
  * Convert language code to locale for specific marketplace
+ * NOTE: Amazon A+ Content API uses underscore format: de_DE (not de-DE)
  */
 function convertLanguageToLocale(lang, marketplace) {
   const localeMap = {
-    'DE': 'de-DE',
-    'EN': 'en-GB',
-    'FR': 'fr-FR',
-    'IT': 'it-IT',
-    'ES': 'es-ES',
-    'NL': 'nl-NL',
-    'PL': 'pl-PL',
-    'SE': 'sv-SE'
+    'DE': 'de_DE',
+    'EN': 'en_GB',
+    'FR': 'fr_FR',
+    'IT': 'it_IT',
+    'ES': 'es_ES',
+    'NL': 'nl_NL',
+    'PL': 'pl_PL',
+    'SE': 'sv_SE'
   };
   return localeMap[lang] || null;
 }
