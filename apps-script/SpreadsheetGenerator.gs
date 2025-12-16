@@ -478,68 +478,134 @@ function generateAPlusBasicSheet(ss) {
   Logger.log('APlusBasic sheet generated');
 }
 
+/**
+ * NEW SIMPLIFIED COLUMN STRUCTURE
+ *
+ * One column per field (no language suffix)
+ * Marketplace + Language columns control where content is exported
+ *
+ * Text formatting supported via markers:
+ *   **bold**     → STYLE_BOLD
+ *   *italic*     → STYLE_ITALIC
+ *   _underline_  → STYLE_UNDERLINE
+ *   • bullet     → LIST_ITEM (or use - at start of line)
+ *   1. numbered  → LIST_ORDERED
+ */
 function getAPlusBasicHeaders() {
-  // Control columns - Marketplace and Language added after contentReferenceKey
-  const control = ['☑️ Export', 'ASIN', 'Module Number', 'Module Type', 'contentReferenceKey', 'Marketplace', 'Language'];
-  const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
+  // Control columns
+  const control = [
+    '☑️ Export',
+    'ASIN',
+    'Module Number',
+    'Module Type',
+    'contentReferenceKey',
+    'Marketplace',  // DE, UK, FR, IT, ES, NL, BE, PL, SE, IE, TR, AE, SA, EG, US, CA, MX, BR, JP, AU, SG, IN
+    'Language'      // DE, EN, FR, IT, ES, NL, PL, SV, PT, TR, CZ, DA, FI, JA, ZH, AR
+  ];
 
-  // Helper to generate fields for all languages
-  const langFields = (prefix, field) => languages.map(lang => `${prefix}${field}_${lang}`);
-
-  // Generate complete columns for each module (m1-m7)
-  // Each module can be used with ANY module type, so we include all possible fields
+  // Generate columns for each module slot (m1-m7)
+  // Each module can be ANY type, so include all possible fields
   const allModuleColumns = [];
 
   for (let m = 1; m <= 7; m++) {
-    const prefix = `aplus_basic_m${m}_`;
+    const p = `m${m}_`;  // Shorter prefix: m1_, m2_, etc.
 
-    // === TEXT CONTENT (all languages) ===
-    // headline - used by most modules
-    allModuleColumns.push(...langFields(prefix, 'headline'));
+    // ══════════════════════════════════════════════════════════════
+    // COMMON TEXT FIELDS (used by most modules)
+    // ══════════════════════════════════════════════════════════════
+    allModuleColumns.push(`${p}headline`);           // Main headline
+    allModuleColumns.push(`${p}subheadline`);        // Subheadline (Premium modules)
+    allModuleColumns.push(`${p}body`);               // Main body text
 
-    // body - used by STANDARD_TEXT, STANDARD_HEADER_IMAGE_TEXT, etc.
-    allModuleColumns.push(...langFields(prefix, 'body'));
+    // ══════════════════════════════════════════════════════════════
+    // MAIN IMAGE (STANDARD_HEADER_IMAGE_TEXT, STANDARD_SINGLE_SIDE_IMAGE, etc.)
+    // ══════════════════════════════════════════════════════════════
+    allModuleColumns.push(`${p}image_url`);          // Source URL for reference
+    allModuleColumns.push(`${p}image_id`);           // Amazon uploadDestinationId
+    allModuleColumns.push(`${p}image_altText`);      // Alt text
+    allModuleColumns.push(`${p}imagePositionType`);  // LEFT, RIGHT
 
-    // === MAIN IMAGE ===
-    allModuleColumns.push(`${prefix}image_url`);
-    allModuleColumns.push(`${prefix}image_id`);
-    allModuleColumns.push(`${prefix}image_altText`);
-    allModuleColumns.push(`${prefix}imagePositionType`); // LEFT, RIGHT
+    // ══════════════════════════════════════════════════════════════
+    // BACKGROUND IMAGE (PREMIUM_FULL_BACKGROUND_TEXT/IMAGE)
+    // ══════════════════════════════════════════════════════════════
+    allModuleColumns.push(`${p}backgroundImage_url`);
+    allModuleColumns.push(`${p}backgroundImage_id`);
+    allModuleColumns.push(`${p}backgroundImage_altText`);
+    allModuleColumns.push(`${p}positionType`);       // LEFT, CENTER, RIGHT
+    allModuleColumns.push(`${p}colorType`);          // LIGHT, DARK (overlay)
+    allModuleColumns.push(`${p}overlayColorType`);   // BLACK, WHITE (text overlay)
 
-    // === COMPANY LOGO (STANDARD_COMPANY_LOGO) ===
-    allModuleColumns.push(`${prefix}companyLogo_url`);
-    allModuleColumns.push(`${prefix}companyLogo_id`);
-    allModuleColumns.push(...langFields(prefix, 'companyDescription'));
+    // ══════════════════════════════════════════════════════════════
+    // COMPANY LOGO (STANDARD_COMPANY_LOGO)
+    // ══════════════════════════════════════════════════════════════
+    allModuleColumns.push(`${p}companyLogo_url`);
+    allModuleColumns.push(`${p}companyLogo_id`);
+    allModuleColumns.push(`${p}companyDescription`);
 
-    // === OVERLAY (STANDARD_IMAGE_TEXT_OVERLAY) ===
-    allModuleColumns.push(`${prefix}overlayColorType`); // BLACK, WHITE
-
-    // === HIGHLIGHTS (STANDARD_SINGLE_IMAGE_HIGHLIGHTS) ===
-    for (let h = 1; h <= 4; h++) {
-      allModuleColumns.push(...langFields(prefix, `highlight${h}`));
+    // ══════════════════════════════════════════════════════════════
+    // HIGHLIGHTS / BULLET POINTS (STANDARD_SINGLE_IMAGE_HIGHLIGHTS)
+    // ══════════════════════════════════════════════════════════════
+    for (let h = 1; h <= 5; h++) {
+      allModuleColumns.push(`${p}highlight${h}`);
     }
 
-    // === MULTIPLE IMAGES (STANDARD_FOUR_IMAGE_TEXT, STANDARD_THREE_IMAGE_TEXT, etc.) ===
-    for (let i = 1; i <= 4; i++) {
-      allModuleColumns.push(`${prefix}image${i}_url`);
-      allModuleColumns.push(`${prefix}image${i}_id`);
-      allModuleColumns.push(`${prefix}image${i}_altText`);
+    // ══════════════════════════════════════════════════════════════
+    // MULTIPLE IMAGES (up to 8 for Premium carousels)
+    // ══════════════════════════════════════════════════════════════
+    for (let i = 1; i <= 8; i++) {
+      allModuleColumns.push(`${p}image${i}_url`);
+      allModuleColumns.push(`${p}image${i}_id`);
+      allModuleColumns.push(`${p}image${i}_altText`);
     }
 
-    // === BLOCKS (STANDARD_FOUR_IMAGE_TEXT, etc.) - headline & body for each block ===
+    // ══════════════════════════════════════════════════════════════
+    // BLOCKS (STANDARD_FOUR_IMAGE_TEXT, STANDARD_THREE_IMAGE_TEXT, etc.)
+    // Each block has: headline, body
+    // ══════════════════════════════════════════════════════════════
     for (let b = 1; b <= 4; b++) {
-      allModuleColumns.push(...langFields(prefix, `block${b}_headline`));
-      allModuleColumns.push(...langFields(prefix, `block${b}_body`));
+      allModuleColumns.push(`${p}block${b}_headline`);
+      allModuleColumns.push(`${p}block${b}_body`);
     }
 
-    // === TEXT BLOCKS (STANDARD_SINGLE_IMAGE_HIGHLIGHTS textBlock1-3) ===
-    for (let t = 1; t <= 3; t++) {
-      allModuleColumns.push(...langFields(prefix, `textBlock${t}_headline`));
-      allModuleColumns.push(...langFields(prefix, `textBlock${t}_body`));
+    // ══════════════════════════════════════════════════════════════
+    // SPECS (STANDARD_TECH_SPECS, STANDARD_SINGLE_IMAGE_SPECS_DETAIL)
+    // Each spec has: name, value
+    // ══════════════════════════════════════════════════════════════
+    for (let s = 1; s <= 12; s++) {
+      allModuleColumns.push(`${p}spec${s}_name`);
+      allModuleColumns.push(`${p}spec${s}_value`);
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // COMPARISON TABLE (STANDARD_COMPARISON_TABLE) - simplified
+    // Up to 4 products, 5 metrics
+    // ══════════════════════════════════════════════════════════════
+    for (let c = 1; c <= 4; c++) {
+      allModuleColumns.push(`${p}product${c}_title`);
+      allModuleColumns.push(`${p}product${c}_asin`);
+      allModuleColumns.push(`${p}product${c}_image_id`);
+      allModuleColumns.push(`${p}product${c}_highlight`);  // TRUE/FALSE
+    }
+    // Comparison metrics (rows) - up to 5
+    for (let r = 1; r <= 5; r++) {
+      allModuleColumns.push(`${p}metric${r}_name`);
+      for (let c = 1; c <= 4; c++) {
+        allModuleColumns.push(`${p}metric${r}_product${c}`);
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // HOTSPOT (PREMIUM_HOTSPOT_IMAGE) - 4 hotspots
+    // ══════════════════════════════════════════════════════════════
+    for (let h = 1; h <= 4; h++) {
+      allModuleColumns.push(`${p}hotspot${h}_x`);
+      allModuleColumns.push(`${p}hotspot${h}_y`);
+      allModuleColumns.push(`${p}hotspot${h}_title`);
+      allModuleColumns.push(`${p}hotspot${h}_text`);
     }
   }
 
-  // Status columns
+  // Status columns at the end
   const status = ['Status', 'ExportDateTime', 'ErrorMessage'];
 
   return [...control, ...allModuleColumns, ...status];

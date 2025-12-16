@@ -537,8 +537,12 @@ function logOperation(operation, status, details) {
  * To run: Extensions → Apps Script → Select testFormImport → Run
  */
 function testFormImport() {
-  // Sample JSON matching the expected format
-  // NOTE: Marketplace and Language are now SEPARATE form fields, NOT in JSON
+  // Sample JSON matching the NEW SIMPLIFIED column format (v2)
+  // NOTE: Marketplace and Language are SEPARATE form fields, NOT in JSON
+  //
+  // NEW COLUMN FORMAT:
+  //   m1_headline, m1_body, m1_image_url, etc.
+  //   (no language suffix - Language dropdown controls locale)
   var sampleJSON = {
     "modules": [
       {
@@ -548,8 +552,9 @@ function testFormImport() {
           "ASIN": "B0FNRLYQ3G",
           "Module Number": 1,
           "Module Type": "STANDARD_COMPANY_LOGO",
-          "aplus_basic_m1_headline_EN": "Test English headline",
-          "aplus_basic_m1_body_EN": "Test English body text"
+          "m1_headline": "Test English headline",
+          "m1_body": "Test English body text",
+          "m1_companyDescription": "We make premium products"
         }
       },
       {
@@ -559,8 +564,8 @@ function testFormImport() {
           "ASIN": "B0FNRLYQ3G",
           "Module Number": 2,
           "Module Type": "STANDARD_TEXT",
-          "aplus_basic_m2_headline_EN": "Second module headline",
-          "aplus_basic_m2_body_EN": "Second module body"
+          "m2_headline": "Second module headline",
+          "m2_body": "Second module body text with **bold** and *italic* formatting"
         }
       }
     ]
@@ -579,6 +584,7 @@ function testFormImport() {
 
   Logger.log('Running test import with sample JSON...');
   Logger.log('Form fields: Marketplace=DE, Language=EN');
+  Logger.log('NEW SIMPLIFIED COLUMN FORMAT: m1_headline, m1_body (no language suffix)');
   onFormSubmit(mockEvent);
   Logger.log('Test complete. Check APlusBasic sheet and Logs sheet.');
 }

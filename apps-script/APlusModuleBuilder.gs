@@ -1,6 +1,19 @@
 /**
  * A+ Content Module Builder - Complete Implementation
  * Handles all A+ Basic and Premium module types
+ *
+ * TEXT FORMATTING SUPPORT (v2):
+ * Amazon A+ API supports text decoration via decoratorSet with these types:
+ *   - STYLE_BOLD      → Use **text** or __text__
+ *   - STYLE_ITALIC    → Use *text* or _text_
+ *   - STYLE_UNDERLINE → Use ~~text~~ (strikethrough renders as underline)
+ *   - LIST_ITEM       → Use - item or • item at start of line
+ *   - LIST_ORDERED    → Use 1. item or 1) item at start of line
+ *
+ * Example input:
+ *   "This is **bold** and *italic* text with a list:\n- Item one\n- Item two"
+ *
+ * The parseTextFormatting() function extracts markers and builds decoratorSet
  */
 
 /**
@@ -97,6 +110,196 @@ const APLUS_IMAGE_SIZES = {
   }
 };
 
+// ========================================
+// TEXT FORMATTING PARSER
+// ========================================
+
+/**
+ * Parse text with markdown-like formatting markers and convert to Amazon decoratorSet
+ *
+ * Supported formats:
+ *   **bold text**     → STYLE_BOLD
+ *   __bold text__     → STYLE_BOLD
+ *   *italic text*     → STYLE_ITALIC
+ *   _italic text_     → STYLE_ITALIC
+ *   ~~underline~~     → STYLE_UNDERLINE
+ *   - bullet item     → LIST_ITEM (at start of line)
+ *   • bullet item     → LIST_ITEM (at start of line)
+ *   1. numbered item  → LIST_ORDERED (at start of line)
+ *   1) numbered item  → LIST_ORDERED (at start of line)
+ *
+ * @param {string} text - Input text with formatting markers
+ * @returns {Object} - { cleanText: string, decoratorSet: Array }
+ */
+function parseTextFormatting(text) {
+  if (!text || typeof text !== 'string') {
+    return { cleanText: text || '', decoratorSet: [] };
+  }
+
+  const decoratorSet = [];
+  let cleanText = text;
+  let offset = 0;
+
+  // Process inline formatting: **bold**, *italic*, ~~underline~~
+  const inlinePatterns = [
+    { regex: /\*\*([^*]+)\*\*/g, type: 'STYLE_BOLD', markerLen: 2 },
+    { regex: /__([^_]+)__/g, type: 'STYLE_BOLD', markerLen: 2 },
+    { regex: /\*([^*]+)\*/g, type: 'STYLE_ITALIC', markerLen: 1 },
+    { regex: /_([^_]+)_/g, type: 'STYLE_ITALIC', markerLen: 1 },
+    { regex: /~~([^~]+)~~/g, type: 'STYLE_UNDERLINE', markerLen: 2 }
+  ];
+
+  // First pass: extract all inline decorators (bold, italic, underline)
+  const inlineDecorators = [];
+
+  for (const pattern of inlinePatterns) {
+    let match;
+    // Reset regex lastIndex
+    pattern.regex.lastIndex = 0;
+
+    while ((match = pattern.regex.exec(text)) !== null) {
+      inlineDecorators.push({
+        type: pattern.type,
+        originalStart: match.index,
+        originalEnd: match.index + match[0].length,
+        contentStart: match.index + pattern.markerLen,
+        contentEnd: match.index + match[0].length - pattern.markerLen,
+        content: match[1],
+        markerLen: pattern.markerLen
+      });
+    }
+  }
+
+  // Sort by original start position (descending for safe replacement)
+  inlineDecorators.sort((a, b) => b.originalStart - a.originalStart);
+
+  // Replace markers with clean text and calculate new offsets
+  for (const dec of inlineDecorators) {
+    const before = cleanText.substring(0, dec.originalStart);
+    const after = cleanText.substring(dec.originalEnd);
+    cleanText = before + dec.content + after;
+  }
+
+  // Recalculate offsets for the clean text
+  // Sort back to ascending order
+  inlineDecorators.sort((a, b) => a.originalStart - b.originalStart);
+
+  let offsetAdjustment = 0;
+  for (const dec of inlineDecorators) {
+    const adjustedStart = dec.originalStart - offsetAdjustment;
+    decoratorSet.push({
+      type: dec.type,
+      offset: adjustedStart,
+      length: dec.content.length,
+      depth: 0
+    });
+    // Each marker pair removes 2*markerLen characters
+    offsetAdjustment += dec.markerLen * 2;
+  }
+
+  // Process list items (line-by-line)
+  const lines = cleanText.split('\n');
+  let currentOffset = 0;
+  const lineDecorators = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    const lineStart = currentOffset;
+
+    // Check for bullet list: "- ", "• ", "* " at start
+    const bulletMatch = line.match(/^(\s*)([-•*])\s+(.*)$/);
+    if (bulletMatch) {
+      const indent = bulletMatch[1].length;
+      const depth = Math.floor(indent / 2); // 2 spaces = 1 level
+      const content = bulletMatch[3];
+
+      // Replace the line with just the content
+      lines[i] = bulletMatch[1] + content;
+
+      lineDecorators.push({
+        type: 'LIST_ITEM',
+        offset: lineStart + indent,
+        length: content.length,
+        depth: depth
+      });
+    }
+
+    // Check for numbered list: "1. ", "1) " at start
+    const numberedMatch = line.match(/^(\s*)(\d+)[.)]\s+(.*)$/);
+    if (numberedMatch) {
+      const indent = numberedMatch[1].length;
+      const depth = Math.floor(indent / 2);
+      const content = numberedMatch[3];
+
+      // Replace the line with just the content
+      lines[i] = numberedMatch[1] + content;
+
+      lineDecorators.push({
+        type: 'LIST_ORDERED',
+        offset: lineStart + indent,
+        length: content.length,
+        depth: depth
+      });
+    }
+
+    currentOffset += lines[i].length + 1; // +1 for newline
+  }
+
+  // Rebuild clean text if list items were modified
+  if (lineDecorators.length > 0) {
+    cleanText = lines.join('\n');
+    decoratorSet.push(...lineDecorators);
+  }
+
+  // Log parsing results
+  if (decoratorSet.length > 0) {
+    Logger.log(`Parsed text formatting: ${decoratorSet.length} decorators found`);
+    Logger.log(`Original: ${text.substring(0, 100)}...`);
+    Logger.log(`Clean: ${cleanText.substring(0, 100)}...`);
+    Logger.log(`Decorators: ${JSON.stringify(decoratorSet)}`);
+  }
+
+  return { cleanText, decoratorSet };
+}
+
+/**
+ * Build TextComponent with optional formatting
+ *
+ * @param {string} value - Text value (may contain formatting markers)
+ * @returns {Object|null} - TextComponent for Amazon API or null if empty
+ */
+function buildTextComponent(value) {
+  if (!value) return null;
+
+  const { cleanText, decoratorSet } = parseTextFormatting(value);
+
+  return {
+    value: cleanText,
+    decoratorSet: decoratorSet
+  };
+}
+
+/**
+ * Build ParagraphComponent with optional formatting
+ *
+ * @param {string} value - Text value (may contain formatting markers)
+ * @returns {Object|null} - ParagraphComponent for Amazon API or null if empty
+ */
+function buildParagraphComponent(value) {
+  if (!value) return null;
+
+  const { cleanText, decoratorSet } = parseTextFormatting(value);
+
+  return {
+    textList: [
+      {
+        value: cleanText,
+        decoratorSet: decoratorSet
+      }
+    ]
+  };
+}
+
 /**
  * Build A+ Content document from module data - COMPLETE VERSION
  * Supports ALL module types from Amazon SP-API A+ Content v2020-11-01
@@ -105,18 +308,10 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   // Use explicit language from column (set in extractAPlusData)
   const explicitLang = aplusData.language || 'DE';
 
-  // Get content for the specified language
-  const content = aplusData.moduleContent?.[explicitLang] || {};
-
-  // If no content for explicit language, try to find any available content
-  if (Object.keys(content).length === 0) {
-    const moduleContentKeys = Object.keys(aplusData.moduleContent || {});
-    if (moduleContentKeys.length > 0) {
-      const fallbackLang = moduleContentKeys[0];
-      Logger.log(`⚠️ No content for language "${explicitLang}", using fallback: "${fallbackLang}"`);
-      // Note: We still use explicit language for locale, just use fallback content
-    }
-  }
+  // NEW SIMPLIFIED STRUCTURE (v2):
+  // Content is now directly in aplusData.moduleContent (not keyed by language)
+  // The Language column determines the locale, not the content structure
+  const content = aplusData.moduleContent || {};
 
   // Generate unique content reference key
   const contentRefKey = `${aplusData.asin}_module${aplusData.moduleNumber}_${Date.now()}`;
@@ -153,29 +348,15 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
   };
 
   // Helper function for TextComponent (headline/heading/title fields)
+  // NOW WITH TEXT FORMATTING SUPPORT (v2)
   function addTextComponent(fieldName, value) {
-    if (value) {
-      return {
-        value: value,
-        decoratorSet: []
-      };
-    }
-    return null;
+    return buildTextComponent(value);
   }
 
   // Helper function for ParagraphComponent (body/description fields)
+  // NOW WITH TEXT FORMATTING SUPPORT (v2)
   function addParagraphComponent(fieldName, value) {
-    if (value) {
-      return {
-        textList: [
-          {
-            value: value,
-            decoratorSet: []
-          }
-        ]
-      };
-    }
-    return null;
+    return buildParagraphComponent(value);
   }
 
   // Helper function to validate Amazon uploadDestinationId format

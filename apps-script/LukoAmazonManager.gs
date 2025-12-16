@@ -1684,6 +1684,19 @@ function addDirectUploadDestinationId(librarySheet, uploadDestinationId, ui) {
   }
 }
 
+/**
+ * Extract A+ data from spreadsheet row
+ *
+ * NEW SIMPLIFIED COLUMN STRUCTURE (v2):
+ * - Columns use format: m1_headline, m1_body, m1_image_url, etc.
+ * - No language suffix - Language column controls which locale is used
+ * - Marketplace column controls which marketplace receives the content
+ *
+ * @param {Sheet} sheet - APlusBasic or APlusPremium sheet
+ * @param {number} rowNumber - Row number to extract (1-based)
+ * @param {string} contentType - 'BASIC' or 'PREMIUM' (for logging)
+ * @returns {Object} - Module data object for publishing
+ */
 function extractAPlusData(sheet, rowNumber, contentType) {
   const range = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn());
   const values = range.getValues()[0];
@@ -1714,62 +1727,40 @@ function extractAPlusData(sheet, rowNumber, contentType) {
     throw new Error(`Module Type is empty in row ${rowNumber}. Please fill in the Module Type column.`);
   }
 
-  // Extract multi-language content for all available languages
-  const languages = ['DE', 'EN', 'FR', 'IT', 'ES', 'NL', 'PL', 'SE'];
+  // NEW SIMPLIFIED STRUCTURE: Use m1_, m2_, etc. prefix (no language suffix)
+  const prefix = `m${moduleNumber}_`;
+  Logger.log(`Using NEW simplified prefix: ${prefix}`);
+
+  // Extract all content fields for this module (single language - determined by Language column)
   const moduleContent = {};
-
-  // Determine if this is a Premium module based on Module Type
-  const isPremium = moduleType && moduleType.toString().toUpperCase().startsWith('PREMIUM');
-
-  // Build prefix for this module (e.g., aplus_basic_m1_ or aplus_premium_m1_)
-  const prefix = isPremium
-    ? `aplus_premium_m${moduleNumber}_`
-    : `aplus_basic_m${moduleNumber}_`;
-
-  Logger.log(`Using prefix: ${prefix} (isPremium: ${isPremium})`);
-
-
-  for (const lang of languages) {
-    const langContent = {};
-
-    // Extract all fields for this language
-    for (let i = 0; i < headers.length; i++) {
-      const header = headers[i];
-      if (header && header.startsWith(prefix) && header.endsWith(`_${lang}`)) {
-        // Extract field name without prefix and language suffix
-        const fieldName = header.substring(prefix.length, header.length - 3);
-        const value = values[i];
-        if (value && value !== '') {
-          langContent[fieldName] = value;
-        }
-      }
-    }
-
-    // Only add if there's content for this language
-    if (Object.keys(langContent).length > 0) {
-      moduleContent[lang] = langContent;
-    }
-  }
-
-  // Extract image URLs and IDs (language-independent)
   const images = {};
+
   for (let i = 0; i < headers.length; i++) {
     const header = headers[i];
-    if (header && header.startsWith(prefix)) {
-      // Match: _url, _id, _imagePositionType, _overlayColorType, etc.
-      if (header.includes('_url') || header.includes('_id') ||
-          header.includes('_imagePositionType') || header.includes('_overlayColorType')) {
-        const fieldName = header.substring(prefix.length);
-        const value = values[i];
-        if (value && value !== '') {
-          images[fieldName] = value;
-        }
-      }
+    if (!header || !header.startsWith(prefix)) continue;
+
+    // Extract field name without prefix (e.g., "m1_headline" → "headline")
+    const fieldName = header.substring(prefix.length);
+    const value = values[i];
+
+    if (value === null || value === undefined || value === '') continue;
+
+    // Categorize fields: images vs text content
+    if (fieldName.includes('_url') || fieldName.includes('_id') ||
+        fieldName.includes('imagePositionType') || fieldName.includes('overlayColorType') ||
+        fieldName.includes('positionType') || fieldName.includes('colorType')) {
+      // Image-related field
+      images[fieldName] = value;
+      Logger.log(`  Image field: ${fieldName} = ${value.toString().substring(0, 50)}...`);
+    } else {
+      // Text content field
+      moduleContent[fieldName] = value;
+      Logger.log(`  Content field: ${fieldName} = ${value.toString().substring(0, 50)}...`);
     }
   }
 
-  Logger.log(`Module content languages: ${Object.keys(moduleContent).join(', ')}`);
-  Logger.log(`Images: ${Object.keys(images).join(', ')}`);
+  Logger.log(`Module content fields: ${Object.keys(moduleContent).join(', ') || '(none)'}`);
+  Logger.log(`Image fields: ${Object.keys(images).join(', ') || '(none)'}`);
 
   return {
     asin: asin,
@@ -1777,6 +1768,8 @@ function extractAPlusData(sheet, rowNumber, contentType) {
     moduleType: moduleType,
     marketplace: marketplace,
     language: language,
+    // NEW: Single content object (not keyed by language)
+    // The Language column determines the locale for API call
     moduleContent: moduleContent,
     images: images
   };
