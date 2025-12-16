@@ -138,50 +138,58 @@ function parseTextFormatting(text) {
 
   const decoratorSet = [];
   let cleanText = text;
-  let offset = 0;
 
   // Process inline formatting: **bold**, *italic*, ~~underline~~
+  // IMPORTANT: Order matters! Process longer markers first to avoid overlap
   const inlinePatterns = [
     { regex: /\*\*([^*]+)\*\*/g, type: 'STYLE_BOLD', markerLen: 2 },
     { regex: /__([^_]+)__/g, type: 'STYLE_BOLD', markerLen: 2 },
-    { regex: /\*([^*]+)\*/g, type: 'STYLE_ITALIC', markerLen: 1 },
-    { regex: /_([^_]+)_/g, type: 'STYLE_ITALIC', markerLen: 1 },
-    { regex: /~~([^~]+)~~/g, type: 'STYLE_UNDERLINE', markerLen: 2 }
+    { regex: /~~([^~]+)~~/g, type: 'STYLE_UNDERLINE', markerLen: 2 },
+    // Single markers - must NOT be adjacent to same marker (to avoid matching inside **)
+    { regex: /(?<!\*)\*([^*]+)\*(?!\*)/g, type: 'STYLE_ITALIC', markerLen: 1 },
+    { regex: /(?<!_)_([^_]+)_(?!_)/g, type: 'STYLE_ITALIC', markerLen: 1 }
   ];
 
-  // First pass: extract all inline decorators (bold, italic, underline)
+  // First pass: extract all inline decorators
   const inlineDecorators = [];
 
   for (const pattern of inlinePatterns) {
     let match;
-    // Reset regex lastIndex
     pattern.regex.lastIndex = 0;
 
     while ((match = pattern.regex.exec(text)) !== null) {
-      inlineDecorators.push({
+      const newDec = {
         type: pattern.type,
         originalStart: match.index,
         originalEnd: match.index + match[0].length,
-        contentStart: match.index + pattern.markerLen,
-        contentEnd: match.index + match[0].length - pattern.markerLen,
         content: match[1],
         markerLen: pattern.markerLen
-      });
+      };
+
+      // Check if this match overlaps with any existing match
+      const overlaps = inlineDecorators.some(existing =>
+        (newDec.originalStart >= existing.originalStart && newDec.originalStart < existing.originalEnd) ||
+        (newDec.originalEnd > existing.originalStart && newDec.originalEnd <= existing.originalEnd) ||
+        (newDec.originalStart <= existing.originalStart && newDec.originalEnd >= existing.originalEnd)
+      );
+
+      if (!overlaps) {
+        inlineDecorators.push(newDec);
+      }
     }
   }
 
   // Sort by original start position (descending for safe replacement)
   inlineDecorators.sort((a, b) => b.originalStart - a.originalStart);
 
-  // Replace markers with clean text and calculate new offsets
+  // Replace markers with clean text
   for (const dec of inlineDecorators) {
     const before = cleanText.substring(0, dec.originalStart);
     const after = cleanText.substring(dec.originalEnd);
     cleanText = before + dec.content + after;
   }
 
-  // Recalculate offsets for the clean text
-  // Sort back to ascending order
+  // Sort back to ascending order and calculate final offsets
   inlineDecorators.sort((a, b) => a.originalStart - b.originalStart);
 
   let offsetAdjustment = 0;
@@ -193,7 +201,6 @@ function parseTextFormatting(text) {
       length: dec.content.length,
       depth: 0
     });
-    // Each marker pair removes 2*markerLen characters
     offsetAdjustment += dec.markerLen * 2;
   }
 
@@ -206,14 +213,12 @@ function parseTextFormatting(text) {
     let line = lines[i];
     const lineStart = currentOffset;
 
-    // Check for bullet list: "- ", "• ", "* " at start
-    const bulletMatch = line.match(/^(\s*)([-•*])\s+(.*)$/);
+    // Check for bullet list: "- ", "• " at start (NOT * to avoid confusion with italic)
+    const bulletMatch = line.match(/^(\s*)([-•])\s+(.*)$/);
     if (bulletMatch) {
       const indent = bulletMatch[1].length;
-      const depth = Math.floor(indent / 2); // 2 spaces = 1 level
+      const depth = Math.floor(indent / 2);
       const content = bulletMatch[3];
-
-      // Replace the line with just the content
       lines[i] = bulletMatch[1] + content;
 
       lineDecorators.push({
@@ -230,8 +235,6 @@ function parseTextFormatting(text) {
       const indent = numberedMatch[1].length;
       const depth = Math.floor(indent / 2);
       const content = numberedMatch[3];
-
-      // Replace the line with just the content
       lines[i] = numberedMatch[1] + content;
 
       lineDecorators.push({
@@ -242,21 +245,18 @@ function parseTextFormatting(text) {
       });
     }
 
-    currentOffset += lines[i].length + 1; // +1 for newline
+    currentOffset += lines[i].length + 1;
   }
 
-  // Rebuild clean text if list items were modified
   if (lineDecorators.length > 0) {
     cleanText = lines.join('\n');
     decoratorSet.push(...lineDecorators);
   }
 
-  // Log parsing results
   if (decoratorSet.length > 0) {
     Logger.log(`Parsed text formatting: ${decoratorSet.length} decorators found`);
     Logger.log(`Original: ${text.substring(0, 100)}...`);
     Logger.log(`Clean: ${cleanText.substring(0, 100)}...`);
-    Logger.log(`Decorators: ${JSON.stringify(decoratorSet)}`);
   }
 
   return { cleanText, decoratorSet };

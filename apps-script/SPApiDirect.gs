@@ -816,6 +816,22 @@ function convertMarketplaceToLocale(marketplace) {
 function convertLanguageToLocale(lang, marketplace) {
   // Complete language to locale mapping
   // Supports all language codes from the form dropdown
+  //
+  // SPECIAL CASES:
+  // - Belgium (BE): Uses fr-BE and nl-BE, NOT fr-FR and nl-NL
+  // - Ireland (IE): NOT supported by A+ Content API!
+
+  // Belgium-specific locales (fr-BE, nl-BE)
+  if (marketplace === 'BE') {
+    const belgiumLocales = {
+      'FR': 'fr-BE',
+      'NL': 'nl-BE',
+      'EN': 'en-GB',
+      'DE': 'de-DE'
+    };
+    return belgiumLocales[lang] || belgiumLocales[lang?.toUpperCase()] || 'nl-BE';
+  }
+
   const localeMap = {
     // Main European languages
     'DE': 'de-DE',
@@ -845,7 +861,7 @@ function convertLanguageToLocale(lang, marketplace) {
     'EN-US': 'en-US',
     'US': 'en-US'
   };
-  return localeMap[lang] || localeMap[lang.toUpperCase()] || null;
+  return localeMap[lang] || localeMap[lang?.toUpperCase()] || null;
 }
 
 /**
