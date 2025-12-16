@@ -9,8 +9,13 @@
  * FORM STRUCTURE:
  * - Form URL: https://docs.google.com/forms/d/1LDysIzwc5kfSBG3cAT7cDKnWlx6w-Sj9vJw2YhbrYI8/edit
  * - Response Sheet: ClaudeAPlusQueue
- * - Column A: Timestamp
- * - Column B: JSON payload from Claude
+ * - Column A (e.values[0]): Timestamp
+ * - Column B (e.values[1]): JSON payload from Claude
+ * - Column C (e.values[2]): Marketplace (dropdown: DE, UK, FR, IT, ES, etc.)
+ * - Column D (e.values[3]): Language (dropdown: DE, EN, FR, IT, ES, etc.)
+ *
+ * NOTE: Marketplace and Language are injected into each module from form fields,
+ * NOT from the JSON payload. This ensures consistent values across all modules.
  *
  * SETUP:
  * 1. Open Apps Script editor
@@ -29,7 +34,12 @@ function onFormSubmit(e) {
     Logger.log('=== FORM IMPORT STARTED ===');
     Logger.log('Event values: ' + JSON.stringify(e.values));
 
-    // 1. Extract and parse JSON from column B (e.values[1])
+    // 1a. Extract Marketplace and Language from form fields (e.values[2] and e.values[3])
+    var formMarketplace = e.values[2] || 'DE';
+    var formLanguage = e.values[3] || 'DE';
+    Logger.log('Form Marketplace: ' + formMarketplace + ', Language: ' + formLanguage);
+
+    // 1b. Extract and parse JSON from column B (e.values[1])
     var jsonText = e.values[1];
     Logger.log('Raw JSON text: ' + jsonText);
 
@@ -138,6 +148,17 @@ function onFormSubmit(e) {
     }
 
     Logger.log('Parsed ' + data.modules.length + ' modules from JSON');
+
+    // 2b. Inject Marketplace and Language from form fields into each module
+    data.modules.forEach(function(module, index) {
+      if (!module.columns) {
+        module.columns = {};
+      }
+      // Always set Marketplace and Language from form fields (override any existing values)
+      module.columns['Marketplace'] = formMarketplace;
+      module.columns['Language'] = formLanguage;
+      Logger.log('Module ' + (index + 1) + ': Set Marketplace=' + formMarketplace + ', Language=' + formLanguage);
+    });
 
     // 3. Separate modules by type (STANDARD vs PREMIUM)
     var standardModules = [];
@@ -516,7 +537,8 @@ function logOperation(operation, status, details) {
  * To run: Extensions → Apps Script → Select testFormImport → Run
  */
 function testFormImport() {
-  // Sample JSON matching the expected format (with Marketplace and Language)
+  // Sample JSON matching the expected format
+  // NOTE: Marketplace and Language are now SEPARATE form fields, NOT in JSON
   var sampleJSON = {
     "modules": [
       {
@@ -526,8 +548,6 @@ function testFormImport() {
           "ASIN": "B0FNRLYQ3G",
           "Module Number": 1,
           "Module Type": "STANDARD_COMPANY_LOGO",
-          "Marketplace": "DE",
-          "Language": "EN",
           "aplus_basic_m1_headline_EN": "Test English headline",
           "aplus_basic_m1_body_EN": "Test English body text"
         }
@@ -539,8 +559,6 @@ function testFormImport() {
           "ASIN": "B0FNRLYQ3G",
           "Module Number": 2,
           "Module Type": "STANDARD_TEXT",
-          "Marketplace": "DE",
-          "Language": "EN",
           "aplus_basic_m2_headline_EN": "Second module headline",
           "aplus_basic_m2_body_EN": "Second module body"
         }
@@ -549,14 +567,18 @@ function testFormImport() {
   };
 
   // Simulate form submission event
+  // Form structure: [Timestamp, JSON, Marketplace, Language]
   var mockEvent = {
     values: [
-      new Date().toISOString(), // Timestamp
-      JSON.stringify(sampleJSON)  // JSON payload
+      new Date().toISOString(), // e.values[0] = Timestamp
+      JSON.stringify(sampleJSON), // e.values[1] = JSON payload
+      'DE',                       // e.values[2] = Marketplace (from form dropdown)
+      'EN'                        // e.values[3] = Language (from form dropdown)
     ]
   };
 
-  Logger.log('Running test import with sample JSON (includes Marketplace & Language)...');
+  Logger.log('Running test import with sample JSON...');
+  Logger.log('Form fields: Marketplace=DE, Language=EN');
   onFormSubmit(mockEvent);
   Logger.log('Test complete. Check APlusBasic sheet and Logs sheet.');
 }
