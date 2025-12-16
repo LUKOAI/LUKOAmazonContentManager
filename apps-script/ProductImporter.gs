@@ -796,7 +796,7 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
 // ========================================
 
 function showProgress(message) {
-  SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Processing...', -1);
+  SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Processing...', 30);
 }
 
 function showError(message) {

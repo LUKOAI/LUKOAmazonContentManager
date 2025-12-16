@@ -540,11 +540,15 @@ function buildAPlusContentDocument(aplusData, marketplace) {
   const isPremium = aplusData.moduleType && aplusData.moduleType.startsWith('PREMIUM');
   const contentSubType = isPremium ? 'PREMIUM' : 'STANDARD';
 
+  // Use content language for locale detection, fallback to marketplace if not detected
+  const detectedLocale = convertLanguageToLocale(firstLang, marketplace) || convertMarketplaceToLocale(marketplace);
+  Logger.log(`📍 Locale detection: Content language="${firstLang}" → Locale="${detectedLocale}" (marketplace=${marketplace})`);
+
   const contentDocument = {
     name: contentRefKey,
     contentType: 'EBC',  // Enhanced Brand Content
     contentSubType: contentSubType,
-    locale: convertMarketplaceToLocale(marketplace),
+    locale: detectedLocale,
     contentModuleList: []
   };
 
