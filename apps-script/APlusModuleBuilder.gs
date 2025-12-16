@@ -457,16 +457,21 @@ function buildAPlusContentDocumentComplete(aplusData, marketplace) {
     const headline = addTextComponent('headline', content.headline);
     if (headline) module.standardSingleImageHighlights.headline = headline;
 
-    // Add bullet points (highlights)
-    const bulletPoints = [];
+    // Add bullet points (highlights) - bulletedListBlock is a single StandardTextBlock, not an array
+    const bulletTextList = [];
     for (let i = 1; i <= 4; i++) {
       const bulletText = content[`highlight${i}`];
       if (bulletText) {
-        bulletPoints.push(addParagraphComponent(`highlight${i}`, bulletText));
+        bulletTextList.push({
+          value: bulletText,
+          decoratorSet: []
+        });
       }
     }
-    if (bulletPoints.length > 0) {
-      module.standardSingleImageHighlights.bulletedListBlock = bulletPoints;
+    if (bulletTextList.length > 0) {
+      module.standardSingleImageHighlights.bulletedListBlock = {
+        textList: bulletTextList
+      };
     }
   }
 
