@@ -570,19 +570,19 @@ function generateAPlusHTML(asin, modules, contentType) {
       <div class="notice-content">
         <div class="notice-icon">&#9888;</div>
         <div class="notice-text">
-          <strong>PREVIEW / PODGLĄD</strong> - This is a visualization of Amazon A+ Content section, not a live page.
+          <strong>PREVIEW</strong> - This is a visualization of Amazon A+ Content section, not a live page.
           <br>
           <span class="notice-subtext">
-            To jest wizualizacja sekcji A+ Content strony produktowej Amazon. Teksty, zdjęcia i wideo będą dostosowane do Twoich wymagań.
+            The texts, images, and videos will be customized according to your requirements.
           </span>
         </div>
       </div>
       <div class="notice-cta">
         <a href="https://ads.netanaliza.com/lacm" target="_blank" class="notice-button">
-          Zamów A+ Content &rarr;
+          Order A+ Content &rarr;
         </a>
         <div class="notice-service">
-          <strong>LUKO Amazon Content Manager</strong> - profesjonalne tworzenie A+ Content dla sprzedawców Amazon
+          <strong>LUKO Amazon Content Manager</strong> - professional A+ Content creation for Amazon sellers
         </div>
       </div>
     </div>
@@ -628,7 +628,7 @@ function generateAPlusHTML(asin, modules, contentType) {
           Support: <a href="mailto:support@netanaliza.com">support@netanaliza.com</a>
         </div>
         <div class="order-cta">
-          <a href="https://ads.netanaliza.com/lacm" target="_blank">Zamów A+ Content dla swojego produktu</a>
+          <a href="https://ads.netanaliza.com/lacm" target="_blank">Order A+ Content for your product</a>
         </div>
       </div>
     </div>
