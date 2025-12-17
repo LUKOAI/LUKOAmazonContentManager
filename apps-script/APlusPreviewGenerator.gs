@@ -216,8 +216,9 @@ function extractModuleDataForPreview(values, headers) {
     language: getColumnValue(values, headers, 'Language') || 'DE'
   };
 
-  // Find the module prefix (m1_, m2_, etc.)
-  const prefix = `m${moduleNumber}_`;
+  // FIXED: Always use m1_ prefix - each row has one module and uses m1_ columns
+  // The Module Number column tells us which module this is, but data is always in m1_ columns
+  const prefix = 'm1_';
 
   // Extract all fields for this module
   let fieldCount = 0;
@@ -233,20 +234,27 @@ function extractModuleDataForPreview(values, headers) {
     }
   }
 
-  Logger.log(`extractModuleDataForPreview: moduleNumber=${moduleNumber}, prefix=${prefix}, fields found: ${fieldCount}`);
+  Logger.log(`extractModuleDataForPreview: moduleNumber=${moduleNumber}, fields found: ${fieldCount}, type: ${data.moduleType}`);
 
-  // If no fields found with prefix, try without prefix (fallback for old column format)
+  // If no fields found with m1_ prefix, try common field names directly (old format)
   if (fieldCount === 0) {
-    Logger.log('No fields found with prefix, trying fallback extraction...');
-    // Try common field names directly
-    const fallbackFields = ['headline', 'body', 'image_url', 'image_altText', 'imagePositionType'];
-    for (const field of fallbackFields) {
+    Logger.log('No fields found with m1_ prefix, trying direct field names...');
+    const directFields = [
+      'headline', 'subheadline', 'body',
+      'image_url', 'image_altText', 'imagePositionType',
+      'block1_headline', 'block1_body', 'block1_image_url',
+      'block2_headline', 'block2_body', 'block2_image_url',
+      'block3_headline', 'block3_body', 'block3_image_url',
+      'block4_headline', 'block4_body', 'block4_image_url'
+    ];
+    for (const field of directFields) {
       const value = getColumnValue(values, headers, field);
       if (value) {
         data[field] = value;
-        Logger.log(`Fallback found: ${field} = ${value.substring(0, 50)}...`);
+        fieldCount++;
       }
     }
+    Logger.log(`Fallback extraction found ${fieldCount} fields`);
   }
 
   return data;
