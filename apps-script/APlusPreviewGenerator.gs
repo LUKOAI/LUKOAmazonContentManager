@@ -71,11 +71,13 @@ function lukoGenerateAPlusPreview() {
     return;
   }
 
-  // Get selected rows with checkbox
-  const selectedRows = getSelectedCheckboxRows(sheet);
+  // Get selected rows with checkbox - use local function to avoid conflicts
+  const selectedRows = getAPlusSelectedRows(sheet);
+
+  Logger.log(`APlusPreview: Found ${selectedRows.length} selected rows in ${sheetName}`);
 
   if (selectedRows.length === 0) {
-    ui.alert('No Selection', 'Please check the Export checkbox for rows you want to preview.', ui.ButtonSet.OK);
+    ui.alert('No Selection', `No rows selected in ${sheetName}.\n\nPlease check the Export checkbox for rows you want to preview.`, ui.ButtonSet.OK);
     return;
   }
 
@@ -1763,6 +1765,73 @@ function getAmazonCSS(isPremium) {
       }
     }
   `;
+}
+
+/**
+ * Get selected checkbox rows for A+ sheets
+ * Local version to avoid conflicts with other definitions
+ */
+function getAPlusSelectedRows(sheet) {
+  const sheetName = sheet.getName();
+  const data = sheet.getDataRange().getValues();
+
+  // APlusBasic and APlusPremium have headers in row 3
+  const headerRowIndex = 2; // 0-indexed = row 3
+  const dataStartIndex = 3; // 0-indexed = row 4
+
+  // Get headers to find Export column
+  const headers = data[headerRowIndex] || [];
+  let checkboxCol = 0; // Default to first column
+
+  // Try to find Export column by name
+  for (let i = 0; i < headers.length; i++) {
+    const header = (headers[i] || '').toString().toLowerCase();
+    if (header.includes('export') || header === '☑️') {
+      checkboxCol = i;
+      Logger.log(`getAPlusSelectedRows: Found Export column at index ${i} (header: "${headers[i]}")`);
+      break;
+    }
+  }
+
+  Logger.log(`getAPlusSelectedRows: Sheet=${sheetName}, checkboxCol=${checkboxCol}, dataStartIndex=${dataStartIndex}, totalRows=${data.length}`);
+
+  const selectedRows = [];
+  for (let i = dataStartIndex; i < data.length; i++) {
+    const cellValue = data[i][checkboxCol];
+    const rowNum = i + 1; // Convert to 1-based
+
+    // Check for various true values
+    const isChecked = cellValue === true ||
+                      cellValue === 'TRUE' ||
+                      cellValue === 'true' ||
+                      cellValue === 'PRAWDA' ||
+                      cellValue === 'prawda' ||
+                      cellValue === 1 ||
+                      cellValue === '1' ||
+                      cellValue === 'x' ||
+                      cellValue === 'X' ||
+                      cellValue === '✓' ||
+                      cellValue === '✔';
+
+    // Skip already exported rows
+    const isDone = (cellValue || '').toString().toUpperCase() === 'DONE';
+
+    if (isChecked && !isDone) {
+      // Also verify the row has some data (ASIN)
+      const asinCol = headers.findIndex(h => (h || '').toString().toUpperCase() === 'ASIN');
+      const hasAsin = asinCol >= 0 && data[i][asinCol];
+
+      if (hasAsin) {
+        selectedRows.push(rowNum);
+        Logger.log(`getAPlusSelectedRows: Row ${rowNum} selected (checkbox=${cellValue}, ASIN=${data[i][asinCol]})`);
+      } else {
+        Logger.log(`getAPlusSelectedRows: Row ${rowNum} has checkbox but no ASIN, skipping`);
+      }
+    }
+  }
+
+  Logger.log(`getAPlusSelectedRows: Total selected rows with ASIN: ${selectedRows.length}`);
+  return selectedRows;
 }
 
 /**
