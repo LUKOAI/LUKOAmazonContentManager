@@ -2,7 +2,7 @@
  * A+ Content Preview Generator
  *
  * Generates HTML preview of A+ Content that looks like Amazon's preview
- * Opens in browser via Web App or saves to Google Drive
+ * Supports both A+ Basic and A+ Premium content types
  */
 
 // ========================================
@@ -40,15 +40,23 @@ function doGet(e) {
 
 /**
  * Generate A+ Preview for selected ASIN
- * Menu: NetAnaliza Manager → Tools → Generate A+ Preview
+ * Menu: NetAnaliza Manager > Tools > Generate A+ Preview
  */
 function lukoGenerateAPlusPreview() {
   const ui = SpreadsheetApp.getUi();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('APlusBasic');
+
+  // Try APlusPremium first, then APlusBasic
+  let sheet = ss.getSheetByName('APlusPremium');
+  let contentType = 'premium';
 
   if (!sheet) {
-    ui.alert('Error', 'APlusBasic sheet not found!', ui.ButtonSet.OK);
+    sheet = ss.getSheetByName('APlusBasic');
+    contentType = 'basic';
+  }
+
+  if (!sheet) {
+    ui.alert('Error', 'No A+ sheet found! Please create APlusBasic or APlusPremium sheet.', ui.ButtonSet.OK);
     return;
   }
 
@@ -56,7 +64,7 @@ function lukoGenerateAPlusPreview() {
   const selectedRows = getSelectedCheckboxRows(sheet);
 
   if (selectedRows.length === 0) {
-    ui.alert('No Selection', 'Please check ☑️ Export for rows you want to preview.', ui.ButtonSet.OK);
+    ui.alert('No Selection', 'Please check the Export checkbox for rows you want to preview.', ui.ButtonSet.OK);
     return;
   }
 
@@ -98,8 +106,14 @@ function lukoGenerateAPlusPreview() {
     // Sort modules by module number
     modules.sort((a, b) => (a.data.moduleNumber || 0) - (b.data.moduleNumber || 0));
 
+    // Detect content type from module types
+    const detectedType = detectAPlusType(modules);
+    if (detectedType !== contentType) {
+      contentType = detectedType;
+    }
+
     // Generate HTML preview
-    const html = generateAPlusHTML(firstAsin, modules);
+    const html = generateAPlusHTML(firstAsin, modules, contentType);
 
     // Save to cache for Web App
     const previewId = firstAsin + '_' + Date.now();
@@ -152,36 +166,42 @@ function lukoGenerateAPlusPreview() {
         .info { background: #f0f0f0; padding: 10px; border-radius: 4px; margin: 10px 0; font-size: 12px; }
         .success { color: green; }
         .url-saved { background: #d4edda; padding: 8px; border-radius: 4px; margin: 10px 0; color: #155724; }
+        .type-badge { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 12px; font-weight: bold; }
+        .type-basic { background: #232f3e; color: white; }
+        .type-premium { background: #ff9900; color: #0f1111; }
       </style>
-      <h3>✅ Preview Generated: ${firstAsin}</h3>
-      <p><strong>${modules.length} module(s)</strong></p>
+      <h3>Preview Generated: ${firstAsin}</h3>
+      <p>
+        <span class="type-badge type-${contentType}">${contentType === 'premium' ? 'A+ Premium' : 'A+ Basic'}</span>
+        <strong>${modules.length} module(s)</strong>
+      </p>
 
       ${savedWebAppUrl ? `
-        <div class="url-saved">✓ Web App URL saved - click to open preview</div>
+        <div class="url-saved">Web App URL saved - click to open preview</div>
         <p>
-          <a class="btn btn-primary" href="${savedWebAppUrl}?id=${previewId}" target="_blank">🌐 Open Preview in Browser</a>
+          <a class="btn btn-primary" href="${savedWebAppUrl}?id=${previewId}" target="_blank">Open Preview in Browser</a>
         </p>
         <hr style="margin: 20px 0;">
       ` : ''}
 
-      <h4>📥 Download HTML</h4>
+      <h4>Download HTML</h4>
       <p>
-        <a class="btn" href="${file.getDownloadUrl()}" target="_blank">⬇️ Download HTML</a>
+        <a class="btn" href="${file.getDownloadUrl()}" target="_blank">Download HTML</a>
       </p>
 
       ${!savedWebAppUrl ? `
-        <h4>🔧 Setup Web App URL (one time)</h4>
+        <h4>Setup Web App URL (one time)</h4>
         <div class="info">
-          1. Extensions → Apps Script → Deploy → Manage deployments<br>
+          1. Extensions > Apps Script > Deploy > Manage deployments<br>
           2. Copy the Web App URL<br>
           3. Paste below and click Save
         </div>
       ` : `
-        <h4>🔧 Change Web App URL</h4>
+        <h4>Change Web App URL</h4>
       `}
       <input type="text" id="webAppUrl" value="${savedWebAppUrl}" placeholder="https://script.google.com/macros/s/..." style="width:100%;padding:8px;margin:5px 0;">
-      <button class="btn btn-secondary" onclick="saveUrl()">💾 Save URL</button>
-      <button class="btn btn-secondary" onclick="openWebApp()">🌐 Open</button>
+      <button class="btn btn-secondary" onclick="saveUrl()">Save URL</button>
+      <button class="btn btn-secondary" onclick="openWebApp()">Open</button>
 
       <script>
         function saveUrl() {
@@ -216,6 +236,28 @@ function lukoGenerateAPlusPreview() {
     ui.alert('Error', error.message + '\n\n' + error.stack, ui.ButtonSet.OK);
     Logger.log('Error in lukoGenerateAPlusPreview: ' + error.message + '\n' + error.stack);
   }
+}
+
+/**
+ * Detect A+ type from module types
+ * Premium modules include: HERO_IMAGE, wider layouts, premium-specific modules
+ */
+function detectAPlusType(modules) {
+  const premiumModulePatterns = [
+    'HERO', 'PREMIUM', 'FULL_WIDTH', 'FULL_IMAGE',
+    'VIDEO', 'HOTSPOT', 'NAVIGATOR', 'Q_AND_A'
+  ];
+
+  for (const module of modules) {
+    const type = (module.data.moduleType || '').toUpperCase();
+    for (const pattern of premiumModulePatterns) {
+      if (type.includes(pattern)) {
+        return 'premium';
+      }
+    }
+  }
+
+  return 'basic';
 }
 
 /**
@@ -293,49 +335,105 @@ function extractModuleDataForPreview(values, headers) {
 /**
  * Generate complete HTML document for A+ Content preview
  */
-function generateAPlusHTML(asin, modules) {
+function generateAPlusHTML(asin, modules, contentType) {
   const marketplace = modules[0]?.data?.marketplace || 'DE';
   const language = modules[0]?.data?.language || 'DE';
+  const isPremium = contentType === 'premium';
 
   let modulesHTML = '';
-
   for (const module of modules) {
-    modulesHTML += generateModuleHTML(module.data);
+    modulesHTML += generateModuleHTML(module.data, isPremium);
   }
 
+  const marketplaceNames = {
+    'DE': 'Germany (amazon.de)',
+    'UK': 'United Kingdom (amazon.co.uk)',
+    'FR': 'France (amazon.fr)',
+    'IT': 'Italy (amazon.it)',
+    'ES': 'Spain (amazon.es)',
+    'NL': 'Netherlands (amazon.nl)',
+    'PL': 'Poland (amazon.pl)',
+    'SE': 'Sweden (amazon.se)',
+    'BE': 'Belgium (amazon.com.be)',
+    'US': 'United States (amazon.com)',
+    'CA': 'Canada (amazon.ca)',
+    'MX': 'Mexico (amazon.com.mx)',
+    'BR': 'Brazil (amazon.com.br)',
+    'JP': 'Japan (amazon.co.jp)',
+    'AU': 'Australia (amazon.com.au)',
+    'IN': 'India (amazon.in)',
+    'AE': 'UAE (amazon.ae)',
+    'SA': 'Saudi Arabia (amazon.sa)',
+    'SG': 'Singapore (amazon.sg)'
+  };
+
+  const languageNames = {
+    'DE': 'German (Deutsch)',
+    'EN': 'English',
+    'FR': 'French (Francais)',
+    'IT': 'Italian (Italiano)',
+    'ES': 'Spanish (Espanol)',
+    'NL': 'Dutch (Nederlands)',
+    'PL': 'Polish (Polski)',
+    'SV': 'Swedish (Svenska)',
+    'PT': 'Portuguese (Portugues)',
+    'JA': 'Japanese',
+    'ZH': 'Chinese',
+    'AR': 'Arabic'
+  };
+
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${language.toLowerCase()}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>A+ Content Preview - ${asin}</title>
   <style>
-    ${getPreviewCSS()}
+    ${getAmazonCSS(isPremium)}
   </style>
 </head>
 <body>
-  <div class="preview-container">
+  <div class="preview-wrapper">
+    <!-- Header with A+ Type Badge -->
     <div class="preview-header">
-      <div class="preview-badge">A+ Content Preview</div>
-      <div class="preview-info">
-        <span class="asin">ASIN: ${asin}</span>
-        <span class="marketplace">${marketplace}</span>
-        <span class="language">${language}</span>
+      <div class="header-content">
+        <div class="aplus-type-badge ${isPremium ? 'premium' : 'basic'}">
+          ${isPremium ? 'A+ Premium Content' : 'A+ Basic Content'}
+        </div>
+        <div class="preview-meta">
+          <div class="meta-item">
+            <span class="meta-label">ASIN:</span>
+            <span class="meta-value">${asin}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Marketplace:</span>
+            <span class="meta-value">${marketplaceNames[marketplace] || marketplace}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Language:</span>
+            <span class="meta-value">${languageNames[language] || language}</span>
+          </div>
+        </div>
       </div>
-      <div class="preview-note">This is a preview. Actual appearance may vary slightly on Amazon.</div>
     </div>
 
-    <div class="aplus-content">
-      ${modulesHTML}
+    <!-- Amazon A+ Content Container -->
+    <div id="aplus" class="aplus-v2 celwidget" data-asin="${asin}">
+      <div class="${isPremium ? 'premium-aplus' : 'aplus-standard'}">
+        ${modulesHTML}
+      </div>
     </div>
 
+    <!-- Footer -->
     <div class="preview-footer">
-      <div class="generated-by">
-        Generated by <a href="https://ads.netanaliza.com/lacm" target="_blank">LUKO Amazon Content Manager</a>
-      </div>
-      <div class="timestamp">${new Date().toLocaleString()}</div>
-      <div class="contact">
-        Support: <a href="mailto:support@netanaliza.com">support@netanaliza.com</a>
+      <div class="footer-content">
+        <div class="generated-by">
+          Generated by <a href="https://ads.netanaliza.com/lacm" target="_blank">LUKO Amazon Content Manager</a>
+        </div>
+        <div class="timestamp">${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}</div>
+        <div class="contact">
+          Support: <a href="mailto:support@netanaliza.com">support@netanaliza.com</a>
+        </div>
       </div>
     </div>
   </div>
@@ -345,9 +443,8 @@ function generateAPlusHTML(asin, modules) {
 
 /**
  * Generate HTML for a single module based on its type
- * Now more flexible - tries multiple field name variants and shows all available data
  */
-function generateModuleHTML(data) {
+function generateModuleHTML(data, isPremium) {
   const moduleType = data.moduleType || 'STANDARD_TEXT';
 
   // Get text fields - try multiple possible names
@@ -357,310 +454,333 @@ function generateModuleHTML(data) {
   // Get image fields - try multiple possible names
   const imageUrl = data.image_url || data.backgroundImage_url || data.mainImage_url ||
                    data.logo_url || data.companyLogo_url || '';
-  const imageAlt = data.image_altText || data.backgroundImage_altText || data.altText || '';
+  const imageAlt = data.image_altText || data.backgroundImage_altText || data.altText || headline || 'Product image';
 
-  // Collect all text content from the module
+  // Collect all text and image content
   const allTextContent = [];
   const allImages = [];
 
-  // Scan all fields for text and images
   for (const [key, value] of Object.entries(data)) {
     if (!value || typeof value !== 'string') continue;
     if (['moduleNumber', 'moduleType', 'marketplace', 'language'].includes(key)) continue;
 
-    // Check if it's an image URL
-    if (key.includes('image') || key.includes('Image') || key.includes('logo') || key.includes('Logo')) {
-      if (value.startsWith('http') || value.startsWith('//')) {
-        allImages.push({ key, url: value });
-      }
-    }
-    // Check if it's meaningful text (not IDs or coordinates)
-    else if (!key.includes('_id') && !key.includes('_x') && !key.includes('_y') &&
-             !key.includes('position') && !key.includes('Position') &&
-             value.length > 5) {
+    if ((key.includes('image') || key.includes('Image') || key.includes('logo') || key.includes('Logo')) &&
+        key.includes('url') && (value.startsWith('http') || value.startsWith('//'))) {
+      const altKey = key.replace('_url', '_altText');
+      allImages.push({
+        key,
+        url: value,
+        alt: data[altKey] || key.replace(/_url|_image/gi, '').replace(/_/g, ' ')
+      });
+    } else if (!key.includes('_id') && !key.includes('_url') && !key.includes('altText') &&
+               !key.includes('position') && !key.includes('Position') &&
+               value.length > 3) {
       allTextContent.push({ key, value });
     }
   }
 
-  // Build HTML based on what we have
-  let html = `<div class="module module-${moduleType.toLowerCase().replace(/_/g, '-')}">`;
-  html += `<div class="module-type-label">${escapeHtml(moduleType.replace(/_/g, ' '))}</div>`;
+  // Build module based on type
+  let html = '';
 
-  // Primary content
-  if (headline) {
-    html += `<h2 class="module-headline">${escapeHtml(headline)}</h2>`;
+  switch (moduleType) {
+    case 'STANDARD_COMPANY_LOGO':
+      html = generateCompanyLogoModule(data, allImages);
+      break;
+    case 'STANDARD_SINGLE_SIDE_IMAGE':
+      html = generateSingleSideImageModule(data, headline, body, imageUrl, imageAlt);
+      break;
+    case 'STANDARD_HEADER_IMAGE_TEXT':
+      html = generateHeaderImageTextModule(data, headline, body, imageUrl, imageAlt);
+      break;
+    case 'STANDARD_FOUR_IMAGE_TEXT':
+    case 'STANDARD_FOUR_IMAGE_TEXT_QUADRANT':
+      html = generateFourImageTextModule(data, headline);
+      break;
+    case 'STANDARD_THREE_IMAGE_TEXT':
+      html = generateThreeImageTextModule(data, headline);
+      break;
+    case 'STANDARD_SINGLE_IMAGE_HIGHLIGHTS':
+      html = generateSingleImageHighlightsModule(data, headline, imageUrl, imageAlt);
+      break;
+    case 'STANDARD_SINGLE_IMAGE_SPECS_DETAIL':
+      html = generateSingleImageSpecsModule(data, headline, imageUrl, imageAlt);
+      break;
+    case 'STANDARD_TEXT':
+      html = generateTextModule(headline, body);
+      break;
+    case 'STANDARD_IMAGE_SIDEBAR':
+      html = generateImageSidebarModule(data, headline, body, imageUrl, imageAlt);
+      break;
+    case 'STANDARD_MULTIPLE_IMAGE_TEXT_A':
+    case 'STANDARD_MULTIPLE_IMAGE_TEXT_B':
+      html = generateMultipleImageTextModule(data, headline, body, allImages);
+      break;
+    case 'STANDARD_TECH_SPECS':
+      html = generateTechSpecsModule(data, headline);
+      break;
+    case 'STANDARD_COMPARISON_TABLE':
+      html = generateComparisonTableModule(data, headline);
+      break;
+    default:
+      html = generateGenericModule(data, headline, body, imageUrl, imageAlt, allImages, allTextContent);
   }
 
-  if (body) {
-    html += `<div class="module-body">${formatTextWithStyles(body)}</div>`;
-  }
-
-  // Main image
-  if (imageUrl) {
-    html += `<div class="module-image"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}"
-             onerror="this.src='${getPlaceholderImage(400, 300)}'"></div>`;
-  }
-
-  // Additional images
-  const otherImages = allImages.filter(img => img.url !== imageUrl).slice(0, 4);
-  if (otherImages.length > 0) {
-    html += `<div class="module-gallery">`;
-    for (const img of otherImages) {
-      html += `<img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.key)}"
-               onerror="this.style.display='none'" class="gallery-image">`;
-    }
-    html += `</div>`;
-  }
-
-  // Additional text content (highlights, descriptions, etc.)
-  const otherText = allTextContent.filter(t => t.value !== headline && t.value !== body);
-  if (otherText.length > 0) {
-    html += `<div class="module-details">`;
-    for (const item of otherText) {
-      const label = item.key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
-      html += `<div class="detail-item"><span class="detail-label">${escapeHtml(label)}:</span>
-               <span class="detail-value">${escapeHtml(item.value)}</span></div>`;
-    }
-    html += `</div>`;
-  }
-
-  // If no content at all, show placeholder
-  if (!headline && !body && !imageUrl && otherText.length === 0) {
-    html += `<div class="empty-module">
-      <p>No content for this module</p>
-      <p class="module-debug">Available fields: ${Object.keys(data).join(', ')}</p>
-    </div>`;
-  }
-
-  html += `</div>`;
   return html;
 }
 
 /**
- * STANDARD_TEXT module - Simple text block
+ * STANDARD_COMPANY_LOGO module
  */
-function generateStandardTextHTML(data) {
-  const headline = data.headline || '';
-  const body = formatTextWithStyles(data.body || '');
+function generateCompanyLogoModule(data, allImages) {
+  const logoUrl = data.companyLogo_url || data.logo_url || data.image_url || '';
+  const logoAlt = data.companyLogo_altText || data.logo_altText || 'Company Logo';
+  const description = data.body || data.companyDescription || data.description || '';
 
   return `
-    <div class="module standard-text">
-      ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
-      <div class="module-body">${body}</div>
+    <div class="apm-brand-story-card apm-brand-story-background">
+      <div class="apm-brand-story-logo-image">
+        ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(logoAlt)}" class="apm-brand-story-logo-image-img">` : ''}
+      </div>
+      ${description ? `<div class="apm-brand-story-text-content"><p>${formatTextWithStyles(description)}</p></div>` : ''}
     </div>
   `;
 }
 
 /**
- * STANDARD_SINGLE_SIDE_IMAGE - Image on left or right with text
+ * STANDARD_SINGLE_SIDE_IMAGE module
  */
-function generateSingleSideImageHTML(data) {
-  const headline = data.headline || '';
-  const body = formatTextWithStyles(data.body || '');
-  const imageUrl = data.image_url || getPlaceholderImage(300, 300);
-  const imageAlt = data.image_altText || 'Product image';
-  const position = (data.imagePositionType || 'LEFT').toLowerCase();
+function generateSingleSideImageModule(data, headline, body, imageUrl, imageAlt) {
+  const position = (data.imagePositionType || 'LEFT').toUpperCase();
+  const isRight = position === 'RIGHT';
+
+  const imageBlock = `
+    <div class="apm-sideimage-imagewrapper">
+      <div class="apm-sideimage-image">
+        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" class="apm-sideimage-image-img">` : getPlaceholderImageTag(300, 300)}
+      </div>
+    </div>
+  `;
+
+  const textBlock = `
+    <div class="apm-sideimage-textwrapper">
+      ${headline ? `<h3 class="apm-sideimage-headline">${escapeHtml(headline)}</h3>` : ''}
+      ${body ? `<div class="apm-sideimage-text">${formatTextWithStyles(body)}</div>` : ''}
+    </div>
+  `;
 
   return `
-    <div class="module single-side-image ${position}">
-      <div class="image-container">
-        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" onerror="this.src='${getPlaceholderImage(300, 300)}'">
+    <div class="apm-sidemodule ${isRight ? 'apm-sidemodule-imageleft' : ''}">
+      ${isRight ? textBlock + imageBlock : imageBlock + textBlock}
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_HEADER_IMAGE_TEXT module
+ */
+function generateHeaderImageTextModule(data, headline, body, imageUrl, imageAlt) {
+  return `
+    <div class="apm-hovermodule">
+      <div class="apm-hovermodule-imagecontainer">
+        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" class="apm-hovermodule-image-img">` : getPlaceholderImageTag(970, 600)}
       </div>
-      <div class="text-container">
-        ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
-        <div class="module-body">${body}</div>
+      <div class="apm-hovermodule-textcontainer">
+        ${headline ? `<h2 class="apm-hovermodule-headline">${escapeHtml(headline)}</h2>` : ''}
+        ${body ? `<div class="apm-hovermodule-text">${formatTextWithStyles(body)}</div>` : ''}
       </div>
     </div>
   `;
 }
 
 /**
- * STANDARD_HEADER_IMAGE_TEXT - Full-width header image with text overlay
+ * STANDARD_FOUR_IMAGE_TEXT module
  */
-function generateHeaderImageTextHTML(data) {
-  const headline = data.headline || '';
-  const body = formatTextWithStyles(data.body || '');
-  const imageUrl = data.image_url || getPlaceholderImage(970, 600);
-  const imageAlt = data.image_altText || 'Header image';
+function generateFourImageTextModule(data, headline) {
+  const blocks = [];
+  for (let i = 1; i <= 4; i++) {
+    blocks.push({
+      imageUrl: data[`block${i}_image_url`] || data[`image${i}_url`] || '',
+      imageAlt: data[`block${i}_image_altText`] || data[`image${i}_altText`] || `Feature ${i}`,
+      headline: data[`block${i}_headline`] || '',
+      body: data[`block${i}_body`] || ''
+    });
+  }
 
   return `
-    <div class="module header-image-text">
-      <div class="header-image">
-        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" onerror="this.src='${getPlaceholderImage(970, 600)}'">
-      </div>
-      <div class="header-text">
-        ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
-        <div class="module-body">${body}</div>
+    <div class="apm-fourcolumnmodule">
+      ${headline ? `<h2 class="apm-fourcolumnmodule-headline">${escapeHtml(headline)}</h2>` : ''}
+      <div class="apm-fourcolumnmodule-grid">
+        ${blocks.map(b => `
+          <div class="apm-fourcolumnmodule-column">
+            <div class="apm-fourcolumnmodule-imagewrapper">
+              ${b.imageUrl ? `<img src="${escapeHtml(b.imageUrl)}" alt="${escapeHtml(b.imageAlt)}" class="apm-fourcolumnmodule-image">` : getPlaceholderImageTag(220, 220)}
+            </div>
+            ${b.headline ? `<h4 class="apm-fourcolumnmodule-column-headline">${escapeHtml(b.headline)}</h4>` : ''}
+            ${b.body ? `<p class="apm-fourcolumnmodule-column-text">${escapeHtml(b.body)}</p>` : ''}
+          </div>
+        `).join('')}
       </div>
     </div>
   `;
 }
 
 /**
- * STANDARD_COMPANY_LOGO - Company logo with description
+ * STANDARD_THREE_IMAGE_TEXT module
  */
-function generateCompanyLogoHTML(data) {
-  const headline = data.headline || '';
-  const body = formatTextWithStyles(data.body || data.companyDescription || '');
-  const logoUrl = data.companyLogo_url || data.image_url || getPlaceholderImage(600, 180);
+function generateThreeImageTextModule(data, headline) {
+  const blocks = [];
+  for (let i = 1; i <= 3; i++) {
+    blocks.push({
+      imageUrl: data[`block${i}_image_url`] || data[`image${i}_url`] || '',
+      imageAlt: data[`block${i}_image_altText`] || data[`image${i}_altText`] || `Feature ${i}`,
+      headline: data[`block${i}_headline`] || '',
+      body: data[`block${i}_body`] || ''
+    });
+  }
 
   return `
-    <div class="module company-logo">
-      <div class="logo-container">
-        <img src="${escapeHtml(logoUrl)}" alt="Company logo" onerror="this.src='${getPlaceholderImage(600, 180)}'">
+    <div class="apm-threecolumnmodule">
+      ${headline ? `<h2 class="apm-threecolumnmodule-headline">${escapeHtml(headline)}</h2>` : ''}
+      <div class="apm-threecolumnmodule-grid">
+        ${blocks.map(b => `
+          <div class="apm-threecolumnmodule-column">
+            <div class="apm-threecolumnmodule-imagewrapper">
+              ${b.imageUrl ? `<img src="${escapeHtml(b.imageUrl)}" alt="${escapeHtml(b.imageAlt)}" class="apm-threecolumnmodule-image">` : getPlaceholderImageTag(300, 300)}
+            </div>
+            ${b.headline ? `<h4 class="apm-threecolumnmodule-column-headline">${escapeHtml(b.headline)}</h4>` : ''}
+            ${b.body ? `<p class="apm-threecolumnmodule-column-text">${escapeHtml(b.body)}</p>` : ''}
+          </div>
+        `).join('')}
       </div>
-      ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
-      <div class="module-body">${body}</div>
     </div>
   `;
 }
 
 /**
- * STANDARD_SINGLE_IMAGE_HIGHLIGHTS - Image with bullet points
+ * STANDARD_SINGLE_IMAGE_HIGHLIGHTS module
  */
-function generateSingleImageHighlightsHTML(data) {
-  const headline = data.headline || '';
-  const imageUrl = data.image_url || getPlaceholderImage(300, 300);
-
-  // Collect highlights
+function generateSingleImageHighlightsModule(data, headline, imageUrl, imageAlt) {
   const highlights = [];
-  for (let i = 1; i <= 5; i++) {
-    const h = data[`highlight${i}`];
+  for (let i = 1; i <= 6; i++) {
+    const h = data[`highlight${i}`] || data[`bulletPoint${i}`];
     if (h) highlights.push(h);
   }
 
   return `
-    <div class="module single-image-highlights">
-      <div class="image-container">
-        <img src="${escapeHtml(imageUrl)}" alt="Product image" onerror="this.src='${getPlaceholderImage(300, 300)}'">
+    <div class="apm-singleimagehighlights">
+      <div class="apm-singleimagehighlights-imagewrapper">
+        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" class="apm-singleimagehighlights-image">` : getPlaceholderImageTag(300, 300)}
       </div>
-      <div class="highlights-container">
-        ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
-        <ul class="highlights-list">
-          ${highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('')}
-        </ul>
-      </div>
-    </div>
-  `;
-}
-
-/**
- * STANDARD_FOUR_IMAGE_TEXT - Four images with text
- */
-function generateFourImageTextHTML(data) {
-  const headline = data.headline || '';
-  const blocks = [];
-
-  for (let i = 1; i <= 4; i++) {
-    blocks.push({
-      imageUrl: data[`image${i}_url`] || getPlaceholderImage(135, 135),
-      headline: data[`block${i}_headline`] || '',
-      body: data[`block${i}_body`] || ''
-    });
-  }
-
-  return `
-    <div class="module four-image-text">
-      ${headline ? `<h2 class="module-headline center">${escapeHtml(headline)}</h2>` : ''}
-      <div class="four-grid">
-        ${blocks.map(b => `
-          <div class="grid-item">
-            <img src="${escapeHtml(b.imageUrl)}" alt="Feature image" onerror="this.src='${getPlaceholderImage(135, 135)}'">
-            ${b.headline ? `<h3>${escapeHtml(b.headline)}</h3>` : ''}
-            ${b.body ? `<p>${escapeHtml(b.body)}</p>` : ''}
-          </div>
-        `).join('')}
+      <div class="apm-singleimagehighlights-content">
+        ${headline ? `<h3 class="apm-singleimagehighlights-headline">${escapeHtml(headline)}</h3>` : ''}
+        ${highlights.length > 0 ? `
+          <ul class="apm-singleimagehighlights-list">
+            ${highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('')}
+          </ul>
+        ` : ''}
       </div>
     </div>
   `;
 }
 
 /**
- * STANDARD_THREE_IMAGE_TEXT - Three images with text
+ * STANDARD_SINGLE_IMAGE_SPECS_DETAIL module
  */
-function generateThreeImageTextHTML(data) {
-  const headline = data.headline || '';
-  const blocks = [];
-
-  for (let i = 1; i <= 3; i++) {
-    blocks.push({
-      imageUrl: data[`image${i}_url`] || getPlaceholderImage(300, 300),
-      headline: data[`block${i}_headline`] || '',
-      body: data[`block${i}_body`] || ''
-    });
-  }
-
-  return `
-    <div class="module three-image-text">
-      ${headline ? `<h2 class="module-headline center">${escapeHtml(headline)}</h2>` : ''}
-      <div class="three-grid">
-        ${blocks.map(b => `
-          <div class="grid-item">
-            <img src="${escapeHtml(b.imageUrl)}" alt="Feature image" onerror="this.src='${getPlaceholderImage(300, 300)}'">
-            ${b.headline ? `<h3>${escapeHtml(b.headline)}</h3>` : ''}
-            ${b.body ? `<p>${escapeHtml(b.body)}</p>` : ''}
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
-}
-
-/**
- * STANDARD_MULTIPLE_IMAGE_TEXT - Multiple images in a row
- */
-function generateMultipleImageTextHTML(data) {
-  const headline = data.headline || '';
-  const body = formatTextWithStyles(data.body || '');
-  const images = [];
-
-  for (let i = 1; i <= 8; i++) {
-    const url = data[`image${i}_url`];
-    if (url) {
-      images.push({
-        url: url,
-        alt: data[`image${i}_altText`] || `Image ${i}`
-      });
-    }
-  }
-
-  return `
-    <div class="module multiple-image-text">
-      ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
-      <div class="image-row">
-        ${images.map(img => `
-          <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt)}" onerror="this.src='${getPlaceholderImage(300, 300)}'">
-        `).join('')}
-      </div>
-      ${body ? `<div class="module-body">${body}</div>` : ''}
-    </div>
-  `;
-}
-
-/**
- * STANDARD_TECH_SPECS - Technical specifications table
- */
-function generateTechSpecsHTML(data) {
-  const headline = data.headline || 'Technical Specifications';
+function generateSingleImageSpecsModule(data, headline, imageUrl, imageAlt) {
   const specs = [];
-
-  for (let i = 1; i <= 12; i++) {
-    const name = data[`spec${i}_name`];
-    const value = data[`spec${i}_value`];
-    if (name && value) {
-      specs.push({ name, value });
-    }
+  for (let i = 1; i <= 8; i++) {
+    const label = data[`specLabel${i}`] || data[`spec${i}_label`] || data[`spec${i}_name`];
+    const value = data[`specValue${i}`] || data[`spec${i}_value`] || data[`spec${i}_definition`];
+    if (label && value) specs.push({ label, value });
   }
 
   return `
-    <div class="module tech-specs">
-      <h2 class="module-headline">${escapeHtml(headline)}</h2>
-      <table class="specs-table">
+    <div class="apm-specsmodule">
+      <div class="apm-specsmodule-imagewrapper">
+        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" class="apm-specsmodule-image">` : getPlaceholderImageTag(300, 300)}
+      </div>
+      <div class="apm-specsmodule-content">
+        ${headline ? `<h3 class="apm-specsmodule-headline">${escapeHtml(headline)}</h3>` : ''}
+        ${specs.length > 0 ? `
+          <table class="apm-specsmodule-table">
+            <tbody>
+              ${specs.map(s => `<tr><th>${escapeHtml(s.label)}</th><td>${escapeHtml(s.value)}</td></tr>`).join('')}
+            </tbody>
+          </table>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_TEXT module
+ */
+function generateTextModule(headline, body) {
+  return `
+    <div class="apm-textmodule">
+      ${headline ? `<h2 class="apm-textmodule-headline">${escapeHtml(headline)}</h2>` : ''}
+      ${body ? `<div class="apm-textmodule-body">${formatTextWithStyles(body)}</div>` : ''}
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_IMAGE_SIDEBAR module
+ */
+function generateImageSidebarModule(data, headline, body, imageUrl, imageAlt) {
+  return `
+    <div class="apm-imagesidebar">
+      <div class="apm-imagesidebar-main">
+        ${headline ? `<h2 class="apm-imagesidebar-headline">${escapeHtml(headline)}</h2>` : ''}
+        ${body ? `<div class="apm-imagesidebar-body">${formatTextWithStyles(body)}</div>` : ''}
+      </div>
+      <div class="apm-imagesidebar-sidebar">
+        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" class="apm-imagesidebar-image">` : getPlaceholderImageTag(220, 220)}
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_MULTIPLE_IMAGE_TEXT module
+ */
+function generateMultipleImageTextModule(data, headline, body, allImages) {
+  const images = allImages.filter(img => img.url).slice(0, 6);
+
+  return `
+    <div class="apm-multipleimages">
+      ${headline ? `<h2 class="apm-multipleimages-headline">${escapeHtml(headline)}</h2>` : ''}
+      ${body ? `<div class="apm-multipleimages-body">${formatTextWithStyles(body)}</div>` : ''}
+      ${images.length > 0 ? `
+        <div class="apm-multipleimages-grid">
+          ${images.map(img => `<img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt)}" class="apm-multipleimages-image">`).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+/**
+ * STANDARD_TECH_SPECS module
+ */
+function generateTechSpecsModule(data, headline) {
+  const specs = [];
+  for (let i = 1; i <= 16; i++) {
+    const label = data[`spec${i}_label`] || data[`spec${i}_name`] || data[`specLabel${i}`];
+    const value = data[`spec${i}_value`] || data[`spec${i}_definition`] || data[`specValue${i}`];
+    if (label && value) specs.push({ label, value });
+  }
+
+  return `
+    <div class="apm-techspecs">
+      ${headline ? `<h2 class="apm-techspecs-headline">${escapeHtml(headline || 'Technical Specifications')}</h2>` : ''}
+      <table class="apm-techspecs-table">
         <tbody>
           ${specs.map(s => `
             <tr>
-              <th>${escapeHtml(s.name)}</th>
-              <td>${escapeHtml(s.value)}</td>
+              <th class="apm-techspecs-label">${escapeHtml(s.label)}</th>
+              <td class="apm-techspecs-value">${escapeHtml(s.value)}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -670,78 +790,128 @@ function generateTechSpecsHTML(data) {
 }
 
 /**
- * STANDARD_COMPARISON_TABLE - Product comparison table
+ * STANDARD_COMPARISON_TABLE module
  */
-function generateComparisonTableHTML(data) {
-  const headline = data.headline || 'Product Comparison';
-
-  // Collect products
+function generateComparisonTableModule(data, headline) {
   const products = [];
-  for (let i = 1; i <= 4; i++) {
-    const title = data[`product${i}_title`];
+  for (let i = 1; i <= 6; i++) {
+    const title = data[`product${i}_title`] || data[`product${i}_name`];
     if (title) {
       products.push({
-        title: title,
+        title,
         asin: data[`product${i}_asin`] || '',
+        imageUrl: data[`product${i}_image_url`] || '',
         highlight: data[`product${i}_highlight`] === 'TRUE' || data[`product${i}_highlight`] === true
       });
     }
   }
 
-  // Collect metrics
   const metrics = [];
-  for (let i = 1; i <= 5; i++) {
-    const name = data[`metric${i}_name`];
+  for (let i = 1; i <= 10; i++) {
+    const name = data[`metric${i}_name`] || data[`row${i}_label`];
     if (name) {
       const values = [];
-      for (let j = 1; j <= 4; j++) {
-        values.push(data[`metric${i}_product${j}`] || '');
+      for (let j = 1; j <= 6; j++) {
+        values.push(data[`metric${i}_product${j}`] || data[`row${i}_product${j}`] || '');
       }
       metrics.push({ name, values });
     }
   }
 
   return `
-    <div class="module comparison-table">
-      <h2 class="module-headline center">${escapeHtml(headline)}</h2>
-      <table class="comparison">
-        <thead>
-          <tr>
-            <th></th>
-            ${products.map(p => `<th class="${p.highlight ? 'highlight' : ''}">${escapeHtml(p.title)}</th>`).join('')}
-          </tr>
-        </thead>
-        <tbody>
-          ${metrics.map(m => `
+    <div class="apm-comparison">
+      ${headline ? `<h2 class="apm-comparison-headline">${escapeHtml(headline)}</h2>` : ''}
+      <div class="apm-comparison-table-wrapper">
+        <table class="apm-comparison-table">
+          <thead>
             <tr>
-              <th>${escapeHtml(m.name)}</th>
-              ${m.values.slice(0, products.length).map((v, i) => `
-                <td class="${products[i]?.highlight ? 'highlight' : ''}">${escapeHtml(v)}</td>
+              <th></th>
+              ${products.map(p => `
+                <th class="${p.highlight ? 'apm-comparison-highlight' : ''}">
+                  ${p.imageUrl ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.title)}" class="apm-comparison-product-image">` : ''}
+                  <span class="apm-comparison-product-title">${escapeHtml(p.title)}</span>
+                </th>
               `).join('')}
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${metrics.map(m => `
+              <tr>
+                <th class="apm-comparison-metric">${escapeHtml(m.name)}</th>
+                ${m.values.slice(0, products.length).map((v, i) => `
+                  <td class="${products[i]?.highlight ? 'apm-comparison-highlight' : ''}">${escapeHtml(v) || '-'}</td>
+                `).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
     </div>
   `;
 }
 
 /**
- * Generic module for unknown types
+ * Generic module for unknown types - shows all available content
  */
-function generateGenericModuleHTML(data) {
-  const headline = data.headline || '';
-  const body = formatTextWithStyles(data.body || '');
-  const imageUrl = data.image_url;
+function generateGenericModule(data, headline, body, imageUrl, imageAlt, allImages, allTextContent) {
+  const otherImages = allImages.filter(img => img.url !== imageUrl).slice(0, 4);
+  const otherText = allTextContent.filter(t =>
+    t.value !== headline && t.value !== body &&
+    !t.key.includes('altText') && !t.key.includes('position')
+  );
 
   return `
-    <div class="module generic">
-      <div class="module-type-badge">${escapeHtml(data.moduleType || 'Unknown')}</div>
-      ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="Module image" class="generic-image" onerror="this.src='${getPlaceholderImage(300, 300)}'">` : ''}
-      ${headline ? `<h2 class="module-headline">${escapeHtml(headline)}</h2>` : ''}
-      ${body ? `<div class="module-body">${body}</div>` : ''}
+    <div class="apm-genericmodule">
+      <div class="apm-genericmodule-type">${escapeHtml(data.moduleType || 'Module')}</div>
+
+      ${imageUrl ? `
+        <div class="apm-genericmodule-mainimage">
+          <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}">
+        </div>
+      ` : ''}
+
+      ${headline ? `<h2 class="apm-genericmodule-headline">${escapeHtml(headline)}</h2>` : ''}
+      ${body ? `<div class="apm-genericmodule-body">${formatTextWithStyles(body)}</div>` : ''}
+
+      ${otherImages.length > 0 ? `
+        <div class="apm-genericmodule-gallery">
+          ${otherImages.map(img => `<img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt)}">`).join('')}
+        </div>
+      ` : ''}
+
+      ${otherText.length > 0 ? `
+        <div class="apm-genericmodule-details">
+          ${otherText.map(item => `
+            <div class="apm-genericmodule-detail">
+              <span class="apm-genericmodule-detail-label">${escapeHtml(item.key.replace(/_/g, ' '))}:</span>
+              <span class="apm-genericmodule-detail-value">${escapeHtml(item.value)}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      ${!headline && !body && !imageUrl && otherText.length === 0 ? `
+        <div class="apm-genericmodule-empty">
+          <p>No content configured for this module</p>
+          <p class="apm-genericmodule-debug">Type: ${data.moduleType}<br>Available fields: ${Object.keys(data).filter(k => data[k] && !['moduleNumber', 'moduleType', 'marketplace', 'language'].includes(k)).join(', ') || 'none'}</p>
+        </div>
+      ` : ''}
     </div>
   `;
+}
+
+/**
+ * Get placeholder image HTML tag
+ */
+function getPlaceholderImageTag(width, height) {
+  return `<div class="apm-placeholder" style="width:${width}px;height:${height}px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;">${width}x${height}</div>`;
+}
+
+/**
+ * Get placeholder image URL
+ */
+function getPlaceholderImage(width, height) {
+  return `https://via.placeholder.com/${width}x${height}/f0f0f0/666666?text=${width}x${height}`;
 }
 
 /**
@@ -765,16 +935,11 @@ function formatTextWithStyles(text) {
 
   // Bullet lists: - item
   html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+  if (html.includes('<li>')) {
+    html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+  }
 
   return html;
-}
-
-/**
- * Get placeholder image URL
- */
-function getPlaceholderImage(width, height) {
-  return `https://via.placeholder.com/${width}x${height}/f5f5f5/333333?text=${width}x${height}`;
 }
 
 /**
@@ -791,10 +956,13 @@ function escapeHtml(text) {
 }
 
 /**
- * Get CSS styles for preview
+ * Get Amazon-style CSS
  */
-function getPreviewCSS() {
+function getAmazonCSS(isPremium) {
+  const maxWidth = isPremium ? '1464px' : '970px';
+
   return `
+    /* Reset & Base */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -802,390 +970,712 @@ function getPreviewCSS() {
     }
 
     body {
-      font-family: "Amazon Ember", Arial, sans-serif;
-      background: #f5f5f5;
+      font-family: "Amazon Ember", "Helvetica Neue", Roboto, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.465;
       color: #0F1111;
-      line-height: 1.5;
+      background: #eaeded;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .preview-container {
-      max-width: 970px;
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Preview Wrapper */
+    .preview-wrapper {
+      max-width: ${maxWidth};
       margin: 0 auto;
-      background: white;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
+    /* Preview Header */
     .preview-header {
       background: linear-gradient(135deg, #232f3e 0%, #37475a 100%);
-      color: white;
-      padding: 20px;
-      text-align: center;
+      padding: 24px 30px;
+      color: #fff;
     }
 
-    .preview-badge {
+    .header-content {
+      max-width: 100%;
+    }
+
+    .aplus-type-badge {
       display: inline-block;
-      background: #ff9900;
-      color: #0F1111;
-      padding: 5px 15px;
-      border-radius: 3px;
-      font-weight: bold;
-      font-size: 14px;
-      margin-bottom: 10px;
+      padding: 8px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
     }
 
-    .preview-info {
+    .aplus-type-badge.basic {
+      background: #fff;
+      color: #232f3e;
+    }
+
+    .aplus-type-badge.premium {
+      background: linear-gradient(135deg, #ff9900 0%, #ffad33 100%);
+      color: #0f1111;
+    }
+
+    .preview-meta {
       display: flex;
-      justify-content: center;
+      flex-wrap: wrap;
       gap: 20px;
-      margin: 10px 0;
     }
 
-    .preview-info span {
+    .meta-item {
       background: rgba(255,255,255,0.1);
-      padding: 5px 10px;
-      border-radius: 3px;
-      font-size: 12px;
+      padding: 8px 14px;
+      border-radius: 4px;
     }
 
-    .preview-note {
+    .meta-label {
+      color: rgba(255,255,255,0.7);
       font-size: 11px;
-      opacity: 0.7;
-      margin-top: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 2px;
     }
 
-    .aplus-content {
+    .meta-value {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* Amazon A+ Container */
+    #aplus {
       padding: 0;
     }
 
-    .module {
-      padding: 30px 20px;
-      border-bottom: 1px solid #e7e7e7;
+    .aplus-standard,
+    .premium-aplus {
+      padding: 0;
     }
 
-    .module:last-child {
-      border-bottom: none;
-    }
+    /* ============================================
+       AMAZON A+ MODULE STYLES
+       ============================================ */
 
-    .module-headline {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 15px;
-      color: #0F1111;
-    }
-
-    .module-headline.center {
+    /* Brand Story / Company Logo */
+    .apm-brand-story-card {
+      padding: 40px;
       text-align: center;
+      background: #fafafa;
     }
 
-    .module-body {
+    .apm-brand-story-logo-image {
+      margin-bottom: 20px;
+    }
+
+    .apm-brand-story-logo-image-img {
+      max-width: 600px;
+      max-height: 180px;
+    }
+
+    .apm-brand-story-text-content {
+      max-width: 800px;
+      margin: 0 auto;
       font-size: 14px;
       color: #333;
       line-height: 1.6;
     }
 
-    .module-body ul {
-      margin: 10px 0;
-      padding-left: 20px;
-    }
-
-    .module-body li {
-      margin: 5px 0;
-    }
-
-    /* Single Side Image */
-    .single-side-image {
+    /* Side Image Module */
+    .apm-sidemodule {
       display: flex;
+      padding: 30px;
       gap: 30px;
       align-items: flex-start;
     }
 
-    .single-side-image.right {
+    .apm-sidemodule-imageleft {
       flex-direction: row-reverse;
     }
 
-    .single-side-image .image-container {
+    .apm-sideimage-imagewrapper {
       flex: 0 0 300px;
     }
 
-    .single-side-image .image-container img {
+    .apm-sideimage-image-img {
       width: 100%;
       height: auto;
+      border-radius: 4px;
     }
 
-    .single-side-image .text-container {
+    .apm-sideimage-textwrapper {
       flex: 1;
     }
 
-    /* Header Image Text */
-    .header-image-text .header-image {
-      margin: -30px -20px 20px -20px;
+    .apm-sideimage-headline {
+      font-size: 21px;
+      font-weight: 700;
+      color: #0F1111;
+      margin-bottom: 12px;
+      line-height: 1.3;
     }
 
-    .header-image-text .header-image img {
+    .apm-sideimage-text {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* Header Image Text Module (Hover Module) */
+    .apm-hovermodule {
+      position: relative;
+    }
+
+    .apm-hovermodule-imagecontainer {
+      width: 100%;
+    }
+
+    .apm-hovermodule-image-img {
       width: 100%;
       height: auto;
       display: block;
     }
 
-    /* Company Logo */
-    .company-logo {
+    .apm-hovermodule-textcontainer {
+      padding: 30px;
+    }
+
+    .apm-hovermodule-headline {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0F1111;
+      margin-bottom: 12px;
+    }
+
+    .apm-hovermodule-text {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* Four Column Module */
+    .apm-fourcolumnmodule {
+      padding: 30px;
+    }
+
+    .apm-fourcolumnmodule-headline {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0F1111;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .apm-fourcolumnmodule-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .apm-fourcolumnmodule-column {
       text-align: center;
     }
 
-    .company-logo .logo-container {
-      margin-bottom: 20px;
+    .apm-fourcolumnmodule-imagewrapper {
+      margin-bottom: 12px;
     }
 
-    .company-logo .logo-container img {
-      max-width: 600px;
-      max-height: 180px;
+    .apm-fourcolumnmodule-image {
+      width: 100%;
+      max-width: 220px;
+      height: auto;
+      border-radius: 4px;
+    }
+
+    .apm-fourcolumnmodule-column-headline {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0F1111;
+      margin-bottom: 8px;
+    }
+
+    .apm-fourcolumnmodule-column-text {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    /* Three Column Module */
+    .apm-threecolumnmodule {
+      padding: 30px;
+    }
+
+    .apm-threecolumnmodule-headline {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0F1111;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .apm-threecolumnmodule-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .apm-threecolumnmodule-column {
+      text-align: center;
+    }
+
+    .apm-threecolumnmodule-imagewrapper {
+      margin-bottom: 12px;
+    }
+
+    .apm-threecolumnmodule-image {
+      width: 100%;
+      max-width: 300px;
+      height: auto;
+      border-radius: 4px;
+    }
+
+    .apm-threecolumnmodule-column-headline {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0F1111;
+      margin-bottom: 8px;
+    }
+
+    .apm-threecolumnmodule-column-text {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.5;
     }
 
     /* Single Image Highlights */
-    .single-image-highlights {
+    .apm-singleimagehighlights {
       display: flex;
+      padding: 30px;
       gap: 30px;
       align-items: flex-start;
     }
 
-    .single-image-highlights .image-container {
+    .apm-singleimagehighlights-imagewrapper {
       flex: 0 0 300px;
     }
 
-    .single-image-highlights .image-container img {
+    .apm-singleimagehighlights-image {
       width: 100%;
-      height: auto;
+      border-radius: 4px;
     }
 
-    .highlights-list {
+    .apm-singleimagehighlights-content {
+      flex: 1;
+    }
+
+    .apm-singleimagehighlights-headline {
+      font-size: 21px;
+      font-weight: 700;
+      color: #0F1111;
+      margin-bottom: 16px;
+    }
+
+    .apm-singleimagehighlights-list {
       list-style: none;
       padding: 0;
     }
 
-    .highlights-list li {
-      padding: 10px 0 10px 30px;
+    .apm-singleimagehighlights-list li {
       position: relative;
+      padding: 10px 0 10px 28px;
       border-bottom: 1px solid #eee;
-    }
-
-    .highlights-list li:before {
-      content: "✓";
-      position: absolute;
-      left: 0;
-      color: #007600;
-      font-weight: bold;
-    }
-
-    /* Grid layouts */
-    .four-grid, .three-grid {
-      display: grid;
-      gap: 20px;
-      margin-top: 20px;
-    }
-
-    .four-grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-
-    .three-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .grid-item {
-      text-align: center;
-    }
-
-    .grid-item img {
-      width: 100%;
-      height: auto;
-      margin-bottom: 10px;
-    }
-
-    .grid-item h3 {
       font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 5px;
-    }
-
-    .grid-item p {
-      font-size: 12px;
-      color: #555;
-    }
-
-    /* Image row */
-    .image-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin: 20px 0;
-    }
-
-    .image-row img {
-      max-width: 200px;
-      height: auto;
-    }
-
-    /* Tech Specs */
-    .specs-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-
-    .specs-table th, .specs-table td {
-      padding: 12px 15px;
-      text-align: left;
-      border-bottom: 1px solid #e7e7e7;
-    }
-
-    .specs-table th {
-      background: #f7f7f7;
-      font-weight: 600;
-      width: 40%;
-    }
-
-    /* Comparison Table */
-    .comparison {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    .comparison th, .comparison td {
-      padding: 12px;
-      text-align: center;
-      border: 1px solid #e7e7e7;
-    }
-
-    .comparison thead th {
-      background: #f7f7f7;
-      font-weight: 600;
-    }
-
-    .comparison tbody th {
-      text-align: left;
-      background: #fafafa;
-    }
-
-    .comparison .highlight {
-      background: #fffbea;
-    }
-
-    .comparison thead .highlight {
-      background: #ff9900;
-      color: white;
-    }
-
-    /* Generic module */
-    .generic {
-      background: #fafafa;
-    }
-
-    .module-type-badge {
-      display: inline-block;
-      background: #232f3e;
-      color: white;
-      padding: 3px 8px;
-      border-radius: 3px;
-      font-size: 10px;
-      margin-bottom: 10px;
-    }
-
-    .generic-image {
-      max-width: 100%;
-      height: auto;
-      margin: 15px 0;
-    }
-
-    /* New flexible module styles */
-    .module-type-label {
-      display: inline-block;
-      background: #232f3e;
-      color: white;
-      padding: 4px 10px;
-      border-radius: 3px;
-      font-size: 11px;
-      margin-bottom: 15px;
-      text-transform: capitalize;
-    }
-
-    .module-image {
-      margin: 15px 0;
-    }
-
-    .module-image img {
-      max-width: 100%;
-      max-height: 400px;
-      height: auto;
-      display: block;
-      margin: 0 auto;
-    }
-
-    .module-gallery {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin: 15px 0;
-    }
-
-    .gallery-image {
-      max-width: 180px;
-      max-height: 180px;
-      height: auto;
-      border: 1px solid #e7e7e7;
-      border-radius: 4px;
-    }
-
-    .module-details {
-      margin-top: 15px;
-      padding: 15px;
-      background: #fafafa;
-      border-radius: 4px;
-    }
-
-    .detail-item {
-      padding: 8px 0;
-      border-bottom: 1px solid #e7e7e7;
-    }
-
-    .detail-item:last-child {
-      border-bottom: none;
-    }
-
-    .detail-label {
-      font-weight: 600;
-      color: #555;
-      margin-right: 10px;
-      text-transform: capitalize;
-    }
-
-    .detail-value {
       color: #333;
     }
 
-    .empty-module {
+    .apm-singleimagehighlights-list li:last-child {
+      border-bottom: none;
+    }
+
+    .apm-singleimagehighlights-list li:before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 14px;
+      width: 16px;
+      height: 16px;
+      background: #007600;
+      border-radius: 50%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
+      background-size: 12px;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* Specs Module */
+    .apm-specsmodule {
+      display: flex;
+      padding: 30px;
+      gap: 30px;
+      align-items: flex-start;
+    }
+
+    .apm-specsmodule-imagewrapper {
+      flex: 0 0 300px;
+    }
+
+    .apm-specsmodule-image {
+      width: 100%;
+      border-radius: 4px;
+    }
+
+    .apm-specsmodule-content {
+      flex: 1;
+    }
+
+    .apm-specsmodule-headline {
+      font-size: 21px;
+      font-weight: 700;
+      color: #0F1111;
+      margin-bottom: 16px;
+    }
+
+    .apm-specsmodule-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .apm-specsmodule-table th,
+    .apm-specsmodule-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e7e7e7;
+      font-size: 13px;
+    }
+
+    .apm-specsmodule-table th {
+      background: #f7f7f7;
+      font-weight: 600;
+      width: 40%;
+      color: #0F1111;
+    }
+
+    .apm-specsmodule-table td {
+      color: #333;
+    }
+
+    /* Text Module */
+    .apm-textmodule {
+      padding: 30px;
+    }
+
+    .apm-textmodule-headline {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0F1111;
+      margin-bottom: 16px;
+    }
+
+    .apm-textmodule-body {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .apm-textmodule-body ul {
+      margin: 12px 0;
+      padding-left: 20px;
+    }
+
+    .apm-textmodule-body li {
+      margin: 6px 0;
+    }
+
+    /* Image Sidebar */
+    .apm-imagesidebar {
+      display: flex;
+      padding: 30px;
+      gap: 30px;
+    }
+
+    .apm-imagesidebar-main {
+      flex: 1;
+    }
+
+    .apm-imagesidebar-headline {
+      font-size: 21px;
+      font-weight: 700;
+      color: #0F1111;
+      margin-bottom: 12px;
+    }
+
+    .apm-imagesidebar-body {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .apm-imagesidebar-sidebar {
+      flex: 0 0 220px;
+    }
+
+    .apm-imagesidebar-image {
+      width: 100%;
+      border-radius: 4px;
+    }
+
+    /* Multiple Images */
+    .apm-multipleimages {
+      padding: 30px;
+    }
+
+    .apm-multipleimages-headline {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0F1111;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .apm-multipleimages-body {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.6;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .apm-multipleimages-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+    }
+
+    .apm-multipleimages-image {
+      max-width: 200px;
+      height: auto;
+      border-radius: 4px;
+    }
+
+    /* Tech Specs */
+    .apm-techspecs {
+      padding: 30px;
+    }
+
+    .apm-techspecs-headline {
+      font-size: 21px;
+      font-weight: 700;
+      color: #0F1111;
+      margin-bottom: 20px;
+    }
+
+    .apm-techspecs-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .apm-techspecs-table tr:nth-child(even) {
+      background: #f7f7f7;
+    }
+
+    .apm-techspecs-label {
+      padding: 12px 16px;
+      font-weight: 600;
+      color: #0F1111;
+      width: 40%;
+      text-align: left;
+      border-bottom: 1px solid #e7e7e7;
+    }
+
+    .apm-techspecs-value {
+      padding: 12px 16px;
+      color: #333;
+      text-align: left;
+      border-bottom: 1px solid #e7e7e7;
+    }
+
+    /* Comparison Table */
+    .apm-comparison {
+      padding: 30px;
+    }
+
+    .apm-comparison-headline {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0F1111;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .apm-comparison-table-wrapper {
+      overflow-x: auto;
+    }
+
+    .apm-comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
+
+    .apm-comparison-table th,
+    .apm-comparison-table td {
+      padding: 14px 16px;
+      text-align: center;
+      border: 1px solid #e7e7e7;
+      font-size: 13px;
+    }
+
+    .apm-comparison-table thead th {
+      background: #f7f7f7;
+      font-weight: 600;
+      vertical-align: bottom;
+    }
+
+    .apm-comparison-product-image {
+      max-width: 80px;
+      height: auto;
+      margin-bottom: 8px;
+    }
+
+    .apm-comparison-product-title {
+      display: block;
+      font-weight: 600;
+      color: #0F1111;
+    }
+
+    .apm-comparison-metric {
+      text-align: left !important;
+      background: #fafafa;
+      font-weight: 600;
+    }
+
+    .apm-comparison-highlight {
+      background: #fffbea !important;
+    }
+
+    .apm-comparison-table thead .apm-comparison-highlight {
+      background: #ff9900 !important;
+      color: #0f1111;
+    }
+
+    /* Generic Module */
+    .apm-genericmodule {
+      padding: 30px;
+      background: #fafafa;
+      border: 1px dashed #ddd;
+      margin: 10px;
+    }
+
+    .apm-genericmodule-type {
+      display: inline-block;
+      background: #232f3e;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .apm-genericmodule-mainimage {
+      margin-bottom: 16px;
+    }
+
+    .apm-genericmodule-mainimage img {
+      max-width: 100%;
+      max-height: 400px;
+      display: block;
+      margin: 0 auto;
+      border-radius: 4px;
+    }
+
+    .apm-genericmodule-headline {
+      font-size: 21px;
+      font-weight: 700;
+      color: #0F1111;
+      margin-bottom: 12px;
+    }
+
+    .apm-genericmodule-body {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .apm-genericmodule-gallery {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 16px 0;
+    }
+
+    .apm-genericmodule-gallery img {
+      max-width: 160px;
+      max-height: 160px;
+      border-radius: 4px;
+      border: 1px solid #e7e7e7;
+    }
+
+    .apm-genericmodule-details {
+      background: #fff;
+      padding: 16px;
+      border-radius: 4px;
+      border: 1px solid #e7e7e7;
+    }
+
+    .apm-genericmodule-detail {
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .apm-genericmodule-detail:last-child {
+      border-bottom: none;
+    }
+
+    .apm-genericmodule-detail-label {
+      font-weight: 600;
+      color: #555;
+      text-transform: capitalize;
+      margin-right: 8px;
+    }
+
+    .apm-genericmodule-detail-value {
+      color: #333;
+    }
+
+    .apm-genericmodule-empty {
       text-align: center;
       padding: 30px;
       color: #888;
     }
 
-    .module-debug {
-      font-size: 10px;
+    .apm-genericmodule-debug {
+      font-size: 11px;
       color: #999;
-      margin-top: 10px;
-      word-break: break-all;
+      margin-top: 8px;
     }
 
-    /* Footer */
+    /* Placeholder */
+    .apm-placeholder {
+      border: 2px dashed #ddd;
+      border-radius: 4px;
+      margin: 0 auto;
+    }
+
+    /* Preview Footer */
     .preview-footer {
       background: linear-gradient(135deg, #232f3e 0%, #37475a 100%);
-      padding: 20px;
+      padding: 24px 30px;
       text-align: center;
-      font-size: 12px;
       color: #ccc;
-      border-top: 1px solid #e7e7e7;
+    }
+
+    .footer-content {
+      max-width: 100%;
     }
 
     .preview-footer a {
@@ -1198,63 +1688,67 @@ function getPreviewCSS() {
     }
 
     .preview-footer .generated-by {
-      font-size: 14px;
-      margin-bottom: 5px;
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 6px;
     }
 
     .preview-footer .timestamp {
-      font-size: 11px;
+      font-size: 12px;
       opacity: 0.7;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
     .preview-footer .contact {
-      font-size: 12px;
-      margin-top: 10px;
-      padding-top: 10px;
+      font-size: 13px;
+      padding-top: 12px;
       border-top: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .generated-by {
-      font-weight: 600;
-      margin-bottom: 5px;
     }
 
     /* Responsive */
     @media (max-width: 768px) {
-      .single-side-image,
-      .single-image-highlights {
+      .apm-sidemodule,
+      .apm-singleimagehighlights,
+      .apm-specsmodule,
+      .apm-imagesidebar {
         flex-direction: column;
       }
 
-      .single-side-image .image-container,
-      .single-image-highlights .image-container {
+      .apm-sideimage-imagewrapper,
+      .apm-singleimagehighlights-imagewrapper,
+      .apm-specsmodule-imagewrapper,
+      .apm-imagesidebar-sidebar {
         flex: none;
         width: 100%;
+        max-width: 400px;
+        margin: 0 auto 20px;
       }
 
-      .four-grid {
+      .apm-fourcolumnmodule-grid {
         grid-template-columns: repeat(2, 1fr);
       }
 
-      .three-grid {
+      .apm-threecolumnmodule-grid {
         grid-template-columns: 1fr;
+      }
+
+      .preview-meta {
+        flex-direction: column;
+        gap: 10px;
       }
     }
 
+    /* Print */
     @media print {
       .preview-header,
       .preview-footer {
-        background: white !important;
-        color: black !important;
+        background: #232f3e !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
 
-      .preview-badge {
-        border: 2px solid #ff9900;
-        background: white !important;
-        color: #ff9900 !important;
+      .preview-wrapper {
+        box-shadow: none;
       }
     }
   `;
