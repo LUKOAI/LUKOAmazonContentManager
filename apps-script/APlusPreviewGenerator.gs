@@ -1284,23 +1284,6 @@ function generateGenericModule(data, headline, body, imageUrl, imageAlt, moduleI
         </div>
       ` : ''}
 
-      ${otherText.length > 0 ? `
-        <div class="apm-genericmodule-details">
-          ${otherText.map(item => `
-            <div class="apm-genericmodule-detail">
-              <span class="apm-genericmodule-detail-label">${escapeHtml(item.key.replace(/_/g, ' '))}:</span>
-              <span class="apm-genericmodule-detail-value">${escapeHtml(item.value)}</span>
-            </div>
-          `).join('')}
-        </div>
-      ` : ''}
-
-      ${!headline && !body && !imageUrl && otherText.length === 0 ? `
-        <div class="apm-genericmodule-empty">
-          <p>No content configured for this module</p>
-          <p class="apm-genericmodule-debug">Type: ${data.moduleType}<br>Available fields: ${Object.keys(data).filter(k => data[k] && !['moduleNumber', 'moduleType', 'marketplace', 'language', 'asin'].includes(k)).join(', ') || 'none'}</p>
-        </div>
-      ` : ''}
     </div>
   `;
 }
@@ -2093,45 +2076,6 @@ function getAmazonCSS(isPremium) {
       max-height: 160px;
       border-radius: 4px;
       border: 1px solid #e7e7e7;
-    }
-
-    .apm-genericmodule-details {
-      background: #fff;
-      padding: 16px;
-      border-radius: 4px;
-      border: 1px solid #e7e7e7;
-    }
-
-    .apm-genericmodule-detail {
-      padding: 8px 0;
-      border-bottom: 1px solid #f0f0f0;
-    }
-
-    .apm-genericmodule-detail:last-child {
-      border-bottom: none;
-    }
-
-    .apm-genericmodule-detail-label {
-      font-weight: 600;
-      color: #555;
-      text-transform: capitalize;
-      margin-right: 8px;
-    }
-
-    .apm-genericmodule-detail-value {
-      color: #333;
-    }
-
-    .apm-genericmodule-empty {
-      text-align: center;
-      padding: 30px;
-      color: #888;
-    }
-
-    .apm-genericmodule-debug {
-      font-size: 11px;
-      color: #999;
-      margin-top: 8px;
     }
 
     /* Placeholder */
