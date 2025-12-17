@@ -330,14 +330,24 @@ function extractModuleDataForPreview(values, headers) {
           const shortValue = strValue.substring(0, 100);
           foundFields.push(`${fieldName}="${shortValue}"`);
 
-          // Collect text content for smart matching (ignore images, IDs, etc)
+          // Collect text content for smart matching (ignore images, real IDs, etc)
           const lowerValue = strValue.toLowerCase();
           const isImage = lowerValue.endsWith('.png') || lowerValue.endsWith('.jpg') ||
                          lowerValue.endsWith('.jpeg') || lowerValue.endsWith('.gif') ||
                          lowerValue.endsWith('.webp') || strValue.startsWith('http');
-          const isId = fieldName.toLowerCase().includes('_id') || fieldName.toLowerCase().includes('position');
 
-          if (!isImage && !isId && strValue.length > 10) {
+          // Check if the VALUE looks like a real ID (not the field name)
+          // Real IDs: UUIDs, numeric values, short alphanumeric without spaces
+          const looksLikeUUID = /^[a-f0-9-]{36}$/i.test(strValue);
+          const looksLikeNumericId = /^\d+$/.test(strValue);
+          const isShortNoSpaces = strValue.length < 30 && !strValue.includes(' ');
+          const isRealId = looksLikeUUID || looksLikeNumericId || (isShortNoSpaces && fieldName.toLowerCase().includes('_id'));
+
+          // Position values are usually short codes like "LEFT", "RIGHT", "CENTER"
+          const isPositionValue = fieldName.toLowerCase().includes('position') && strValue.length < 20;
+
+          // Text content: not an image, not a real ID, has reasonable length
+          if (!isImage && !isRealId && !isPositionValue && strValue.length > 10) {
             textContents.push({ field: fieldName, value: strValue, length: strValue.length });
           }
         }
@@ -555,6 +565,28 @@ function generateAPlusHTML(asin, modules, contentType) {
 </head>
 <body>
   <div class="preview-wrapper">
+    <!-- Preview Notice Banner -->
+    <div class="preview-notice">
+      <div class="notice-content">
+        <div class="notice-icon">&#9888;</div>
+        <div class="notice-text">
+          <strong>PREVIEW / PODGLĄD</strong> - This is a visualization of Amazon A+ Content section, not a live page.
+          <br>
+          <span class="notice-subtext">
+            To jest wizualizacja sekcji A+ Content strony produktowej Amazon. Teksty, zdjęcia i wideo będą dostosowane do Twoich wymagań.
+          </span>
+        </div>
+      </div>
+      <div class="notice-cta">
+        <a href="https://ads.netanaliza.com/lacm" target="_blank" class="notice-button">
+          Zamów A+ Content &rarr;
+        </a>
+        <div class="notice-service">
+          <strong>LUKO Amazon Content Manager</strong> - profesjonalne tworzenie A+ Content dla sprzedawców Amazon
+        </div>
+      </div>
+    </div>
+
     <!-- Header with A+ Type Badge -->
     <div class="preview-header">
       <div class="header-content">
@@ -594,6 +626,9 @@ function generateAPlusHTML(asin, modules, contentType) {
         <div class="timestamp">${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}</div>
         <div class="contact">
           Support: <a href="mailto:support@netanaliza.com">support@netanaliza.com</a>
+        </div>
+        <div class="order-cta">
+          <a href="https://ads.netanaliza.com/lacm" target="_blank">Zamów A+ Content dla swojego produktu</a>
         </div>
       </div>
     </div>
@@ -673,9 +708,33 @@ function generateModuleHTML(data, isPremium, productImages, imageIndex) {
     Logger.log(`generateModuleHTML: Using ImportedProducts image: ${imageUrl.substring(0, 80)}...`);
   }
 
-  // Get text fields - try multiple possible names
-  const headline = data.headline || data.subheadline || data.title || data.header || '';
-  const body = data.body || data.text || data.description || data.content || '';
+  // Get text fields - try multiple possible names, including misaligned columns
+  let headline = data.headline || data.subheadline || data.title || data.header || '';
+  let body = data.body || data.text || data.description || data.content || '';
+
+  // Additional fallbacks for misaligned data - product_asin fields often contain headlines
+  if (!headline) {
+    const potentialHeadlines = [
+      data.product3_asin, data.product3_image_id, data.product1_asin,
+      data.imagePositionType // Sometimes contains headline text
+    ].filter(v => v && typeof v === 'string' && v.includes(' ') && v.length > 10 && v.length < 150);
+
+    if (potentialHeadlines.length > 0) {
+      headline = potentialHeadlines[0];
+    }
+  }
+
+  // Body fallbacks
+  if (!body) {
+    const potentialBodies = [
+      data.backgroundImage_id, data.backgroundImage_altText, data.image_altText,
+      data.spec4_name // Sometimes contains description
+    ].filter(v => v && typeof v === 'string' && v.length > 50 && !v.endsWith('.png') && !v.endsWith('.jpg'));
+
+    if (potentialBodies.length > 0) {
+      body = potentialBodies[0];
+    }
+  }
 
   Logger.log(`generateModuleHTML: headline="${(headline || '').substring(0, 50)}...", body="${(body || '').substring(0, 50)}...", imageUrl="${imageUrl ? imageUrl.substring(0, 50) + '...' : 'none'}"`);
 
@@ -822,6 +881,25 @@ function generateFourImageTextModule(data, headline, moduleImages, productImages
   productImages = productImages || [];
   startIndex = startIndex || 0;
 
+  // Try to find main headline from various sources (data may be in wrong columns)
+  if (!headline) {
+    headline = data.product3_asin || data.product3_image_id || data.product1_asin ||
+               data.headline || data.title || '';
+    // Only use if it looks like text (has spaces, reasonable length)
+    if (headline && (!headline.includes(' ') || headline.length < 10 || headline.length > 200)) {
+      headline = '';
+    }
+  }
+
+  // Due to column misalignment, blocks may be in hotspot fields
+  // Mapping observed: hotspot3_x/title = headlines, hotspot3_y/text = bodies
+  const hotspotBlocks = [
+    { headline: data.hotspot3_x || '', body: data.hotspot3_y || '' },
+    { headline: data.hotspot3_title || '', body: data.hotspot3_text || '' },
+    { headline: data.hotspot4_x || '', body: data.hotspot4_y || '' },
+    { headline: data.hotspot4_title || '', body: data.hotspot4_text || '' }
+  ];
+
   // Try to find images from various naming patterns
   const blocks = [];
   for (let i = 1; i <= 4; i++) {
@@ -840,12 +918,27 @@ function generateFourImageTextModule(data, headline, moduleImages, productImages
     const imgAlt = data[`block${i}_image_altText`] || data[`image${i}_altText`] ||
                    data[`block${i}_imageCrop_altText`] || `Feature ${i}`;
 
-    // Try multiple naming conventions for text
-    const blockHeadline = data[`block${i}_headline`] || data[`headline${i}`] ||
-                          data[`block${i}headline`] || data[`textBlock${i}_headline`] || '';
+    // Try multiple naming conventions for text, including hotspot fallback
+    let blockHeadline = data[`block${i}_headline`] || data[`headline${i}`] ||
+                        data[`block${i}headline`] || data[`textBlock${i}_headline`] || '';
 
-    const blockBody = data[`block${i}_body`] || data[`body${i}`] ||
-                      data[`block${i}body`] || data[`textBlock${i}_body`] || '';
+    let blockBody = data[`block${i}_body`] || data[`body${i}`] ||
+                    data[`block${i}body`] || data[`textBlock${i}_body`] || '';
+
+    // Fallback to hotspot fields if standard fields empty
+    if (!blockHeadline && hotspotBlocks[i-1]) {
+      const hb = hotspotBlocks[i-1];
+      // Only use if it looks like text (has spaces, reasonable length)
+      if (hb.headline && hb.headline.includes(' ') && hb.headline.length > 5 && hb.headline.length < 100) {
+        blockHeadline = hb.headline;
+      }
+    }
+    if (!blockBody && hotspotBlocks[i-1]) {
+      const hb = hotspotBlocks[i-1];
+      if (hb.body && hb.body.length > 20 && !hb.body.endsWith('.png') && !hb.body.endsWith('.jpg')) {
+        blockBody = hb.body;
+      }
+    }
 
     blocks.push({
       imageUrl: imgUrl,
@@ -1301,6 +1394,76 @@ function getAmazonCSS(isPremium) {
       margin: 0 auto;
       background: #fff;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* Preview Notice Banner */
+    .preview-notice {
+      background: linear-gradient(135deg, #ff9900 0%, #ffad33 100%);
+      padding: 20px 30px;
+      color: #0f1111;
+      border-bottom: 3px solid #e88b00;
+    }
+
+    .notice-content {
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .notice-icon {
+      font-size: 28px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .notice-text {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .notice-text strong {
+      font-size: 16px;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+
+    .notice-subtext {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .notice-cta {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .notice-button {
+      display: inline-block;
+      background: #232f3e;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .notice-button:hover {
+      background: #37475a;
+    }
+
+    .notice-service {
+      font-size: 13px;
+      max-width: 400px;
+    }
+
+    .notice-service strong {
+      display: block;
+      font-size: 14px;
     }
 
     /* Preview Header */
@@ -2015,6 +2178,28 @@ function getAmazonCSS(isPremium) {
       font-size: 13px;
       padding-top: 12px;
       border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .preview-footer .order-cta {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .preview-footer .order-cta a {
+      display: inline-block;
+      background: #ff9900;
+      color: #0f1111;
+      padding: 10px 24px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .preview-footer .order-cta a:hover {
+      background: #ffad33;
+      text-decoration: none;
     }
 
     /* Responsive */
