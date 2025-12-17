@@ -124,6 +124,10 @@ function lukoGenerateAPlusPreview() {
     // Get Web App URL (user must deploy first)
     const scriptId = ScriptApp.getScriptId();
 
+    // Get saved Web App URL from properties
+    const props = PropertiesService.getScriptProperties();
+    const savedWebAppUrl = props.getProperty('PREVIEW_WEB_APP_URL') || '';
+
     // Show dialog with options
     const dialogHtml = `
       <style>
@@ -131,7 +135,7 @@ function lukoGenerateAPlusPreview() {
         h3 { color: #232f3e; }
         .btn {
           display: inline-block;
-          padding: 10px 20px;
+          padding: 12px 24px;
           margin: 10px 5px 10px 0;
           background: #ff9900;
           color: #0f1111;
@@ -140,45 +144,63 @@ function lukoGenerateAPlusPreview() {
           font-weight: bold;
           border: none;
           cursor: pointer;
+          font-size: 14px;
         }
         .btn:hover { background: #e88b00; }
         .btn-secondary { background: #e7e9ec; }
+        .btn-primary { background: #007600; color: white; }
         .info { background: #f0f0f0; padding: 10px; border-radius: 4px; margin: 10px 0; font-size: 12px; }
         .success { color: green; }
+        .url-saved { background: #d4edda; padding: 8px; border-radius: 4px; margin: 10px 0; color: #155724; }
       </style>
       <h3>✅ Preview Generated: ${firstAsin}</h3>
       <p><strong>${modules.length} module(s)</strong></p>
 
-      <h4>Option 1: Download & Open Locally</h4>
+      ${savedWebAppUrl ? `
+        <div class="url-saved">✓ Web App URL saved - click to open preview</div>
+        <p>
+          <a class="btn btn-primary" href="${savedWebAppUrl}?id=${previewId}" target="_blank">🌐 Open Preview in Browser</a>
+        </p>
+        <hr style="margin: 20px 0;">
+      ` : ''}
+
+      <h4>📥 Download HTML</h4>
       <p>
         <a class="btn" href="${file.getDownloadUrl()}" target="_blank">⬇️ Download HTML</a>
-        <span style="font-size:12px;">(Then double-click to open in browser)</span>
       </p>
 
-      <h4>Option 2: Open via Web App</h4>
-      <div class="info">
-        <strong>First time setup:</strong><br>
-        1. Extensions → Apps Script<br>
-        2. Deploy → New deployment → Web app<br>
-        3. Execute as: Me, Access: Anyone<br>
-        4. Copy the URL and paste below
-      </div>
-      <input type="text" id="webAppUrl" placeholder="Paste Web App URL here..." style="width:100%;padding:8px;margin:5px 0;">
-      <button class="btn btn-secondary" onclick="openWebApp()">🌐 Open in Browser</button>
-
-      <h4>Option 3: View in Google Drive</h4>
-      <p>
-        <a class="btn btn-secondary" href="${file.getUrl()}" target="_blank">📁 Open in Drive</a>
-        <span style="font-size:12px;">(Shows source code only)</span>
-      </p>
+      ${!savedWebAppUrl ? `
+        <h4>🔧 Setup Web App URL (one time)</h4>
+        <div class="info">
+          1. Extensions → Apps Script → Deploy → Manage deployments<br>
+          2. Copy the Web App URL<br>
+          3. Paste below and click Save
+        </div>
+      ` : `
+        <h4>🔧 Change Web App URL</h4>
+      `}
+      <input type="text" id="webAppUrl" value="${savedWebAppUrl}" placeholder="https://script.google.com/macros/s/..." style="width:100%;padding:8px;margin:5px 0;">
+      <button class="btn btn-secondary" onclick="saveUrl()">💾 Save URL</button>
+      <button class="btn btn-secondary" onclick="openWebApp()">🌐 Open</button>
 
       <script>
-        function openWebApp() {
+        function saveUrl() {
           const url = document.getElementById('webAppUrl').value;
+          if (url && url.includes('script.google.com')) {
+            google.script.run.withSuccessHandler(function() {
+              alert('URL saved! Next time it will open automatically.');
+              location.reload();
+            }).saveWebAppUrl(url);
+          } else {
+            alert('Please enter a valid Web App URL');
+          }
+        }
+        function openWebApp() {
+          const url = document.getElementById('webAppUrl').value || '${savedWebAppUrl}';
           if (url) {
             window.open(url + '?id=${previewId}', '_blank');
           } else {
-            alert('Please paste your Web App URL first');
+            alert('Please enter Web App URL first');
           }
         }
       </script>
@@ -186,7 +208,7 @@ function lukoGenerateAPlusPreview() {
 
     const htmlOutput = HtmlService.createHtmlOutput(dialogHtml)
       .setWidth(500)
-      .setHeight(500);
+      .setHeight(450);
 
     ui.showModalDialog(htmlOutput, `A+ Preview: ${firstAsin}`);
 
@@ -194,6 +216,14 @@ function lukoGenerateAPlusPreview() {
     ui.alert('Error', error.message + '\n\n' + error.stack, ui.ButtonSet.OK);
     Logger.log('Error in lukoGenerateAPlusPreview: ' + error.message + '\n' + error.stack);
   }
+}
+
+/**
+ * Save Web App URL to script properties
+ */
+function saveWebAppUrl(url) {
+  PropertiesService.getScriptProperties().setProperty('PREVIEW_WEB_APP_URL', url);
+  return true;
 }
 
 /**
@@ -300,8 +330,13 @@ function generateAPlusHTML(asin, modules) {
     </div>
 
     <div class="preview-footer">
-      <div class="generated-by">Generated by LUKO Amazon Content Manager</div>
+      <div class="generated-by">
+        Generated by <a href="https://ads.netanaliza.com/lacm" target="_blank">LUKO Amazon Content Manager</a>
+      </div>
       <div class="timestamp">${new Date().toLocaleString()}</div>
+      <div class="contact">
+        Support: <a href="mailto:support@netanaliza.com">support@netanaliza.com</a>
+      </div>
     </div>
   </div>
 </body>
@@ -1145,12 +1180,39 @@ function getPreviewCSS() {
 
     /* Footer */
     .preview-footer {
-      background: #f7f7f7;
-      padding: 15px 20px;
+      background: linear-gradient(135deg, #232f3e 0%, #37475a 100%);
+      padding: 20px;
       text-align: center;
-      font-size: 11px;
-      color: #666;
+      font-size: 12px;
+      color: #ccc;
       border-top: 1px solid #e7e7e7;
+    }
+
+    .preview-footer a {
+      color: #ff9900;
+      text-decoration: none;
+    }
+
+    .preview-footer a:hover {
+      text-decoration: underline;
+    }
+
+    .preview-footer .generated-by {
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .preview-footer .timestamp {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-bottom: 8px;
+    }
+
+    .preview-footer .contact {
+      font-size: 12px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.1);
     }
 
     .generated-by {
