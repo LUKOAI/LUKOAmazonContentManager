@@ -305,8 +305,13 @@ function extractModuleDataForPreview(values, headers) {
   // The Module Number column tells us which module this is, but data is always in m1_ columns
   const prefix = 'm1_';
 
+  // Log all headers for debugging
+  const m1Headers = headers.filter(h => h && h.startsWith(prefix));
+  Logger.log(`extractModuleDataForPreview: Found ${m1Headers.length} m1_ headers: ${m1Headers.join(', ')}`);
+
   // Extract all fields for this module
   let fieldCount = 0;
+  const foundFields = [];
   for (let i = 0; i < headers.length; i++) {
     const header = headers[i];
     if (header && header.startsWith(prefix)) {
@@ -315,11 +320,15 @@ function extractModuleDataForPreview(values, headers) {
       if (value !== null && value !== undefined && value !== '') {
         data[fieldName] = value;
         fieldCount++;
+        // Log first 100 chars of value
+        const shortValue = String(value).substring(0, 100);
+        foundFields.push(`${fieldName}="${shortValue}"`);
       }
     }
   }
 
-  Logger.log(`extractModuleDataForPreview: moduleNumber=${moduleNumber}, fields found: ${fieldCount}, type: ${data.moduleType}`);
+  Logger.log(`extractModuleDataForPreview: moduleNumber=${moduleNumber}, type: ${data.moduleType}`);
+  Logger.log(`extractModuleDataForPreview: fields found (${fieldCount}): ${foundFields.join('; ')}`);
 
   // If no fields found with m1_ prefix, try common field names directly (old format)
   if (fieldCount === 0) {
@@ -461,9 +470,10 @@ function generateModuleHTML(data, isPremium) {
   const moduleType = data.moduleType || 'STANDARD_TEXT';
 
   // Log all available data for debugging
-  Logger.log(`generateModuleHTML: type=${moduleType}, fields=${Object.keys(data).join(', ')}`);
+  Logger.log(`generateModuleHTML: type=${moduleType}, fields=${JSON.stringify(Object.keys(data))}`);
+  Logger.log(`generateModuleHTML: data sample: ${JSON.stringify(data).substring(0, 500)}`);
 
-  // Collect ALL image URLs from the data (any field containing http/https that looks like image)
+  // Collect ALL image URLs from the data (any field containing http/https OR image filename)
   const allImages = [];
   const allTextContent = [];
 
@@ -471,31 +481,41 @@ function generateModuleHTML(data, isPremium) {
     if (!value) continue;
     if (['moduleNumber', 'moduleType', 'marketplace', 'language'].includes(key)) continue;
 
-    const strValue = String(value);
+    const strValue = String(value).trim();
+    if (!strValue) continue;
 
-    // Check if this is an image URL - ANY URL that could be an image
-    if (strValue.startsWith('http') || strValue.startsWith('//')) {
-      // It's a URL - check if it looks like an image
-      const lowerUrl = strValue.toLowerCase();
-      const isImageUrl = lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') ||
-                         lowerUrl.includes('.png') || lowerUrl.includes('.gif') ||
-                         lowerUrl.includes('.webp') || lowerUrl.includes('image') ||
-                         lowerUrl.includes('img') || lowerUrl.includes('media') ||
-                         lowerUrl.includes('cdn') || lowerUrl.includes('s3.') ||
-                         lowerUrl.includes('cloudfront') || key.toLowerCase().includes('url');
+    // Check if this is an image URL or image filename
+    const lowerValue = strValue.toLowerCase();
+    const lowerKey = key.toLowerCase();
 
-      if (isImageUrl) {
-        const altKey = key.replace(/_url$/i, '_altText').replace(/Url$/i, 'AltText');
-        allImages.push({
-          key,
-          url: strValue,
-          alt: data[altKey] || key.replace(/_url|Url|_image|Image/gi, '').replace(/_/g, ' ') || 'Image'
-        });
-        Logger.log(`generateModuleHTML: Found image: ${key} = ${strValue.substring(0, 50)}...`);
-      }
+    // Is it a URL?
+    const isUrl = strValue.startsWith('http') || strValue.startsWith('//');
+
+    // Is it an image filename? (ends with image extension)
+    const isImageFilename = lowerValue.endsWith('.jpg') || lowerValue.endsWith('.jpeg') ||
+                            lowerValue.endsWith('.png') || lowerValue.endsWith('.gif') ||
+                            lowerValue.endsWith('.webp') || lowerValue.endsWith('.svg');
+
+    // Is the key name related to images?
+    const isImageKey = lowerKey.includes('image') || lowerKey.includes('logo') ||
+                       lowerKey.includes('img') || lowerKey.includes('photo') ||
+                       lowerKey.includes('picture') || lowerKey.includes('crop');
+
+    if (isUrl || isImageFilename) {
+      // This looks like an image
+      const altKey = key.replace(/_url$/i, '_altText').replace(/Url$/i, 'AltText');
+      const imageUrl = isUrl ? strValue : strValue; // Keep filename as-is for now
+
+      allImages.push({
+        key,
+        url: imageUrl,
+        alt: data[altKey] || key.replace(/_url|Url|_image|Image|Crop|crop/gi, '').replace(/_/g, ' ') || 'Image',
+        isFilename: !isUrl
+      });
+      Logger.log(`generateModuleHTML: Found image: ${key} = ${strValue}`);
     } else if (typeof value === 'string' && strValue.length > 3 &&
-               !key.includes('_id') && !key.toLowerCase().includes('url') &&
-               !key.toLowerCase().includes('alttext') && !key.toLowerCase().includes('position')) {
+               !lowerKey.includes('url') && !lowerKey.includes('alttext') &&
+               !lowerKey.includes('position') && !lowerKey.includes('_id')) {
       allTextContent.push({ key, value: strValue });
     }
   }
@@ -508,7 +528,7 @@ function generateModuleHTML(data, isPremium) {
   const headline = data.headline || data.subheadline || data.title || data.header || '';
   const body = data.body || data.text || data.description || data.content || '';
 
-  Logger.log(`generateModuleHTML: headline="${headline.substring(0, 30)}...", imageUrl="${imageUrl.substring(0, 50)}...", totalImages=${allImages.length}`);
+  Logger.log(`generateModuleHTML: headline="${headline.substring(0, 50)}...", body="${body.substring(0, 50)}...", imageUrl="${imageUrl}", totalImages=${allImages.length}`);
 
   // Build module based on type
   let html = '';
