@@ -283,6 +283,7 @@ function saveWebAppUrl(url) {
 
 /**
  * Extract module data for preview from row values
+ * ENHANCED: Now uses smart content detection for misaligned columns
  */
 function extractModuleDataForPreview(values, headers) {
   // Get module number - ensure it's a number
@@ -298,37 +299,99 @@ function extractModuleDataForPreview(values, headers) {
     moduleNumber: moduleNumber,
     moduleType: getColumnValue(values, headers, 'Module Type') || 'STANDARD_TEXT',
     marketplace: getColumnValue(values, headers, 'Marketplace') || 'DE',
-    language: getColumnValue(values, headers, 'Language') || 'DE'
+    language: getColumnValue(values, headers, 'Language') || 'DE',
+    asin: getColumnValue(values, headers, 'ASIN') || ''
   };
 
   // FIXED: Always use m1_ prefix - each row has one module and uses m1_ columns
-  // The Module Number column tells us which module this is, but data is always in m1_ columns
   const prefix = 'm1_';
 
   // Log all headers for debugging
   const m1Headers = headers.filter(h => h && h.startsWith(prefix));
-  Logger.log(`extractModuleDataForPreview: Found ${m1Headers.length} m1_ headers: ${m1Headers.join(', ')}`);
+  Logger.log(`extractModuleDataForPreview: Found ${m1Headers.length} m1_ headers`);
 
-  // Extract all fields for this module
+  // Extract all fields for this module AND collect text content for smart matching
   let fieldCount = 0;
   const foundFields = [];
+  const textContents = []; // Collect all text for smart matching
+
   for (let i = 0; i < headers.length; i++) {
     const header = headers[i];
     if (header && header.startsWith(prefix)) {
       const fieldName = header.substring(prefix.length);
       const value = values[i];
       if (value !== null && value !== undefined && value !== '') {
-        data[fieldName] = value;
-        fieldCount++;
-        // Log first 100 chars of value
-        const shortValue = String(value).substring(0, 100);
-        foundFields.push(`${fieldName}="${shortValue}"`);
+        const strValue = String(value).trim();
+        if (strValue) {
+          data[fieldName] = value;
+          fieldCount++;
+
+          // Log first 100 chars of value
+          const shortValue = strValue.substring(0, 100);
+          foundFields.push(`${fieldName}="${shortValue}"`);
+
+          // Collect text content for smart matching (ignore images, IDs, etc)
+          const lowerValue = strValue.toLowerCase();
+          const isImage = lowerValue.endsWith('.png') || lowerValue.endsWith('.jpg') ||
+                         lowerValue.endsWith('.jpeg') || lowerValue.endsWith('.gif') ||
+                         lowerValue.endsWith('.webp') || strValue.startsWith('http');
+          const isId = fieldName.toLowerCase().includes('_id') || fieldName.toLowerCase().includes('position');
+
+          if (!isImage && !isId && strValue.length > 10) {
+            textContents.push({ field: fieldName, value: strValue, length: strValue.length });
+          }
+        }
       }
     }
   }
 
   Logger.log(`extractModuleDataForPreview: moduleNumber=${moduleNumber}, type: ${data.moduleType}`);
   Logger.log(`extractModuleDataForPreview: fields found (${fieldCount}): ${foundFields.join('; ')}`);
+
+  // SMART CONTENT DETECTION: If headline/body are missing, find them by content characteristics
+  // Headline: typically shorter (< 150 chars), no line breaks
+  // Body: typically longer, may have line breaks
+  if (!data.headline && !data.body && textContents.length > 0) {
+    Logger.log(`Smart matching: ${textContents.length} text fields found`);
+
+    // Sort by length - shorter is likely headline, longer is likely body
+    textContents.sort((a, b) => a.length - b.length);
+
+    // Find potential headline (shorter, < 150 chars, no line breaks)
+    const potentialHeadline = textContents.find(t =>
+      t.length < 150 && !t.value.includes('\n')
+    );
+
+    // Find potential body (longer, > 100 chars)
+    const potentialBody = textContents.find(t =>
+      t.length > 100 && t !== potentialHeadline
+    );
+
+    if (potentialHeadline && !data.headline) {
+      data.headline = potentialHeadline.value;
+      Logger.log(`Smart match headline from ${potentialHeadline.field}: "${potentialHeadline.value.substring(0, 50)}..."`);
+    }
+
+    if (potentialBody && !data.body) {
+      data.body = potentialBody.value;
+      Logger.log(`Smart match body from ${potentialBody.field}: "${potentialBody.value.substring(0, 50)}..."`);
+    }
+  }
+
+  // Also check for text in known wrong locations (from observed column misalignment)
+  if (!data.headline && data.subheadline && data.subheadline.length > 0) {
+    // subheadline might actually contain headline
+    if (data.subheadline.length < 150 && !data.subheadline.includes('\n')) {
+      data.headline = data.subheadline;
+      Logger.log(`Using subheadline as headline: "${data.headline.substring(0, 50)}..."`);
+    }
+  }
+
+  if (!data.body && data.backgroundImage_altText && data.backgroundImage_altText.length > 50) {
+    // backgroundImage_altText might actually contain body text
+    data.body = data.backgroundImage_altText;
+    Logger.log(`Using backgroundImage_altText as body: "${data.body.substring(0, 50)}..."`);
+  }
 
   // If no fields found with m1_ prefix, try common field names directly (old format)
   if (fieldCount === 0) {
@@ -355,6 +418,73 @@ function extractModuleDataForPreview(values, headers) {
 }
 
 /**
+ * Get images from ImportedProducts sheet by ASIN
+ * Returns array of image URLs: [mainImage, additional1, additional2, ...]
+ */
+function getImagesFromImportedProducts(asin) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('ImportedProducts');
+
+  if (!sheet) {
+    Logger.log('getImagesFromImportedProducts: ImportedProducts sheet not found');
+    return [];
+  }
+
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0] || [];
+
+  // Find column indices
+  const asinCol = headers.findIndex(h => (h || '').toString().toUpperCase() === 'ASIN');
+  const mainImageCol = headers.findIndex(h => (h || '').toString().toLowerCase().includes('main image'));
+
+  // Find additional image columns
+  const additionalImageCols = [];
+  for (let i = 0; i < headers.length; i++) {
+    const h = (headers[i] || '').toString().toLowerCase();
+    if (h.includes('additional image')) {
+      additionalImageCols.push(i);
+    }
+  }
+
+  Logger.log(`getImagesFromImportedProducts: Looking for ASIN "${asin}", asinCol=${asinCol}, mainImageCol=${mainImageCol}, additionalCols=${additionalImageCols.join(',')}`);
+
+  if (asinCol < 0) {
+    Logger.log('getImagesFromImportedProducts: ASIN column not found');
+    return [];
+  }
+
+  // Find row with matching ASIN
+  for (let i = 1; i < data.length; i++) {
+    const rowAsin = (data[i][asinCol] || '').toString().trim();
+    if (rowAsin === asin) {
+      const images = [];
+
+      // Get main image
+      if (mainImageCol >= 0) {
+        const mainImg = (data[i][mainImageCol] || '').toString().trim();
+        if (mainImg && mainImg.startsWith('http')) {
+          images.push(mainImg);
+        }
+      }
+
+      // Get additional images
+      for (const col of additionalImageCols) {
+        const img = (data[i][col] || '').toString().trim();
+        if (img && img.startsWith('http')) {
+          images.push(img);
+        }
+      }
+
+      Logger.log(`getImagesFromImportedProducts: Found ${images.length} images for ASIN ${asin}`);
+      return images;
+    }
+  }
+
+  Logger.log(`getImagesFromImportedProducts: No row found for ASIN ${asin}`);
+  return [];
+}
+
+/**
  * Generate complete HTML document for A+ Content preview
  */
 function generateAPlusHTML(asin, modules, contentType) {
@@ -362,9 +492,18 @@ function generateAPlusHTML(asin, modules, contentType) {
   const language = modules[0]?.data?.language || 'DE';
   const isPremium = contentType === 'premium';
 
+  // Fetch images from ImportedProducts for this ASIN
+  const productImages = getImagesFromImportedProducts(asin);
+  Logger.log(`generateAPlusHTML: Got ${productImages.length} images from ImportedProducts for ${asin}`);
+
   let modulesHTML = '';
+  let imageIndex = 0; // Track which product image to use next
+
   for (const module of modules) {
-    modulesHTML += generateModuleHTML(module.data, isPremium);
+    // Pass product images and current index to module generator
+    const result = generateModuleHTML(module.data, isPremium, productImages, imageIndex);
+    modulesHTML += result.html;
+    imageIndex = result.nextImageIndex; // Update index for next module
   }
 
   const marketplaceNames = {
@@ -465,54 +604,46 @@ function generateAPlusHTML(asin, modules, contentType) {
 
 /**
  * Generate HTML for a single module based on its type
+ * @param {Object} data - Module data
+ * @param {boolean} isPremium - Is this premium A+ content
+ * @param {string[]} productImages - Array of product image URLs from ImportedProducts
+ * @param {number} imageIndex - Starting index in productImages array
+ * @returns {Object} { html: string, nextImageIndex: number }
  */
-function generateModuleHTML(data, isPremium) {
+function generateModuleHTML(data, isPremium, productImages, imageIndex) {
+  productImages = productImages || [];
+  imageIndex = imageIndex || 0;
+
   const moduleType = data.moduleType || 'STANDARD_TEXT';
 
   // Log all available data for debugging
   Logger.log(`generateModuleHTML: type=${moduleType}, fields=${JSON.stringify(Object.keys(data))}`);
-  Logger.log(`generateModuleHTML: data sample: ${JSON.stringify(data).substring(0, 500)}`);
 
-  // Collect ALL image URLs from the data (any field containing http/https OR image filename)
-  const allImages = [];
+  // Collect ALL image URLs from the module data (any field containing http/https)
+  const moduleImages = [];
   const allTextContent = [];
 
   for (const [key, value] of Object.entries(data)) {
     if (!value) continue;
-    if (['moduleNumber', 'moduleType', 'marketplace', 'language'].includes(key)) continue;
+    if (['moduleNumber', 'moduleType', 'marketplace', 'language', 'asin'].includes(key)) continue;
 
     const strValue = String(value).trim();
     if (!strValue) continue;
 
-    // Check if this is an image URL or image filename
     const lowerValue = strValue.toLowerCase();
     const lowerKey = key.toLowerCase();
 
-    // Is it a URL?
+    // Is it a real URL (not just a filename)?
     const isUrl = strValue.startsWith('http') || strValue.startsWith('//');
 
-    // Is it an image filename? (ends with image extension)
-    const isImageFilename = lowerValue.endsWith('.jpg') || lowerValue.endsWith('.jpeg') ||
-                            lowerValue.endsWith('.png') || lowerValue.endsWith('.gif') ||
-                            lowerValue.endsWith('.webp') || lowerValue.endsWith('.svg');
-
-    // Is the key name related to images?
-    const isImageKey = lowerKey.includes('image') || lowerKey.includes('logo') ||
-                       lowerKey.includes('img') || lowerKey.includes('photo') ||
-                       lowerKey.includes('picture') || lowerKey.includes('crop');
-
-    if (isUrl || isImageFilename) {
-      // This looks like an image
+    if (isUrl) {
       const altKey = key.replace(/_url$/i, '_altText').replace(/Url$/i, 'AltText');
-      const imageUrl = isUrl ? strValue : strValue; // Keep filename as-is for now
-
-      allImages.push({
+      moduleImages.push({
         key,
-        url: imageUrl,
-        alt: data[altKey] || key.replace(/_url|Url|_image|Image|Crop|crop/gi, '').replace(/_/g, ' ') || 'Image',
-        isFilename: !isUrl
+        url: strValue,
+        alt: data[altKey] || 'Product image'
       });
-      Logger.log(`generateModuleHTML: Found image: ${key} = ${strValue}`);
+      Logger.log(`generateModuleHTML: Found module image URL: ${key} = ${strValue.substring(0, 80)}...`);
     } else if (typeof value === 'string' && strValue.length > 3 &&
                !lowerKey.includes('url') && !lowerKey.includes('alttext') &&
                !lowerKey.includes('position') && !lowerKey.includes('_id')) {
@@ -520,22 +651,52 @@ function generateModuleHTML(data, isPremium) {
     }
   }
 
-  // Get primary image (first one found) and text
-  const imageUrl = allImages.length > 0 ? allImages[0].url : '';
-  const imageAlt = allImages.length > 0 ? allImages[0].alt : 'Product image';
+  // Helper function to get next product image (cycles through if needed)
+  const getNextProductImage = () => {
+    if (productImages.length === 0) return null;
+    const img = productImages[imageIndex % productImages.length];
+    imageIndex++;
+    return img;
+  };
+
+  // Determine primary image: prefer module image URL, fallback to product image
+  let imageUrl = '';
+  let imageAlt = 'Product image';
+
+  if (moduleImages.length > 0 && moduleImages[0].url.startsWith('http')) {
+    // Use module's own image if it's a real URL
+    imageUrl = moduleImages[0].url;
+    imageAlt = moduleImages[0].alt;
+  } else if (productImages.length > 0) {
+    // Use product image from ImportedProducts
+    imageUrl = getNextProductImage();
+    Logger.log(`generateModuleHTML: Using ImportedProducts image: ${imageUrl.substring(0, 80)}...`);
+  }
 
   // Get text fields - try multiple possible names
   const headline = data.headline || data.subheadline || data.title || data.header || '';
   const body = data.body || data.text || data.description || data.content || '';
 
-  Logger.log(`generateModuleHTML: headline="${headline.substring(0, 50)}...", body="${body.substring(0, 50)}...", imageUrl="${imageUrl}", totalImages=${allImages.length}`);
+  Logger.log(`generateModuleHTML: headline="${(headline || '').substring(0, 50)}...", body="${(body || '').substring(0, 50)}...", imageUrl="${imageUrl ? imageUrl.substring(0, 50) + '...' : 'none'}"`);
 
   // Build module based on type
   let html = '';
 
+  // For multi-image modules, we need to get multiple images from productImages
+  const getImagesForModule = (count) => {
+    const images = [];
+    for (let i = 0; i < count; i++) {
+      if (productImages.length > 0) {
+        images.push(productImages[imageIndex % productImages.length]);
+        imageIndex++;
+      }
+    }
+    return images;
+  };
+
   switch (moduleType) {
     case 'STANDARD_COMPANY_LOGO':
-      html = generateCompanyLogoModule(data, allImages);
+      html = generateCompanyLogoModule(data, moduleImages, imageUrl);
       break;
     case 'STANDARD_SINGLE_SIDE_IMAGE':
       html = generateSingleSideImageModule(data, headline, body, imageUrl, imageAlt);
@@ -545,10 +706,14 @@ function generateModuleHTML(data, isPremium) {
       break;
     case 'STANDARD_FOUR_IMAGE_TEXT':
     case 'STANDARD_FOUR_IMAGE_TEXT_QUADRANT':
-      html = generateFourImageTextModule(data, headline, allImages);
+      // Get 4 images for this module
+      html = generateFourImageTextModule(data, headline, moduleImages, productImages, imageIndex);
+      imageIndex += 4; // Reserve 4 images
       break;
     case 'STANDARD_THREE_IMAGE_TEXT':
-      html = generateThreeImageTextModule(data, headline, allImages);
+      // Get 3 images for this module
+      html = generateThreeImageTextModule(data, headline, moduleImages, productImages, imageIndex);
+      imageIndex += 3; // Reserve 3 images
       break;
     case 'STANDARD_SINGLE_IMAGE_HIGHLIGHTS':
       html = generateSingleImageHighlightsModule(data, headline, imageUrl, imageAlt);
@@ -564,26 +729,32 @@ function generateModuleHTML(data, isPremium) {
       break;
     case 'STANDARD_MULTIPLE_IMAGE_TEXT_A':
     case 'STANDARD_MULTIPLE_IMAGE_TEXT_B':
-      html = generateMultipleImageTextModule(data, headline, body, allImages);
+      html = generateMultipleImageTextModule(data, headline, body, moduleImages, productImages, imageIndex);
+      imageIndex += 6; // Reserve up to 6 images
       break;
     case 'STANDARD_TECH_SPECS':
       html = generateTechSpecsModule(data, headline);
       break;
     case 'STANDARD_COMPARISON_TABLE':
-      html = generateComparisonTableModule(data, headline);
+      html = generateComparisonTableModule(data, headline, productImages, imageIndex);
+      imageIndex += 6; // Reserve images for comparison products
       break;
     default:
-      html = generateGenericModule(data, headline, body, imageUrl, imageAlt, allImages, allTextContent);
+      html = generateGenericModule(data, headline, body, imageUrl, imageAlt, moduleImages, allTextContent, productImages, imageIndex);
+      imageIndex += 1;
   }
 
-  return html;
+  return { html, nextImageIndex: imageIndex };
 }
 
 /**
  * STANDARD_COMPANY_LOGO module
  */
-function generateCompanyLogoModule(data, allImages) {
-  const logoUrl = data.companyLogo_url || data.logo_url || data.image_url || '';
+function generateCompanyLogoModule(data, moduleImages, fallbackImageUrl) {
+  // Try to get logo from module data first, then fallback
+  const logoUrl = data.companyLogo_url || data.logo_url || data.image_url ||
+                  (moduleImages.length > 0 ? moduleImages[0].url : '') ||
+                  fallbackImageUrl || '';
   const logoAlt = data.companyLogo_altText || data.logo_altText || 'Company Logo';
   const description = data.body || data.companyDescription || data.description || '';
 
@@ -645,16 +816,26 @@ function generateHeaderImageTextModule(data, headline, body, imageUrl, imageAlt)
 
 /**
  * STANDARD_FOUR_IMAGE_TEXT module
+ * Uses productImages from ImportedProducts as fallback
  */
-function generateFourImageTextModule(data, headline, allImages) {
+function generateFourImageTextModule(data, headline, moduleImages, productImages, startIndex) {
+  productImages = productImages || [];
+  startIndex = startIndex || 0;
+
   // Try to find images from various naming patterns
   const blocks = [];
   for (let i = 1; i <= 4; i++) {
-    // Try multiple naming conventions for images
-    const imgUrl = data[`block${i}_image_url`] || data[`image${i}_url`] ||
-                   data[`block${i}_imageCrop_url`] || data[`imageCrop${i}_url`] ||
-                   data[`block${i}Image_url`] || data[`block${i}image_url`] ||
-                   (allImages && allImages[i-1] ? allImages[i-1].url : '') || '';
+    // Try module data first, then fallback to product images
+    let imgUrl = data[`block${i}_image_url`] || data[`image${i}_url`] ||
+                 data[`block${i}_imageCrop_url`] || data[`imageCrop${i}_url`] ||
+                 data[`block${i}Image_url`] || data[`block${i}image_url`] ||
+                 (moduleImages && moduleImages[i-1] ? moduleImages[i-1].url : '');
+
+    // If no URL from module, use product image (cycling through available images)
+    if ((!imgUrl || !imgUrl.startsWith('http')) && productImages.length > 0) {
+      const productImgIndex = (startIndex + i - 1) % productImages.length;
+      imgUrl = productImages[productImgIndex];
+    }
 
     const imgAlt = data[`block${i}_image_altText`] || data[`image${i}_altText`] ||
                    data[`block${i}_imageCrop_altText`] || `Feature ${i}`;
@@ -694,16 +875,26 @@ function generateFourImageTextModule(data, headline, allImages) {
 
 /**
  * STANDARD_THREE_IMAGE_TEXT module
+ * Uses productImages from ImportedProducts as fallback
  */
-function generateThreeImageTextModule(data, headline, allImages) {
+function generateThreeImageTextModule(data, headline, moduleImages, productImages, startIndex) {
+  productImages = productImages || [];
+  startIndex = startIndex || 0;
+
   // Try to find images from various naming patterns
   const blocks = [];
   for (let i = 1; i <= 3; i++) {
-    // Try multiple naming conventions for images
-    const imgUrl = data[`block${i}_image_url`] || data[`image${i}_url`] ||
-                   data[`block${i}_imageCrop_url`] || data[`imageCrop${i}_url`] ||
-                   data[`block${i}Image_url`] || data[`block${i}image_url`] ||
-                   (allImages && allImages[i-1] ? allImages[i-1].url : '') || '';
+    // Try module data first, then fallback to product images
+    let imgUrl = data[`block${i}_image_url`] || data[`image${i}_url`] ||
+                 data[`block${i}_imageCrop_url`] || data[`imageCrop${i}_url`] ||
+                 data[`block${i}Image_url`] || data[`block${i}image_url`] ||
+                 (moduleImages && moduleImages[i-1] ? moduleImages[i-1].url : '');
+
+    // If no URL from module, use product image (cycling through available images)
+    if ((!imgUrl || !imgUrl.startsWith('http')) && productImages.length > 0) {
+      const productImgIndex = (startIndex + i - 1) % productImages.length;
+      imgUrl = productImages[productImgIndex];
+    }
 
     const imgAlt = data[`block${i}_image_altText`] || data[`image${i}_altText`] ||
                    data[`block${i}_imageCrop_altText`] || `Feature ${i}`;
@@ -829,9 +1020,23 @@ function generateImageSidebarModule(data, headline, body, imageUrl, imageAlt) {
 
 /**
  * STANDARD_MULTIPLE_IMAGE_TEXT module
+ * Uses productImages from ImportedProducts as fallback
  */
-function generateMultipleImageTextModule(data, headline, body, allImages) {
-  const images = allImages.filter(img => img.url).slice(0, 6);
+function generateMultipleImageTextModule(data, headline, body, moduleImages, productImages, startIndex) {
+  productImages = productImages || [];
+  startIndex = startIndex || 0;
+
+  // Collect images from module data first
+  let images = moduleImages.filter(img => img.url && img.url.startsWith('http')).slice(0, 6);
+
+  // If not enough images from module, fill with product images
+  if (images.length < 6 && productImages.length > 0) {
+    const neededImages = 6 - images.length;
+    for (let i = 0; i < neededImages && productImages.length > 0; i++) {
+      const imgIndex = (startIndex + i) % productImages.length;
+      images.push({ url: productImages[imgIndex], alt: 'Product image' });
+    }
+  }
 
   return `
     <div class="apm-multipleimages">
@@ -876,16 +1081,28 @@ function generateTechSpecsModule(data, headline) {
 
 /**
  * STANDARD_COMPARISON_TABLE module
+ * Uses productImages from ImportedProducts as fallback
  */
-function generateComparisonTableModule(data, headline) {
+function generateComparisonTableModule(data, headline, productImages, startIndex) {
+  productImages = productImages || [];
+  startIndex = startIndex || 0;
+
   const products = [];
   for (let i = 1; i <= 6; i++) {
     const title = data[`product${i}_title`] || data[`product${i}_name`];
     if (title) {
+      let imgUrl = data[`product${i}_image_url`] || '';
+
+      // If no image URL, use product image from ImportedProducts
+      if ((!imgUrl || !imgUrl.startsWith('http')) && productImages.length > 0) {
+        const imgIndex = (startIndex + products.length) % productImages.length;
+        imgUrl = productImages[imgIndex];
+      }
+
       products.push({
         title,
         asin: data[`product${i}_asin`] || '',
-        imageUrl: data[`product${i}_image_url`] || '',
+        imageUrl: imgUrl,
         highlight: data[`product${i}_highlight`] === 'TRUE' || data[`product${i}_highlight`] === true
       });
     }
@@ -937,9 +1154,19 @@ function generateComparisonTableModule(data, headline) {
 
 /**
  * Generic module for unknown types - shows all available content
+ * Uses productImages from ImportedProducts as fallback
  */
-function generateGenericModule(data, headline, body, imageUrl, imageAlt, allImages, allTextContent) {
-  const otherImages = allImages.filter(img => img.url !== imageUrl).slice(0, 4);
+function generateGenericModule(data, headline, body, imageUrl, imageAlt, moduleImages, allTextContent, productImages, startIndex) {
+  productImages = productImages || [];
+  startIndex = startIndex || 0;
+
+  // If no imageUrl, use product image
+  if (!imageUrl && productImages.length > 0) {
+    imageUrl = productImages[startIndex % productImages.length];
+    imageAlt = 'Product image';
+  }
+
+  const otherImages = moduleImages.filter(img => img.url !== imageUrl && img.url.startsWith('http')).slice(0, 4);
   const otherText = allTextContent.filter(t =>
     t.value !== headline && t.value !== body &&
     !t.key.includes('altText') && !t.key.includes('position')
@@ -978,7 +1205,7 @@ function generateGenericModule(data, headline, body, imageUrl, imageAlt, allImag
       ${!headline && !body && !imageUrl && otherText.length === 0 ? `
         <div class="apm-genericmodule-empty">
           <p>No content configured for this module</p>
-          <p class="apm-genericmodule-debug">Type: ${data.moduleType}<br>Available fields: ${Object.keys(data).filter(k => data[k] && !['moduleNumber', 'moduleType', 'marketplace', 'language'].includes(k)).join(', ') || 'none'}</p>
+          <p class="apm-genericmodule-debug">Type: ${data.moduleType}<br>Available fields: ${Object.keys(data).filter(k => data[k] && !['moduleNumber', 'moduleType', 'marketplace', 'language', 'asin'].includes(k)).join(', ') || 'none'}</p>
         </div>
       ` : ''}
     </div>
