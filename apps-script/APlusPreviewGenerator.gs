@@ -460,37 +460,55 @@ function generateAPlusHTML(asin, modules, contentType) {
 function generateModuleHTML(data, isPremium) {
   const moduleType = data.moduleType || 'STANDARD_TEXT';
 
+  // Log all available data for debugging
+  Logger.log(`generateModuleHTML: type=${moduleType}, fields=${Object.keys(data).join(', ')}`);
+
+  // Collect ALL image URLs from the data (any field containing http/https that looks like image)
+  const allImages = [];
+  const allTextContent = [];
+
+  for (const [key, value] of Object.entries(data)) {
+    if (!value) continue;
+    if (['moduleNumber', 'moduleType', 'marketplace', 'language'].includes(key)) continue;
+
+    const strValue = String(value);
+
+    // Check if this is an image URL - ANY URL that could be an image
+    if (strValue.startsWith('http') || strValue.startsWith('//')) {
+      // It's a URL - check if it looks like an image
+      const lowerUrl = strValue.toLowerCase();
+      const isImageUrl = lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') ||
+                         lowerUrl.includes('.png') || lowerUrl.includes('.gif') ||
+                         lowerUrl.includes('.webp') || lowerUrl.includes('image') ||
+                         lowerUrl.includes('img') || lowerUrl.includes('media') ||
+                         lowerUrl.includes('cdn') || lowerUrl.includes('s3.') ||
+                         lowerUrl.includes('cloudfront') || key.toLowerCase().includes('url');
+
+      if (isImageUrl) {
+        const altKey = key.replace(/_url$/i, '_altText').replace(/Url$/i, 'AltText');
+        allImages.push({
+          key,
+          url: strValue,
+          alt: data[altKey] || key.replace(/_url|Url|_image|Image/gi, '').replace(/_/g, ' ') || 'Image'
+        });
+        Logger.log(`generateModuleHTML: Found image: ${key} = ${strValue.substring(0, 50)}...`);
+      }
+    } else if (typeof value === 'string' && strValue.length > 3 &&
+               !key.includes('_id') && !key.toLowerCase().includes('url') &&
+               !key.toLowerCase().includes('alttext') && !key.toLowerCase().includes('position')) {
+      allTextContent.push({ key, value: strValue });
+    }
+  }
+
+  // Get primary image (first one found) and text
+  const imageUrl = allImages.length > 0 ? allImages[0].url : '';
+  const imageAlt = allImages.length > 0 ? allImages[0].alt : 'Product image';
+
   // Get text fields - try multiple possible names
   const headline = data.headline || data.subheadline || data.title || data.header || '';
   const body = data.body || data.text || data.description || data.content || '';
 
-  // Get image fields - try multiple possible names
-  const imageUrl = data.image_url || data.backgroundImage_url || data.mainImage_url ||
-                   data.logo_url || data.companyLogo_url || '';
-  const imageAlt = data.image_altText || data.backgroundImage_altText || data.altText || headline || 'Product image';
-
-  // Collect all text and image content
-  const allTextContent = [];
-  const allImages = [];
-
-  for (const [key, value] of Object.entries(data)) {
-    if (!value || typeof value !== 'string') continue;
-    if (['moduleNumber', 'moduleType', 'marketplace', 'language'].includes(key)) continue;
-
-    if ((key.includes('image') || key.includes('Image') || key.includes('logo') || key.includes('Logo')) &&
-        key.includes('url') && (value.startsWith('http') || value.startsWith('//'))) {
-      const altKey = key.replace('_url', '_altText');
-      allImages.push({
-        key,
-        url: value,
-        alt: data[altKey] || key.replace(/_url|_image/gi, '').replace(/_/g, ' ')
-      });
-    } else if (!key.includes('_id') && !key.includes('_url') && !key.includes('altText') &&
-               !key.includes('position') && !key.includes('Position') &&
-               value.length > 3) {
-      allTextContent.push({ key, value });
-    }
-  }
+  Logger.log(`generateModuleHTML: headline="${headline.substring(0, 30)}...", imageUrl="${imageUrl.substring(0, 50)}...", totalImages=${allImages.length}`);
 
   // Build module based on type
   let html = '';
@@ -507,10 +525,10 @@ function generateModuleHTML(data, isPremium) {
       break;
     case 'STANDARD_FOUR_IMAGE_TEXT':
     case 'STANDARD_FOUR_IMAGE_TEXT_QUADRANT':
-      html = generateFourImageTextModule(data, headline);
+      html = generateFourImageTextModule(data, headline, allImages);
       break;
     case 'STANDARD_THREE_IMAGE_TEXT':
-      html = generateThreeImageTextModule(data, headline);
+      html = generateThreeImageTextModule(data, headline, allImages);
       break;
     case 'STANDARD_SINGLE_IMAGE_HIGHLIGHTS':
       html = generateSingleImageHighlightsModule(data, headline, imageUrl, imageAlt);
@@ -608,14 +626,31 @@ function generateHeaderImageTextModule(data, headline, body, imageUrl, imageAlt)
 /**
  * STANDARD_FOUR_IMAGE_TEXT module
  */
-function generateFourImageTextModule(data, headline) {
+function generateFourImageTextModule(data, headline, allImages) {
+  // Try to find images from various naming patterns
   const blocks = [];
   for (let i = 1; i <= 4; i++) {
+    // Try multiple naming conventions for images
+    const imgUrl = data[`block${i}_image_url`] || data[`image${i}_url`] ||
+                   data[`block${i}_imageCrop_url`] || data[`imageCrop${i}_url`] ||
+                   data[`block${i}Image_url`] || data[`block${i}image_url`] ||
+                   (allImages && allImages[i-1] ? allImages[i-1].url : '') || '';
+
+    const imgAlt = data[`block${i}_image_altText`] || data[`image${i}_altText`] ||
+                   data[`block${i}_imageCrop_altText`] || `Feature ${i}`;
+
+    // Try multiple naming conventions for text
+    const blockHeadline = data[`block${i}_headline`] || data[`headline${i}`] ||
+                          data[`block${i}headline`] || data[`textBlock${i}_headline`] || '';
+
+    const blockBody = data[`block${i}_body`] || data[`body${i}`] ||
+                      data[`block${i}body`] || data[`textBlock${i}_body`] || '';
+
     blocks.push({
-      imageUrl: data[`block${i}_image_url`] || data[`image${i}_url`] || '',
-      imageAlt: data[`block${i}_image_altText`] || data[`image${i}_altText`] || `Feature ${i}`,
-      headline: data[`block${i}_headline`] || '',
-      body: data[`block${i}_body`] || ''
+      imageUrl: imgUrl,
+      imageAlt: imgAlt,
+      headline: blockHeadline,
+      body: blockBody
     });
   }
 
@@ -640,14 +675,31 @@ function generateFourImageTextModule(data, headline) {
 /**
  * STANDARD_THREE_IMAGE_TEXT module
  */
-function generateThreeImageTextModule(data, headline) {
+function generateThreeImageTextModule(data, headline, allImages) {
+  // Try to find images from various naming patterns
   const blocks = [];
   for (let i = 1; i <= 3; i++) {
+    // Try multiple naming conventions for images
+    const imgUrl = data[`block${i}_image_url`] || data[`image${i}_url`] ||
+                   data[`block${i}_imageCrop_url`] || data[`imageCrop${i}_url`] ||
+                   data[`block${i}Image_url`] || data[`block${i}image_url`] ||
+                   (allImages && allImages[i-1] ? allImages[i-1].url : '') || '';
+
+    const imgAlt = data[`block${i}_image_altText`] || data[`image${i}_altText`] ||
+                   data[`block${i}_imageCrop_altText`] || `Feature ${i}`;
+
+    // Try multiple naming conventions for text
+    const blockHeadline = data[`block${i}_headline`] || data[`headline${i}`] ||
+                          data[`block${i}headline`] || data[`textBlock${i}_headline`] || '';
+
+    const blockBody = data[`block${i}_body`] || data[`body${i}`] ||
+                      data[`block${i}body`] || data[`textBlock${i}_body`] || '';
+
     blocks.push({
-      imageUrl: data[`block${i}_image_url`] || data[`image${i}_url`] || '',
-      imageAlt: data[`block${i}_image_altText`] || data[`image${i}_altText`] || `Feature ${i}`,
-      headline: data[`block${i}_headline`] || '',
-      body: data[`block${i}_body`] || ''
+      imageUrl: imgUrl,
+      imageAlt: imgAlt,
+      headline: blockHeadline,
+      body: blockBody
     });
   }
 
