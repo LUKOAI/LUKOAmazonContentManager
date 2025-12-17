@@ -46,17 +46,28 @@ function lukoGenerateAPlusPreview() {
   const ui = SpreadsheetApp.getUi();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // Try APlusPremium first, then APlusBasic
-  let sheet = ss.getSheetByName('APlusPremium');
-  let contentType = 'premium';
+  // Use active sheet - must be APlusBasic or APlusPremium
+  let sheet = ss.getActiveSheet();
+  const sheetName = sheet.getName();
+  let contentType = 'basic';
 
-  if (!sheet) {
-    sheet = ss.getSheetByName('APlusBasic');
+  if (sheetName === 'APlusPremium') {
+    contentType = 'premium';
+  } else if (sheetName === 'APlusBasic') {
     contentType = 'basic';
+  } else {
+    // Not on an A+ sheet - try to find one
+    sheet = ss.getSheetByName('APlusPremium');
+    if (sheet) {
+      contentType = 'premium';
+    } else {
+      sheet = ss.getSheetByName('APlusBasic');
+      contentType = 'basic';
+    }
   }
 
   if (!sheet) {
-    ui.alert('Error', 'No A+ sheet found! Please create APlusBasic or APlusPremium sheet.', ui.ButtonSet.OK);
+    ui.alert('Error', 'No A+ sheet found! Please open APlusBasic or APlusPremium sheet.', ui.ButtonSet.OK);
     return;
   }
 
