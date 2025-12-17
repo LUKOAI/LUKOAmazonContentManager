@@ -310,46 +310,95 @@ function generateAPlusHTML(asin, modules) {
 
 /**
  * Generate HTML for a single module based on its type
+ * Now more flexible - tries multiple field name variants and shows all available data
  */
 function generateModuleHTML(data) {
   const moduleType = data.moduleType || 'STANDARD_TEXT';
 
-  switch (moduleType) {
-    case 'STANDARD_TEXT':
-      return generateStandardTextHTML(data);
+  // Get text fields - try multiple possible names
+  const headline = data.headline || data.subheadline || data.title || data.header || '';
+  const body = data.body || data.text || data.description || data.content || '';
 
-    case 'STANDARD_SINGLE_SIDE_IMAGE':
-      return generateSingleSideImageHTML(data);
+  // Get image fields - try multiple possible names
+  const imageUrl = data.image_url || data.backgroundImage_url || data.mainImage_url ||
+                   data.logo_url || data.companyLogo_url || '';
+  const imageAlt = data.image_altText || data.backgroundImage_altText || data.altText || '';
 
-    case 'STANDARD_HEADER_IMAGE_TEXT':
-      return generateHeaderImageTextHTML(data);
+  // Collect all text content from the module
+  const allTextContent = [];
+  const allImages = [];
 
-    case 'STANDARD_COMPANY_LOGO':
-      return generateCompanyLogoHTML(data);
+  // Scan all fields for text and images
+  for (const [key, value] of Object.entries(data)) {
+    if (!value || typeof value !== 'string') continue;
+    if (['moduleNumber', 'moduleType', 'marketplace', 'language'].includes(key)) continue;
 
-    case 'STANDARD_SINGLE_IMAGE_HIGHLIGHTS':
-      return generateSingleImageHighlightsHTML(data);
-
-    case 'STANDARD_FOUR_IMAGE_TEXT':
-    case 'STANDARD_FOUR_IMAGE_TEXT_QUADRANT':
-      return generateFourImageTextHTML(data);
-
-    case 'STANDARD_THREE_IMAGE_TEXT':
-      return generateThreeImageTextHTML(data);
-
-    case 'STANDARD_MULTIPLE_IMAGE_TEXT':
-      return generateMultipleImageTextHTML(data);
-
-    case 'STANDARD_TECH_SPECS':
-    case 'STANDARD_SINGLE_IMAGE_SPECS_DETAIL':
-      return generateTechSpecsHTML(data);
-
-    case 'STANDARD_COMPARISON_TABLE':
-      return generateComparisonTableHTML(data);
-
-    default:
-      return generateGenericModuleHTML(data);
+    // Check if it's an image URL
+    if (key.includes('image') || key.includes('Image') || key.includes('logo') || key.includes('Logo')) {
+      if (value.startsWith('http') || value.startsWith('//')) {
+        allImages.push({ key, url: value });
+      }
+    }
+    // Check if it's meaningful text (not IDs or coordinates)
+    else if (!key.includes('_id') && !key.includes('_x') && !key.includes('_y') &&
+             !key.includes('position') && !key.includes('Position') &&
+             value.length > 5) {
+      allTextContent.push({ key, value });
+    }
   }
+
+  // Build HTML based on what we have
+  let html = `<div class="module module-${moduleType.toLowerCase().replace(/_/g, '-')}">`;
+  html += `<div class="module-type-label">${escapeHtml(moduleType.replace(/_/g, ' '))}</div>`;
+
+  // Primary content
+  if (headline) {
+    html += `<h2 class="module-headline">${escapeHtml(headline)}</h2>`;
+  }
+
+  if (body) {
+    html += `<div class="module-body">${formatTextWithStyles(body)}</div>`;
+  }
+
+  // Main image
+  if (imageUrl) {
+    html += `<div class="module-image"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}"
+             onerror="this.src='${getPlaceholderImage(400, 300)}'"></div>`;
+  }
+
+  // Additional images
+  const otherImages = allImages.filter(img => img.url !== imageUrl).slice(0, 4);
+  if (otherImages.length > 0) {
+    html += `<div class="module-gallery">`;
+    for (const img of otherImages) {
+      html += `<img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.key)}"
+               onerror="this.style.display='none'" class="gallery-image">`;
+    }
+    html += `</div>`;
+  }
+
+  // Additional text content (highlights, descriptions, etc.)
+  const otherText = allTextContent.filter(t => t.value !== headline && t.value !== body);
+  if (otherText.length > 0) {
+    html += `<div class="module-details">`;
+    for (const item of otherText) {
+      const label = item.key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+      html += `<div class="detail-item"><span class="detail-label">${escapeHtml(label)}:</span>
+               <span class="detail-value">${escapeHtml(item.value)}</span></div>`;
+    }
+    html += `</div>`;
+  }
+
+  // If no content at all, show placeholder
+  if (!headline && !body && !imageUrl && otherText.length === 0) {
+    html += `<div class="empty-module">
+      <p>No content for this module</p>
+      <p class="module-debug">Available fields: ${Object.keys(data).join(', ')}</p>
+    </div>`;
+  }
+
+  html += `</div>`;
+  return html;
 }
 
 /**
@@ -1012,6 +1061,86 @@ function getPreviewCSS() {
       max-width: 100%;
       height: auto;
       margin: 15px 0;
+    }
+
+    /* New flexible module styles */
+    .module-type-label {
+      display: inline-block;
+      background: #232f3e;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      margin-bottom: 15px;
+      text-transform: capitalize;
+    }
+
+    .module-image {
+      margin: 15px 0;
+    }
+
+    .module-image img {
+      max-width: 100%;
+      max-height: 400px;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .module-gallery {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 15px 0;
+    }
+
+    .gallery-image {
+      max-width: 180px;
+      max-height: 180px;
+      height: auto;
+      border: 1px solid #e7e7e7;
+      border-radius: 4px;
+    }
+
+    .module-details {
+      margin-top: 15px;
+      padding: 15px;
+      background: #fafafa;
+      border-radius: 4px;
+    }
+
+    .detail-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #e7e7e7;
+    }
+
+    .detail-item:last-child {
+      border-bottom: none;
+    }
+
+    .detail-label {
+      font-weight: 600;
+      color: #555;
+      margin-right: 10px;
+      text-transform: capitalize;
+    }
+
+    .detail-value {
+      color: #333;
+    }
+
+    .empty-module {
+      text-align: center;
+      padding: 30px;
+      color: #888;
+    }
+
+    .module-debug {
+      font-size: 10px;
+      color: #999;
+      margin-top: 10px;
+      word-break: break-all;
     }
 
     /* Footer */
