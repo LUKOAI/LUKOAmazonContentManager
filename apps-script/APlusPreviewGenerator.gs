@@ -2,13 +2,45 @@
  * A+ Content Preview Generator
  *
  * Generates HTML preview of A+ Content that looks like Amazon's preview
- * Saves to Google Drive and returns shareable link
+ * Opens in browser via Web App or saves to Google Drive
  */
+
+// ========================================
+// WEB APP ENDPOINT - MUST BE DEPLOYED AS WEB APP
+// ========================================
+
+/**
+ * Web App endpoint - serves the preview HTML
+ * Deploy: Extensions > Apps Script > Deploy > New deployment > Web App
+ * Access: Anyone with the link
+ */
+function doGet(e) {
+  const cache = CacheService.getScriptCache();
+  const previewId = e?.parameter?.id || 'latest';
+  const html = cache.get(`preview_${previewId}`);
+
+  if (!html) {
+    return HtmlService.createHtmlOutput(`
+      <html><body style="font-family:Arial;padding:40px;text-align:center;">
+        <h2>Preview not found or expired</h2>
+        <p>Preview ID: ${previewId}</p>
+        <p>Previews expire after 6 hours. Please generate a new preview from Google Sheets.</p>
+      </body></html>
+    `).setTitle('Preview Not Found');
+  }
+
+  return HtmlService.createHtmlOutput(html)
+    .setTitle('A+ Content Preview')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// ========================================
+// MAIN PREVIEW FUNCTION
+// ========================================
 
 /**
  * Generate A+ Preview for selected ASIN
  * Menu: NetAnaliza Manager → Tools → Generate A+ Preview
- * Shows preview in modal dialog (renders HTML properly!)
  */
 function lukoGenerateAPlusPreview() {
   const ui = SpreadsheetApp.getUi();
@@ -42,9 +74,12 @@ function lukoGenerateAPlusPreview() {
       asinGroups[asin] = [];
     }
 
+    const moduleData = extractModuleDataForPreview(values, headers);
+    Logger.log(`Row ${row}: Module ${moduleData.moduleNumber}, Type: ${moduleData.moduleType}, Fields: ${Object.keys(moduleData).join(', ')}`);
+
     asinGroups[asin].push({
       row: row,
-      data: extractModuleDataForPreview(values, headers)
+      data: moduleData
     });
   }
 
@@ -56,7 +91,7 @@ function lukoGenerateAPlusPreview() {
   }
 
   try {
-    // For simplicity, show first ASIN preview in modal
+    // Get first ASIN
     const firstAsin = Object.keys(asinGroups)[0];
     const modules = asinGroups[firstAsin];
 
@@ -66,29 +101,98 @@ function lukoGenerateAPlusPreview() {
     // Generate HTML preview
     const html = generateAPlusHTML(firstAsin, modules);
 
-    // Show preview in modal dialog (this renders the HTML properly!)
-    const htmlOutput = HtmlService.createHtmlOutput(html)
-      .setWidth(1000)
-      .setHeight(700);
+    // Save to cache for Web App
+    const previewId = firstAsin + '_' + Date.now();
+    const cache = CacheService.getScriptCache();
 
-    ui.showModalDialog(htmlOutput, `A+ Preview: ${firstAsin} (${modules.length} modules)`);
-
-    // Also save to Drive for sharing
-    const file = saveHTMLToDrive(firstAsin, html);
-    Logger.log(`Preview saved to Drive: ${file.getUrl()}`);
-
-    // If multiple ASINs, show info
-    if (asinCount > 1) {
-      SpreadsheetApp.getActiveSpreadsheet().toast(
-        `Showing ${firstAsin}. Preview saved to Drive: LUKO-A+-Previews. Total ASINs: ${asinCount}`,
-        'Preview Generated',
-        10
-      );
+    // Split HTML if too large (cache limit is 100KB per key)
+    if (html.length > 90000) {
+      // Store in chunks
+      const chunks = Math.ceil(html.length / 90000);
+      for (let i = 0; i < chunks; i++) {
+        cache.put(`preview_${previewId}_${i}`, html.substring(i * 90000, (i + 1) * 90000), 21600);
+      }
+      cache.put(`preview_${previewId}`, `__CHUNKED__${chunks}`, 21600);
+    } else {
+      cache.put(`preview_${previewId}`, html, 21600); // 6 hours
     }
+    cache.put('preview_latest', html.length > 90000 ? `__CHUNKED_REF__${previewId}` : html, 21600);
+
+    // Also save to Drive
+    const file = saveHTMLToDrive(firstAsin, html);
+
+    // Get Web App URL (user must deploy first)
+    const scriptId = ScriptApp.getScriptId();
+
+    // Show dialog with options
+    const dialogHtml = `
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h3 { color: #232f3e; }
+        .btn {
+          display: inline-block;
+          padding: 10px 20px;
+          margin: 10px 5px 10px 0;
+          background: #ff9900;
+          color: #0f1111;
+          text-decoration: none;
+          border-radius: 4px;
+          font-weight: bold;
+          border: none;
+          cursor: pointer;
+        }
+        .btn:hover { background: #e88b00; }
+        .btn-secondary { background: #e7e9ec; }
+        .info { background: #f0f0f0; padding: 10px; border-radius: 4px; margin: 10px 0; font-size: 12px; }
+        .success { color: green; }
+      </style>
+      <h3>✅ Preview Generated: ${firstAsin}</h3>
+      <p><strong>${modules.length} module(s)</strong></p>
+
+      <h4>Option 1: Download & Open Locally</h4>
+      <p>
+        <a class="btn" href="${file.getDownloadUrl()}" target="_blank">⬇️ Download HTML</a>
+        <span style="font-size:12px;">(Then double-click to open in browser)</span>
+      </p>
+
+      <h4>Option 2: Open via Web App</h4>
+      <div class="info">
+        <strong>First time setup:</strong><br>
+        1. Extensions → Apps Script<br>
+        2. Deploy → New deployment → Web app<br>
+        3. Execute as: Me, Access: Anyone<br>
+        4. Copy the URL and paste below
+      </div>
+      <input type="text" id="webAppUrl" placeholder="Paste Web App URL here..." style="width:100%;padding:8px;margin:5px 0;">
+      <button class="btn btn-secondary" onclick="openWebApp()">🌐 Open in Browser</button>
+
+      <h4>Option 3: View in Google Drive</h4>
+      <p>
+        <a class="btn btn-secondary" href="${file.getUrl()}" target="_blank">📁 Open in Drive</a>
+        <span style="font-size:12px;">(Shows source code only)</span>
+      </p>
+
+      <script>
+        function openWebApp() {
+          const url = document.getElementById('webAppUrl').value;
+          if (url) {
+            window.open(url + '?id=${previewId}', '_blank');
+          } else {
+            alert('Please paste your Web App URL first');
+          }
+        }
+      </script>
+    `;
+
+    const htmlOutput = HtmlService.createHtmlOutput(dialogHtml)
+      .setWidth(500)
+      .setHeight(500);
+
+    ui.showModalDialog(htmlOutput, `A+ Preview: ${firstAsin}`);
 
   } catch (error) {
-    ui.alert('Error', error.message, ui.ButtonSet.OK);
-    Logger.log('Error in lukoGenerateAPlusPreview: ' + error.message);
+    ui.alert('Error', error.message + '\n\n' + error.stack, ui.ButtonSet.OK);
+    Logger.log('Error in lukoGenerateAPlusPreview: ' + error.message + '\n' + error.stack);
   }
 }
 
@@ -96,17 +200,27 @@ function lukoGenerateAPlusPreview() {
  * Extract module data for preview from row values
  */
 function extractModuleDataForPreview(values, headers) {
+  // Get module number - ensure it's a number
+  let moduleNumber = getColumnValue(values, headers, 'Module Number');
+  if (typeof moduleNumber === 'string') {
+    moduleNumber = parseInt(moduleNumber, 10);
+  }
+  if (!moduleNumber || isNaN(moduleNumber)) {
+    moduleNumber = 1;
+  }
+
   const data = {
-    moduleNumber: getColumnValue(values, headers, 'Module Number'),
-    moduleType: getColumnValue(values, headers, 'Module Type'),
+    moduleNumber: moduleNumber,
+    moduleType: getColumnValue(values, headers, 'Module Type') || 'STANDARD_TEXT',
     marketplace: getColumnValue(values, headers, 'Marketplace') || 'DE',
     language: getColumnValue(values, headers, 'Language') || 'DE'
   };
 
   // Find the module prefix (m1_, m2_, etc.)
-  const prefix = `m${data.moduleNumber}_`;
+  const prefix = `m${moduleNumber}_`;
 
   // Extract all fields for this module
+  let fieldCount = 0;
   for (let i = 0; i < headers.length; i++) {
     const header = headers[i];
     if (header && header.startsWith(prefix)) {
@@ -114,6 +228,23 @@ function extractModuleDataForPreview(values, headers) {
       const value = values[i];
       if (value !== null && value !== undefined && value !== '') {
         data[fieldName] = value;
+        fieldCount++;
+      }
+    }
+  }
+
+  Logger.log(`extractModuleDataForPreview: moduleNumber=${moduleNumber}, prefix=${prefix}, fields found: ${fieldCount}`);
+
+  // If no fields found with prefix, try without prefix (fallback for old column format)
+  if (fieldCount === 0) {
+    Logger.log('No fields found with prefix, trying fallback extraction...');
+    // Try common field names directly
+    const fallbackFields = ['headline', 'body', 'image_url', 'image_altText', 'imagePositionType'];
+    for (const field of fallbackFields) {
+      const value = getColumnValue(values, headers, field);
+      if (value) {
+        data[field] = value;
+        Logger.log(`Fallback found: ${field} = ${value.substring(0, 50)}...`);
       }
     }
   }
