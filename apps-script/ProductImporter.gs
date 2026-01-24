@@ -1749,13 +1749,14 @@ function handleError(functionName, error) {
 /**
  * Fix/regenerate headers on existing ImportedProducts sheet
  * This preserves existing data!
+ * Can be run directly from Apps Script editor
  */
 function lukoFixImportedProductsHeaders() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('ImportedProducts');
 
   if (!sheet) {
-    SpreadsheetApp.getUi().alert('Error', 'ImportedProducts sheet not found!', SpreadsheetApp.getUi().ButtonSet.OK);
+    Logger.log('ERROR: ImportedProducts sheet not found!');
     return;
   }
 
@@ -1864,27 +1865,19 @@ function lukoFixImportedProductsHeaders() {
   sheet.setFrozenRows(1);
   sheet.setFrozenColumns(5);
 
-  SpreadsheetApp.getUi().alert('Done!', `Headers fixed! Total: ${headers.length} columns (A to ${String.fromCharCode(64 + (headers.length % 26))}${headers.length > 26 ? Math.floor(headers.length / 26) : ''})`, SpreadsheetApp.getUi().ButtonSet.OK);
+  Logger.log(`SUCCESS: Headers fixed! Total: ${headers.length} columns`);
 }
 
 /**
  * Regenerate ImportedProducts sheet (WARNING: deletes existing data!)
+ * Can be run directly from Apps Script editor
  */
 function lukoRegenerateImportedProductsSheet() {
-  const ui = SpreadsheetApp.getUi();
-
-  const confirm = ui.alert(
-    'Regenerate ImportedProducts Sheet',
-    '⚠️ WARNING: This will DELETE the existing ImportedProducts sheet and create a new one.\n\n' +
-    'All existing imported data will be LOST!\n\n' +
-    'Continue?',
-    ui.ButtonSet.YES_NO
-  );
-
-  if (confirm !== ui.Button.YES) return;
-
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  Logger.log('WARNING: Regenerating ImportedProducts sheet - existing data will be deleted!');
+
   generateImportedProductsSheet(ss);
 
-  ui.alert('Done!', 'ImportedProducts sheet has been regenerated with all columns including A+ Content and Brand Story.', ui.ButtonSet.OK);
+  Logger.log('SUCCESS: ImportedProducts sheet has been regenerated with all columns including A+ Content and Brand Story.');
 }
