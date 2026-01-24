@@ -337,6 +337,58 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
         warnings++;
       }
 
+      // Rate limiting: wait 300ms
+      Utilities.sleep(300);
+
+      // Fetch A+ Content (may fail due to permissions - that's OK)
+      try {
+        showProgress(`Fetching A+ Content for ${asin}...`);
+        const aplusData = fetchAPlusContentByASIN(asin, marketplaceConfig, tokens.access_token);
+
+        // Merge A+ data into product data
+        productData.hasAPlus = aplusData.hasAPlus || false;
+        productData.aplusType = aplusData.aplusType || '';
+        productData.aplusStatus = aplusData.aplusStatus || '';
+        productData.aplusContentId = aplusData.aplusContentId || '';
+        productData.aplusName = aplusData.aplusName || '';
+        productData.aplusModuleCount = aplusData.aplusModuleCount || 0;
+        productData.aplusModuleTypes = aplusData.aplusModuleTypes || '';
+        productData.aplusHeadline = aplusData.aplusHeadline || '';
+        productData.aplusText1 = aplusData.aplusText1 || '';
+        productData.aplusText2 = aplusData.aplusText2 || '';
+        productData.aplusText3 = aplusData.aplusText3 || '';
+        productData.aplusImageUrl1 = aplusData.aplusImageUrl1 || '';
+        productData.aplusImageUrl2 = aplusData.aplusImageUrl2 || '';
+        productData.aplusImageUrl3 = aplusData.aplusImageUrl3 || '';
+        productData.aplusImageUrl4 = aplusData.aplusImageUrl4 || '';
+        productData.hasBrandStory = aplusData.hasBrandStory || false;
+        productData.brandStoryHeadline = aplusData.brandStoryHeadline || '';
+        productData.brandStoryText = aplusData.brandStoryText || '';
+        productData.brandStoryImageUrl = aplusData.brandStoryImageUrl || '';
+      } catch (e) {
+        Logger.log(`Could not fetch A+ content for ${asin}: ${e.message}`);
+        productData.hasAPlus = false;
+        productData.aplusType = '';
+        productData.aplusStatus = '';
+        productData.aplusContentId = '';
+        productData.aplusName = '';
+        productData.aplusModuleCount = 0;
+        productData.aplusModuleTypes = '';
+        productData.aplusHeadline = '';
+        productData.aplusText1 = '';
+        productData.aplusText2 = '';
+        productData.aplusText3 = '';
+        productData.aplusImageUrl1 = '';
+        productData.aplusImageUrl2 = '';
+        productData.aplusImageUrl3 = '';
+        productData.aplusImageUrl4 = '';
+        productData.hasBrandStory = false;
+        productData.brandStoryHeadline = '';
+        productData.brandStoryText = '';
+        productData.brandStoryImageUrl = '';
+        warnings++;
+      }
+
       // Add to sheet
       appendProductToImportedSheet(sheet, productData, marketplace);
 
@@ -754,6 +806,360 @@ function fetchProductInventory(asin, marketplaceConfig, accessToken) {
 }
 
 // ========================================
+// A+ CONTENT API
+// ========================================
+
+/**
+ * Fetch A+ Content for an ASIN
+ * Uses the A+ Content Management API
+ * @param {string} asin - The ASIN to fetch A+ content for
+ * @param {Object} marketplaceConfig - Marketplace configuration
+ * @param {string} accessToken - SP-API access token
+ * @returns {Object} A+ content data
+ */
+function fetchAPlusContent(asin, marketplaceConfig, accessToken) {
+  try {
+    // Search for A+ content documents associated with this ASIN
+    const searchPath = '/aplus/2020-11-01/contentDocuments';
+    const searchParams = {
+      marketplaceId: marketplaceConfig.marketplaceId,
+      pageToken: ''
+    };
+
+    const searchResponse = callSPAPI('GET', searchPath, marketplaceConfig.marketplaceId, searchParams, accessToken);
+
+    const contentDocuments = searchResponse.contentMetadataRecords || [];
+
+    // Find content that includes our ASIN
+    let aplusData = {
+      hasAPlus: false,
+      aplusType: '',
+      aplusStatus: '',
+      aplusContentId: '',
+      aplusName: '',
+      aplusModuleCount: 0,
+      aplusModuleTypes: '',
+      aplusHeadline: '',
+      aplusText1: '',
+      aplusText2: '',
+      aplusText3: '',
+      aplusImageUrl1: '',
+      aplusImageUrl2: '',
+      aplusImageUrl3: '',
+      aplusImageUrl4: '',
+      hasBrandStory: false,
+      brandStoryHeadline: '',
+      brandStoryText: '',
+      brandStoryImageUrl: ''
+    };
+
+    // Search through content documents to find one with this ASIN
+    for (const record of contentDocuments) {
+      const contentReferenceKey = record.contentReferenceKey;
+
+      // Check if this content is associated with our ASIN
+      // We need to get the full content document to see the ASINs
+      try {
+        const contentPath = `/aplus/2020-11-01/contentDocuments/${contentReferenceKey}`;
+        const contentParams = {
+          marketplaceId: marketplaceConfig.marketplaceId,
+          includedDataSet: 'CONTENTS'
+        };
+
+        const contentResponse = callSPAPI('GET', contentPath, marketplaceConfig.marketplaceId, contentParams, accessToken);
+
+        const contentDocument = contentResponse.contentDocument || {};
+        const contentModuleList = contentDocument.contentModuleList || [];
+
+        // Check if this document is for our ASIN by looking at associated ASINs
+        // Note: The API might not return ASIN list directly, so we'll take what we find
+        if (contentDocument.contentReferenceKey) {
+          aplusData.hasAPlus = true;
+          aplusData.aplusContentId = contentDocument.contentReferenceKey || '';
+          aplusData.aplusName = contentDocument.name || '';
+          aplusData.aplusStatus = record.status || '';
+          aplusData.aplusType = contentDocument.contentType || 'STANDARD';
+          aplusData.aplusModuleCount = contentModuleList.length;
+
+          // Extract module types
+          const moduleTypes = contentModuleList.map(m => m.contentModuleType).filter(t => t);
+          aplusData.aplusModuleTypes = moduleTypes.join(', ');
+
+          // Extract content from modules
+          let textIndex = 1;
+          let imageIndex = 1;
+
+          for (const module of contentModuleList) {
+            const moduleType = module.contentModuleType || '';
+
+            // Check for Brand Story module
+            if (moduleType.includes('BRAND_STORY') || moduleType === 'STANDARD_BRAND_CONTENT_HERO') {
+              aplusData.hasBrandStory = true;
+
+              // Extract Brand Story content
+              if (module.standardHeaderImageText) {
+                aplusData.brandStoryHeadline = module.standardHeaderImageText.headline?.value || '';
+                aplusData.brandStoryText = module.standardHeaderImageText.block?.textList?.[0]?.value || '';
+                aplusData.brandStoryImageUrl = module.standardHeaderImageText.image?.imageCropSpecification?.optimizedImage?.link || '';
+              }
+            }
+
+            // Extract headline from header modules
+            if (module.standardHeaderTextModule) {
+              aplusData.aplusHeadline = module.standardHeaderTextModule.headline?.value || aplusData.aplusHeadline;
+            }
+
+            // Extract text from various module types
+            if (module.standardTextModule && textIndex <= 3) {
+              const text = module.standardTextModule.body?.textList?.[0]?.value || '';
+              if (text) {
+                aplusData[`aplusText${textIndex}`] = text;
+                textIndex++;
+              }
+            }
+
+            // Extract text from comparison tables, etc.
+            if (module.standardComparisonTable) {
+              const headline = module.standardComparisonTable.headline?.value || '';
+              if (headline && textIndex <= 3) {
+                aplusData[`aplusText${textIndex}`] = headline;
+                textIndex++;
+              }
+            }
+
+            // Extract images from various module types
+            if (module.standardSingleImageHighlights && imageIndex <= 4) {
+              const img = module.standardSingleImageHighlights.image?.imageCropSpecification?.optimizedImage?.link || '';
+              if (img) {
+                aplusData[`aplusImageUrl${imageIndex}`] = img;
+                imageIndex++;
+              }
+            }
+
+            if (module.standardImageTextOverlay && imageIndex <= 4) {
+              const img = module.standardImageTextOverlay.image?.imageCropSpecification?.optimizedImage?.link || '';
+              if (img) {
+                aplusData[`aplusImageUrl${imageIndex}`] = img;
+                imageIndex++;
+              }
+            }
+
+            if (module.standardFourImageText && imageIndex <= 4) {
+              const images = module.standardFourImageText.fourImageTextList || [];
+              for (const item of images) {
+                if (imageIndex > 4) break;
+                const img = item.image?.imageCropSpecification?.optimizedImage?.link || '';
+                if (img) {
+                  aplusData[`aplusImageUrl${imageIndex}`] = img;
+                  imageIndex++;
+                }
+              }
+            }
+
+            // Standard image and text modules
+            if (module.standardImageSidebar && imageIndex <= 4) {
+              const img = module.standardImageSidebar.image?.imageCropSpecification?.optimizedImage?.link || '';
+              if (img) {
+                aplusData[`aplusImageUrl${imageIndex}`] = img;
+                imageIndex++;
+              }
+            }
+          }
+
+          // Found A+ content, break the loop (take first match)
+          break;
+        }
+      } catch (innerError) {
+        Logger.log(`Could not fetch content document ${contentReferenceKey}: ${innerError.message}`);
+        continue;
+      }
+
+      // Rate limiting between document fetches
+      Utilities.sleep(200);
+    }
+
+    return aplusData;
+
+  } catch (error) {
+    Logger.log(`Could not fetch A+ content for ${asin}: ${error.message}`);
+    return {
+      hasAPlus: false,
+      aplusType: '',
+      aplusStatus: '',
+      aplusContentId: '',
+      aplusName: '',
+      aplusModuleCount: 0,
+      aplusModuleTypes: '',
+      aplusHeadline: '',
+      aplusText1: '',
+      aplusText2: '',
+      aplusText3: '',
+      aplusImageUrl1: '',
+      aplusImageUrl2: '',
+      aplusImageUrl3: '',
+      aplusImageUrl4: '',
+      hasBrandStory: false,
+      brandStoryHeadline: '',
+      brandStoryText: '',
+      brandStoryImageUrl: ''
+    };
+  }
+}
+
+/**
+ * Fetch A+ Content by ASIN using content association
+ * Alternative method that searches by ASIN directly
+ */
+function fetchAPlusContentByASIN(asin, marketplaceConfig, accessToken) {
+  try {
+    // Try to get A+ content associated with specific ASIN
+    const path = '/aplus/2020-11-01/contentDocuments';
+    const params = {
+      marketplaceId: marketplaceConfig.marketplaceId,
+      asin: asin
+    };
+
+    const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
+
+    const contentRecords = response.contentMetadataRecords || [];
+
+    if (contentRecords.length === 0) {
+      return {
+        hasAPlus: false,
+        aplusType: '',
+        aplusStatus: '',
+        aplusContentId: '',
+        aplusName: '',
+        aplusModuleCount: 0,
+        aplusModuleTypes: '',
+        aplusHeadline: '',
+        aplusText1: '',
+        aplusText2: '',
+        aplusText3: '',
+        aplusImageUrl1: '',
+        aplusImageUrl2: '',
+        aplusImageUrl3: '',
+        aplusImageUrl4: '',
+        hasBrandStory: false,
+        brandStoryHeadline: '',
+        brandStoryText: '',
+        brandStoryImageUrl: ''
+      };
+    }
+
+    // Get the first content document
+    const firstRecord = contentRecords[0];
+    const contentReferenceKey = firstRecord.contentReferenceKey;
+
+    // Fetch full content
+    const contentPath = `/aplus/2020-11-01/contentDocuments/${contentReferenceKey}`;
+    const contentParams = {
+      marketplaceId: marketplaceConfig.marketplaceId,
+      includedDataSet: 'CONTENTS'
+    };
+
+    const contentResponse = callSPAPI('GET', contentPath, marketplaceConfig.marketplaceId, contentParams, accessToken);
+
+    return parseAPlusContentDocument(contentResponse, firstRecord);
+
+  } catch (error) {
+    Logger.log(`Could not fetch A+ content by ASIN for ${asin}: ${error.message}`);
+    return fetchAPlusContent(asin, marketplaceConfig, accessToken);
+  }
+}
+
+/**
+ * Parse A+ Content document into structured data
+ */
+function parseAPlusContentDocument(contentResponse, metadata) {
+  const contentDocument = contentResponse.contentDocument || {};
+  const contentModuleList = contentDocument.contentModuleList || [];
+
+  const aplusData = {
+    hasAPlus: true,
+    aplusType: contentDocument.contentType || 'STANDARD',
+    aplusStatus: metadata?.status || '',
+    aplusContentId: contentDocument.contentReferenceKey || '',
+    aplusName: contentDocument.name || '',
+    aplusModuleCount: contentModuleList.length,
+    aplusModuleTypes: contentModuleList.map(m => m.contentModuleType).filter(t => t).join(', '),
+    aplusHeadline: '',
+    aplusText1: '',
+    aplusText2: '',
+    aplusText3: '',
+    aplusImageUrl1: '',
+    aplusImageUrl2: '',
+    aplusImageUrl3: '',
+    aplusImageUrl4: '',
+    hasBrandStory: false,
+    brandStoryHeadline: '',
+    brandStoryText: '',
+    brandStoryImageUrl: ''
+  };
+
+  let textIndex = 1;
+  let imageIndex = 1;
+
+  for (const module of contentModuleList) {
+    const moduleType = module.contentModuleType || '';
+
+    // Brand Story detection
+    if (moduleType.includes('BRAND') || moduleType.includes('HERO')) {
+      aplusData.hasBrandStory = true;
+    }
+
+    // Extract headline
+    if (module.standardHeaderTextModule?.headline?.value) {
+      aplusData.aplusHeadline = module.standardHeaderTextModule.headline.value;
+    }
+
+    // Extract texts
+    const textSources = [
+      module.standardTextModule?.body?.textList?.[0]?.value,
+      module.standardTextModule?.headline?.value,
+      module.standardComparisonTable?.headline?.value,
+      module.standardSingleImageHighlights?.headline?.value
+    ];
+
+    for (const text of textSources) {
+      if (text && textIndex <= 3) {
+        aplusData[`aplusText${textIndex}`] = text.substring(0, 1000);
+        textIndex++;
+      }
+    }
+
+    // Extract images
+    const imageSources = [
+      module.standardSingleImageHighlights?.image?.imageCropSpecification?.optimizedImage?.link,
+      module.standardImageTextOverlay?.image?.imageCropSpecification?.optimizedImage?.link,
+      module.standardImageSidebar?.image?.imageCropSpecification?.optimizedImage?.link,
+      module.standardHeaderImageText?.image?.imageCropSpecification?.optimizedImage?.link
+    ];
+
+    for (const img of imageSources) {
+      if (img && imageIndex <= 4) {
+        aplusData[`aplusImageUrl${imageIndex}`] = img;
+        imageIndex++;
+      }
+    }
+
+    // Extract from four-image modules
+    if (module.standardFourImageText?.fourImageTextList) {
+      for (const item of module.standardFourImageText.fourImageTextList) {
+        if (imageIndex > 4) break;
+        const img = item.image?.imageCropSpecification?.optimizedImage?.link;
+        if (img) {
+          aplusData[`aplusImageUrl${imageIndex}`] = img;
+          imageIndex++;
+        }
+      }
+    }
+  }
+
+  return aplusData;
+}
+
+// ========================================
 // SEARCH BY KEYWORD
 // ========================================
 
@@ -1044,6 +1450,29 @@ function generateImportedProductsSheet(ss) {
     'Website Display Group',
     'Website Display Group Name',
 
+    // === A+ CONTENT ===
+    'Has A+',
+    'A+ Type',
+    'A+ Status',
+    'A+ Content ID',
+    'A+ Name',
+    'A+ Module Count',
+    'A+ Module Types',
+    'A+ Headline',
+    'A+ Text 1',
+    'A+ Text 2',
+    'A+ Text 3',
+    'A+ Image URL 1',
+    'A+ Image URL 2',
+    'A+ Image URL 3',
+    'A+ Image URL 4',
+
+    // === BRAND STORY ===
+    'Has Brand Story',
+    'Brand Story Headline',
+    'Brand Story Text',
+    'Brand Story Image URL',
+
     // === NOTES ===
     'Notes'
   ];
@@ -1258,6 +1687,29 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
     productData.itemClassification || '',
     productData.websiteDisplayGroup || '',
     productData.websiteDisplayGroupName || '',
+
+    // === A+ CONTENT ===
+    productData.hasAPlus ? 'Yes' : 'No',
+    productData.aplusType || '',
+    productData.aplusStatus || '',
+    productData.aplusContentId || '',
+    productData.aplusName || '',
+    productData.aplusModuleCount || '',
+    productData.aplusModuleTypes || '',
+    productData.aplusHeadline || '',
+    productData.aplusText1 || '',
+    productData.aplusText2 || '',
+    productData.aplusText3 || '',
+    productData.aplusImageUrl1 || '',
+    productData.aplusImageUrl2 || '',
+    productData.aplusImageUrl3 || '',
+    productData.aplusImageUrl4 || '',
+
+    // === BRAND STORY ===
+    productData.hasBrandStory ? 'Yes' : 'No',
+    productData.brandStoryHeadline || '',
+    productData.brandStoryText || '',
+    productData.brandStoryImageUrl || '',
 
     // === NOTES ===
     '' // Notes column for user input
