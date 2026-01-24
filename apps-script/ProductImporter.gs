@@ -368,7 +368,7 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
   const path = `/catalog/2022-04-01/items/${asin}`;
   const params = {
     marketplaceIds: marketplaceConfig.marketplaceId,
-    includedData: 'attributes,images,productTypes,salesRanks,summaries,dimensions'
+    includedData: 'attributes,images,productTypes,salesRanks,summaries,dimensions,identifiers,relationships,classifications'
   };
 
   const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
@@ -379,8 +379,40 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
   const summaries = item.summaries || [];
   const images = item.images || [];
   const dimensions = item.dimensions || [];
+  const identifiers = item.identifiers || [];
+  const salesRanks = item.salesRanks || [];
+  const relationships = item.relationships || [];
+  const classifications = item.classifications || [];
 
   const summary = summaries[0] || {};
+
+  // Helper function to get attribute value
+  const getAttr = (name) => attributes[name]?.[0]?.value || '';
+  const getAttrArray = (name) => (attributes[name] || []).map(a => a.value).filter(v => v);
+  const getAttrWithLanguage = (name, lang) => {
+    const attrs = attributes[name] || [];
+    const found = attrs.find(a => a.language_tag === lang || a.marketplace_id === marketplaceConfig.marketplaceId);
+    return found?.value || attrs[0]?.value || '';
+  };
+
+  // Extract identifiers (EAN, UPC, ISBN, GTIN, etc.)
+  const identifiersData = {};
+  for (const idGroup of identifiers) {
+    if (idGroup.marketplaceId === marketplaceConfig.marketplaceId) {
+      const ids = idGroup.identifiers || [];
+      for (const id of ids) {
+        if (id.identifierType === 'EAN') identifiersData.ean = id.identifier;
+        if (id.identifierType === 'UPC') identifiersData.upc = id.identifier;
+        if (id.identifierType === 'ISBN') identifiersData.isbn = id.identifier;
+        if (id.identifierType === 'GTIN') identifiersData.gtin = id.identifier;
+        if (id.identifierType === 'ASIN') identifiersData.asinIdentifier = id.identifier;
+        if (id.identifierType === 'GCID') identifiersData.gcid = id.identifier;
+        if (id.identifierType === 'MINSAN') identifiersData.minsan = id.identifier;
+        if (id.identifierType === 'PZN') identifiersData.pzn = id.identifier;
+      }
+      break;
+    }
+  }
 
   // Extract dimensions from dimensions array (if available)
   const dimensionsData = {};
@@ -389,20 +421,132 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
       const itemDims = dim.item || {};
       const packageDims = dim.package || {};
 
+      // Item dimensions with units
       dimensionsData.itemLength = itemDims.length?.value || '';
+      dimensionsData.itemLengthUnit = itemDims.length?.unit || '';
       dimensionsData.itemWidth = itemDims.width?.value || '';
+      dimensionsData.itemWidthUnit = itemDims.width?.unit || '';
       dimensionsData.itemHeight = itemDims.height?.value || '';
+      dimensionsData.itemHeightUnit = itemDims.height?.unit || '';
       dimensionsData.itemWeight = itemDims.weight?.value || '';
+      dimensionsData.itemWeightUnit = itemDims.weight?.unit || '';
+
+      // Package dimensions with units
       dimensionsData.packageLength = packageDims.length?.value || '';
+      dimensionsData.packageLengthUnit = packageDims.length?.unit || '';
       dimensionsData.packageWidth = packageDims.width?.value || '';
+      dimensionsData.packageWidthUnit = packageDims.width?.unit || '';
       dimensionsData.packageHeight = packageDims.height?.value || '';
+      dimensionsData.packageHeightUnit = packageDims.height?.unit || '';
       dimensionsData.packageWeight = packageDims.weight?.value || '';
+      dimensionsData.packageWeightUnit = packageDims.weight?.unit || '';
       break;
     }
   }
 
-  // Fallback to attributes if dimensions not in dimensions array
-  const getAttr = (name) => attributes[name]?.[0]?.value || '';
+  // Extract sales ranks
+  const salesRanksData = {};
+  for (const rankGroup of salesRanks) {
+    if (rankGroup.marketplaceId === marketplaceConfig.marketplaceId) {
+      // Classification ranks (category-specific)
+      const classRanks = rankGroup.classificationRanks || [];
+      if (classRanks.length > 0) {
+        salesRanksData.salesRank1 = classRanks[0]?.rank || '';
+        salesRanksData.salesRank1Title = classRanks[0]?.title || '';
+        salesRanksData.salesRank1Link = classRanks[0]?.link || '';
+        if (classRanks.length > 1) {
+          salesRanksData.salesRank2 = classRanks[1]?.rank || '';
+          salesRanksData.salesRank2Title = classRanks[1]?.title || '';
+        }
+        if (classRanks.length > 2) {
+          salesRanksData.salesRank3 = classRanks[2]?.rank || '';
+          salesRanksData.salesRank3Title = classRanks[2]?.title || '';
+        }
+      }
+
+      // Display group ranks (department-level)
+      const displayRanks = rankGroup.displayGroupRanks || [];
+      if (displayRanks.length > 0) {
+        salesRanksData.displayGroupRank = displayRanks[0]?.rank || '';
+        salesRanksData.displayGroupTitle = displayRanks[0]?.title || '';
+        salesRanksData.displayGroupLink = displayRanks[0]?.link || '';
+      }
+      break;
+    }
+  }
+
+  // Extract relationships (parent/child, variations)
+  const relationshipsData = {};
+  for (const relGroup of relationships) {
+    if (relGroup.marketplaceId === marketplaceConfig.marketplaceId) {
+      const rels = relGroup.relationships || [];
+
+      // Find parent relationship
+      const parentRel = rels.find(r => r.type === 'VARIATION' && r.parentAsins);
+      if (parentRel && parentRel.parentAsins?.length > 0) {
+        relationshipsData.parentAsin = parentRel.parentAsins[0];
+      }
+
+      // Find child variations
+      const childRels = rels.filter(r => r.type === 'VARIATION' && r.childAsins);
+      if (childRels.length > 0) {
+        const allChildAsins = childRels.flatMap(r => r.childAsins || []);
+        relationshipsData.childAsins = allChildAsins.slice(0, 10).join(', ');
+        relationshipsData.childCount = allChildAsins.length;
+      }
+
+      // Variation theme
+      const variationRel = rels.find(r => r.variationTheme);
+      if (variationRel) {
+        relationshipsData.variationTheme = variationRel.variationTheme.attributes?.join(', ') || '';
+      }
+      break;
+    }
+  }
+
+  // Extract classifications (browse nodes)
+  const classificationsData = {};
+  for (const classGroup of classifications) {
+    if (classGroup.marketplaceId === marketplaceConfig.marketplaceId) {
+      const nodes = classGroup.classifications || [];
+      if (nodes.length > 0) {
+        classificationsData.browseNodeId = nodes[0]?.classificationId || '';
+        classificationsData.browseNodeName = nodes[0]?.displayName || '';
+
+        // Build category path
+        const categoryPath = nodes.map(n => n.displayName).join(' > ');
+        classificationsData.categoryPath = categoryPath;
+
+        // Additional browse nodes
+        if (nodes.length > 1) {
+          classificationsData.browseNode2Id = nodes[1]?.classificationId || '';
+          classificationsData.browseNode2Name = nodes[1]?.displayName || '';
+        }
+        if (nodes.length > 2) {
+          classificationsData.browseNode3Id = nodes[2]?.classificationId || '';
+          classificationsData.browseNode3Name = nodes[2]?.displayName || '';
+        }
+      }
+      break;
+    }
+  }
+
+  // Extract all images with variants
+  const imagesData = {};
+  const imageGroup = images[0]?.images || [];
+  imagesData.mainImageURL = imageGroup.find(i => i.variant === 'MAIN')?.link || imageGroup[0]?.link || '';
+  imagesData.mainImageHeight = imageGroup.find(i => i.variant === 'MAIN')?.height || '';
+  imagesData.mainImageWidth = imageGroup.find(i => i.variant === 'MAIN')?.width || '';
+
+  // Get additional images (non-MAIN variants)
+  const additionalImages = imageGroup.filter(i => i.variant !== 'MAIN');
+  for (let i = 0; i < 8; i++) {
+    imagesData[`additionalImage${i + 1}`] = additionalImages[i]?.link || '';
+    imagesData[`additionalImage${i + 1}Variant`] = additionalImages[i]?.variant || '';
+  }
+
+  // Count total images
+  imagesData.totalImageCount = imageGroup.length;
 
   return {
     asin: asin,
@@ -412,8 +556,19 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
     manufacturer: getAttr('manufacturer'),
     productType: item.productTypes?.[0]?.productType || 'PRODUCT',
 
-    // Bullet points
-    bulletPoint1: getAttr('bullet_point') || attributes.bullet_point?.[0]?.value || '',
+    // === IDENTIFIERS ===
+    ean: identifiersData.ean || getAttr('externally_assigned_product_identifier') || '',
+    upc: identifiersData.upc || '',
+    isbn: identifiersData.isbn || '',
+    gtin: identifiersData.gtin || '',
+    gcid: identifiersData.gcid || '',
+    pzn: identifiersData.pzn || '',  // German pharmacy number
+    minsan: identifiersData.minsan || '',  // Italian pharmacy number
+    partNumber: getAttr('part_number') || getAttr('manufacturer_part_number') || '',
+    itemModelNumber: getAttr('item_model_number') || '',
+
+    // === BULLET POINTS ===
+    bulletPoint1: attributes.bullet_point?.[0]?.value || '',
     bulletPoint2: attributes.bullet_point?.[1]?.value || '',
     bulletPoint3: attributes.bullet_point?.[2]?.value || '',
     bulletPoint4: attributes.bullet_point?.[3]?.value || '',
@@ -423,38 +578,122 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
     bulletPoint8: attributes.bullet_point?.[7]?.value || '',
     bulletPoint9: attributes.bullet_point?.[8]?.value || '',
 
-    // Description
+    // === DESCRIPTIONS ===
     description: getAttr('product_description'),
+    shortDescription: getAttr('short_description') || '',
+    longDescription: getAttr('long_description') || '',
 
-    // Images
-    mainImageURL: images[0]?.images?.[0]?.link || '',
-    additionalImage1: images[0]?.images?.[1]?.link || '',
-    additionalImage2: images[0]?.images?.[2]?.link || '',
-    additionalImage3: images[0]?.images?.[3]?.link || '',
-    additionalImage4: images[0]?.images?.[4]?.link || '',
-    additionalImage5: images[0]?.images?.[5]?.link || '',
+    // === IMAGES ===
+    mainImageURL: imagesData.mainImageURL,
+    mainImageHeight: imagesData.mainImageHeight,
+    mainImageWidth: imagesData.mainImageWidth,
+    additionalImage1: imagesData.additionalImage1,
+    additionalImage2: imagesData.additionalImage2,
+    additionalImage3: imagesData.additionalImage3,
+    additionalImage4: imagesData.additionalImage4,
+    additionalImage5: imagesData.additionalImage5,
+    additionalImage6: imagesData.additionalImage6,
+    additionalImage7: imagesData.additionalImage7,
+    additionalImage8: imagesData.additionalImage8,
+    totalImageCount: imagesData.totalImageCount,
 
-    // Dimensions (prefer dimensions array, fallback to attributes)
+    // === DIMENSIONS ===
     itemLength: dimensionsData.itemLength || getAttr('item_length'),
+    itemLengthUnit: dimensionsData.itemLengthUnit || '',
     itemWidth: dimensionsData.itemWidth || getAttr('item_width'),
+    itemWidthUnit: dimensionsData.itemWidthUnit || '',
     itemHeight: dimensionsData.itemHeight || getAttr('item_height'),
+    itemHeightUnit: dimensionsData.itemHeightUnit || '',
     itemWeight: dimensionsData.itemWeight || getAttr('item_weight'),
+    itemWeightUnit: dimensionsData.itemWeightUnit || '',
     packageLength: dimensionsData.packageLength || getAttr('package_length'),
+    packageLengthUnit: dimensionsData.packageLengthUnit || '',
     packageWidth: dimensionsData.packageWidth || getAttr('package_width'),
+    packageWidthUnit: dimensionsData.packageWidthUnit || '',
     packageHeight: dimensionsData.packageHeight || getAttr('package_height'),
+    packageHeightUnit: dimensionsData.packageHeightUnit || '',
     packageWeight: dimensionsData.packageWeight || getAttr('package_weight'),
+    packageWeightUnit: dimensionsData.packageWeightUnit || '',
 
-    // Additional info
-    modelNumber: getAttr('model_number'),
-    releaseDate: getAttr('release_date'),
-    packageQuantity: getAttr('package_quantity'),
-    countryOfOrigin: getAttr('country_of_origin'),
+    // === SALES RANKS ===
+    salesRank1: salesRanksData.salesRank1 || '',
+    salesRank1Category: salesRanksData.salesRank1Title || '',
+    salesRank2: salesRanksData.salesRank2 || '',
+    salesRank2Category: salesRanksData.salesRank2Title || '',
+    salesRank3: salesRanksData.salesRank3 || '',
+    salesRank3Category: salesRanksData.salesRank3Title || '',
+    displayGroupRank: salesRanksData.displayGroupRank || '',
+    displayGroupName: salesRanksData.displayGroupTitle || '',
 
-    // Parent/variation info
-    parentASIN: getAttr('parent_asin'),
-    variationTheme: getAttr('variation_theme'),
+    // === CLASSIFICATIONS (BROWSE NODES) ===
+    browseNodeId: classificationsData.browseNodeId || '',
+    browseNodeName: classificationsData.browseNodeName || '',
+    categoryPath: classificationsData.categoryPath || '',
+    browseNode2Id: classificationsData.browseNode2Id || '',
+    browseNode2Name: classificationsData.browseNode2Name || '',
 
-    // Metadata
+    // === RELATIONSHIPS ===
+    parentASIN: relationshipsData.parentAsin || getAttr('parent_asin') || '',
+    childAsins: relationshipsData.childAsins || '',
+    childCount: relationshipsData.childCount || '',
+    variationTheme: relationshipsData.variationTheme || getAttr('variation_theme') || '',
+
+    // === PRODUCT DETAILS ===
+    color: getAttr('color') || getAttr('color_name') || '',
+    colorMap: getAttr('color_map') || '',
+    size: getAttr('size') || getAttr('size_name') || '',
+    sizeMap: getAttr('size_map') || '',
+    material: getAttr('material') || getAttr('material_type') || '',
+    style: getAttr('style') || getAttr('style_name') || '',
+    pattern: getAttr('pattern') || getAttr('pattern_name') || '',
+
+    // === ADDITIONAL ATTRIBUTES ===
+    modelNumber: getAttr('model_number') || getAttr('model') || '',
+    releaseDate: getAttr('release_date') || getAttr('item_release_date') || '',
+    firstAvailableDate: getAttr('first_available_date') || '',
+    packageQuantity: getAttr('package_quantity') || getAttr('number_of_items') || '',
+    unitCount: getAttr('unit_count') || '',
+    unitCountType: getAttr('unit_count_type') || '',
+    countryOfOrigin: getAttr('country_of_origin') || '',
+
+    // === WARRANTY & SUPPORT ===
+    warranty: getAttr('warranty_description') || getAttr('warranty') || '',
+    warrantyType: getAttr('warranty_type') || '',
+    legalDisclaimer: getAttr('legal_disclaimer') || '',
+
+    // === SAFETY & COMPLIANCE ===
+    safetyWarning: getAttr('safety_warning') || '',
+    hazmatType: getAttr('hazmat_type') || getAttr('hazardous_material_type') || '',
+    batteryType: getAttr('battery_type') || '',
+    batteryWeight: getAttr('battery_weight') || '',
+    numberOfBatteries: getAttr('number_of_batteries') || '',
+    lithiumBatteryWeight: getAttr('lithium_battery_weight') || '',
+    lithiumBatteryEnergyContent: getAttr('lithium_battery_energy_content') || '',
+
+    // === TARGET AUDIENCE ===
+    targetGender: getAttr('target_gender') || '',
+    ageRangeDescription: getAttr('age_range_description') || getAttr('target_audience_age') || '',
+    recommendedAge: getAttr('recommended_age') || '',
+    itemFormType: getAttr('item_form') || getAttr('item_form_type') || '',
+
+    // === PRODUCT TYPE SPECIFIC ===
+    department: getAttr('department') || '',
+    genericKeywords: getAttrArray('generic_keyword').join(', ') || '',
+    platinumKeywords: getAttrArray('platinum_keywords').join(', ') || '',
+    searchTerms: getAttr('search_terms') || '',
+
+    // === SHIPPING ===
+    isGiftWrapAvailable: getAttr('is_gift_wrap_available') || '',
+    isDiscontinuedByManufacturer: getAttr('is_discontinued_by_manufacturer') || '',
+    itemCondition: getAttr('item_condition') || getAttr('condition_type') || '',
+
+    // === SUMMARY FIELDS ===
+    contributors: summary.contributors?.map(c => `${c.role}: ${c.value}`).join('; ') || '',
+    itemClassification: summary.itemClassification || '',
+    websiteDisplayGroup: summary.websiteDisplayGroup || '',
+    websiteDisplayGroupName: summary.websiteDisplayGroupName || '',
+
+    // === METADATA ===
     importDate: new Date(),
     importedBy: Session.getActiveUser().getEmail()
   };
@@ -623,7 +862,8 @@ function searchProductsByKeyword(searchTerm, marketplaceConfig, accessToken) {
 // ========================================
 
 /**
- * Generate ImportedProducts sheet with all possible fields
+ * Generate ImportedProducts sheet with ALL available fields
+ * This is a comprehensive sheet with 100+ columns for all Amazon product data
  */
 function generateImportedProductsSheet(ss) {
   let sheet = ss.getSheetByName('ImportedProducts');
@@ -637,26 +877,38 @@ function generateImportedProductsSheet(ss) {
   // Unfreeze columns
   sheet.setFrozenColumns(0);
 
-  // Headers
+  // Headers - organized by category
   const headers = [
-    // Control
+    // === CONTROL ===
     '☑️ Use',
     'Import Date',
     'Imported By',
+    'Marketplace',
 
-    // Identifiers
+    // === PRIMARY IDENTIFIERS ===
     'ASIN',
     'SKU',
+    'EAN',
+    'UPC',
+    'ISBN',
+    'GTIN',
+    'GCID',
+    'PZN',
+    'MINSAN',
+    'Part Number',
+    'Item Model Number',
+
+    // === SELLER INFO ===
     'Seller ID',
     'Seller Name',
 
-    // Product info
+    // === BASIC INFO ===
     'Product Type',
     'Title',
     'Brand',
     'Manufacturer',
 
-    // Content
+    // === BULLET POINTS ===
     'Bullet Point 1',
     'Bullet Point 2',
     'Bullet Point 3',
@@ -666,126 +918,349 @@ function generateImportedProductsSheet(ss) {
     'Bullet Point 7',
     'Bullet Point 8',
     'Bullet Point 9',
-    'Description',
 
-    // Images
+    // === DESCRIPTIONS ===
+    'Description',
+    'Short Description',
+    'Long Description',
+
+    // === IMAGES ===
     'Main Image URL',
+    'Main Image Height',
+    'Main Image Width',
     'Additional Image 1',
     'Additional Image 2',
     'Additional Image 3',
     'Additional Image 4',
     'Additional Image 5',
+    'Additional Image 6',
+    'Additional Image 7',
+    'Additional Image 8',
+    'Total Image Count',
 
-    // Pricing
+    // === PRICING ===
     'List Price',
     'Current Price',
     'Currency',
 
-    // Inventory
+    // === INVENTORY ===
     'Available Quantity',
 
-    // Dimensions
+    // === ITEM DIMENSIONS ===
     'Item Length',
+    'Item Length Unit',
     'Item Width',
+    'Item Width Unit',
     'Item Height',
+    'Item Height Unit',
     'Item Weight',
+    'Item Weight Unit',
+
+    // === PACKAGE DIMENSIONS ===
     'Package Length',
+    'Package Length Unit',
     'Package Width',
+    'Package Width Unit',
     'Package Height',
+    'Package Height Unit',
     'Package Weight',
+    'Package Weight Unit',
 
-    // Additional
-    'Model Number',
-    'Release Date',
-    'Package Quantity',
-    'Country of Origin',
+    // === SALES RANKS ===
+    'Sales Rank 1',
+    'Sales Rank 1 Category',
+    'Sales Rank 2',
+    'Sales Rank 2 Category',
+    'Sales Rank 3',
+    'Sales Rank 3 Category',
+    'Display Group Rank',
+    'Display Group Name',
 
-    // Variations
+    // === BROWSE NODES / CLASSIFICATIONS ===
+    'Browse Node ID',
+    'Browse Node Name',
+    'Category Path',
+    'Browse Node 2 ID',
+    'Browse Node 2 Name',
+
+    // === VARIATIONS / RELATIONSHIPS ===
     'Parent ASIN',
+    'Child ASINs',
+    'Child Count',
     'Variation Theme',
 
-    // Metadata
-    'Marketplace',
+    // === PRODUCT ATTRIBUTES ===
+    'Color',
+    'Color Map',
+    'Size',
+    'Size Map',
+    'Material',
+    'Style',
+    'Pattern',
+
+    // === ADDITIONAL INFO ===
+    'Model Number',
+    'Release Date',
+    'First Available Date',
+    'Package Quantity',
+    'Unit Count',
+    'Unit Count Type',
+    'Country of Origin',
+
+    // === WARRANTY & SUPPORT ===
+    'Warranty',
+    'Warranty Type',
+    'Legal Disclaimer',
+
+    // === SAFETY & COMPLIANCE ===
+    'Safety Warning',
+    'Hazmat Type',
+    'Battery Type',
+    'Battery Weight',
+    'Number of Batteries',
+    'Lithium Battery Weight',
+    'Lithium Battery Energy Content',
+
+    // === TARGET AUDIENCE ===
+    'Target Gender',
+    'Age Range',
+    'Recommended Age',
+    'Item Form Type',
+
+    // === PRODUCT TYPE SPECIFIC ===
+    'Department',
+    'Generic Keywords',
+    'Platinum Keywords',
+    'Search Terms',
+
+    // === SHIPPING & AVAILABILITY ===
+    'Is Gift Wrap Available',
+    'Is Discontinued',
+    'Item Condition',
+
+    // === SUMMARY FIELDS ===
+    'Contributors',
+    'Item Classification',
+    'Website Display Group',
+    'Website Display Group Name',
+
+    // === NOTES ===
     'Notes'
   ];
 
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
-  // Format headers
-  sheet.getRange(1, 1, 1, headers.length)
+  // Format headers with different colors for each section
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange
     .setFontWeight('bold')
     .setBackground('#34A853')
     .setFontColor('#FFFFFF')
     .setWrap(true)
-    .setVerticalAlignment('middle');
+    .setVerticalAlignment('middle')
+    .setHorizontalAlignment('center');
 
-  // Set column widths
-  sheet.setColumnWidth(1, 50);  // Checkbox
-  sheet.setColumnWidth(2, 120); // Import Date
-  sheet.setColumnWidth(3, 150); // Imported By
-  sheet.setColumnWidth(4, 120); // ASIN
+  // Set column widths for key columns
+  sheet.setColumnWidth(1, 50);   // Checkbox
+  sheet.setColumnWidth(2, 120);  // Import Date
+  sheet.setColumnWidth(5, 120);  // ASIN
+  sheet.setColumnWidth(20, 300); // Title
+  sheet.setColumnWidth(24, 400); // Bullet Point 1
+  sheet.setColumnWidth(33, 400); // Description
 
-  // Freeze header row
+  // Freeze header row and first few columns
   sheet.setFrozenRows(1);
+  sheet.setFrozenColumns(5);
 
-  // Add data validation
+  // Add data validation for checkbox
   const checkboxRange = sheet.getRange('A2:A1000');
   checkboxRange.insertCheckboxes();
 
-  Logger.log('ImportedProducts sheet generated');
+  // Add conditional formatting for Sales Rank (green = good rank)
+  const salesRankRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenNumberLessThan(1000)
+    .setBackground('#C6EFCE')
+    .setRanges([sheet.getRange('BQ2:BQ1000')])
+    .build();
+
+  const rules = [salesRankRule];
+  sheet.setConditionalFormatRules(rules);
+
+  Logger.log(`ImportedProducts sheet generated with ${headers.length} columns`);
 
   return sheet;
 }
 
 function appendProductToImportedSheet(sheet, productData, marketplace) {
+  // Row data must match the headers order in generateImportedProductsSheet
   const rowData = [
+    // === CONTROL ===
     false, // checkbox
     productData.importDate,
     productData.importedBy,
+    marketplace,
+
+    // === PRIMARY IDENTIFIERS ===
     productData.asin,
-    productData.sku,
+    productData.sku || '',
+    productData.ean || '',
+    productData.upc || '',
+    productData.isbn || '',
+    productData.gtin || '',
+    productData.gcid || '',
+    productData.pzn || '',
+    productData.minsan || '',
+    productData.partNumber || '',
+    productData.itemModelNumber || '',
+
+    // === SELLER INFO ===
     productData.sellerId || '',
     productData.sellerName || '',
-    productData.productType,
-    productData.title,
-    productData.brand,
-    productData.manufacturer,
-    productData.bulletPoint1,
-    productData.bulletPoint2,
-    productData.bulletPoint3,
-    productData.bulletPoint4,
-    productData.bulletPoint5,
-    productData.bulletPoint6,
-    productData.bulletPoint7,
-    productData.bulletPoint8,
-    productData.bulletPoint9,
-    productData.description,
-    productData.mainImageURL,
-    productData.additionalImage1,
-    productData.additionalImage2,
-    productData.additionalImage3,
-    productData.additionalImage4,
-    productData.additionalImage5,
-    productData.listPrice,
-    productData.currentPrice,
-    productData.currency,
-    productData.availableQuantity,
-    productData.itemLength,
-    productData.itemWidth,
-    productData.itemHeight,
-    productData.itemWeight,
-    productData.packageLength,
-    productData.packageWidth,
-    productData.packageHeight,
-    productData.packageWeight,
-    productData.modelNumber,
-    productData.releaseDate,
-    productData.packageQuantity,
-    productData.countryOfOrigin,
-    productData.parentASIN,
-    productData.variationTheme,
-    marketplace,
-    ''
+
+    // === BASIC INFO ===
+    productData.productType || '',
+    productData.title || '',
+    productData.brand || '',
+    productData.manufacturer || '',
+
+    // === BULLET POINTS ===
+    productData.bulletPoint1 || '',
+    productData.bulletPoint2 || '',
+    productData.bulletPoint3 || '',
+    productData.bulletPoint4 || '',
+    productData.bulletPoint5 || '',
+    productData.bulletPoint6 || '',
+    productData.bulletPoint7 || '',
+    productData.bulletPoint8 || '',
+    productData.bulletPoint9 || '',
+
+    // === DESCRIPTIONS ===
+    productData.description || '',
+    productData.shortDescription || '',
+    productData.longDescription || '',
+
+    // === IMAGES ===
+    productData.mainImageURL || '',
+    productData.mainImageHeight || '',
+    productData.mainImageWidth || '',
+    productData.additionalImage1 || '',
+    productData.additionalImage2 || '',
+    productData.additionalImage3 || '',
+    productData.additionalImage4 || '',
+    productData.additionalImage5 || '',
+    productData.additionalImage6 || '',
+    productData.additionalImage7 || '',
+    productData.additionalImage8 || '',
+    productData.totalImageCount || '',
+
+    // === PRICING ===
+    productData.listPrice || '',
+    productData.currentPrice || '',
+    productData.currency || '',
+
+    // === INVENTORY ===
+    productData.availableQuantity || '',
+
+    // === ITEM DIMENSIONS ===
+    productData.itemLength || '',
+    productData.itemLengthUnit || '',
+    productData.itemWidth || '',
+    productData.itemWidthUnit || '',
+    productData.itemHeight || '',
+    productData.itemHeightUnit || '',
+    productData.itemWeight || '',
+    productData.itemWeightUnit || '',
+
+    // === PACKAGE DIMENSIONS ===
+    productData.packageLength || '',
+    productData.packageLengthUnit || '',
+    productData.packageWidth || '',
+    productData.packageWidthUnit || '',
+    productData.packageHeight || '',
+    productData.packageHeightUnit || '',
+    productData.packageWeight || '',
+    productData.packageWeightUnit || '',
+
+    // === SALES RANKS ===
+    productData.salesRank1 || '',
+    productData.salesRank1Category || '',
+    productData.salesRank2 || '',
+    productData.salesRank2Category || '',
+    productData.salesRank3 || '',
+    productData.salesRank3Category || '',
+    productData.displayGroupRank || '',
+    productData.displayGroupName || '',
+
+    // === BROWSE NODES / CLASSIFICATIONS ===
+    productData.browseNodeId || '',
+    productData.browseNodeName || '',
+    productData.categoryPath || '',
+    productData.browseNode2Id || '',
+    productData.browseNode2Name || '',
+
+    // === VARIATIONS / RELATIONSHIPS ===
+    productData.parentASIN || '',
+    productData.childAsins || '',
+    productData.childCount || '',
+    productData.variationTheme || '',
+
+    // === PRODUCT ATTRIBUTES ===
+    productData.color || '',
+    productData.colorMap || '',
+    productData.size || '',
+    productData.sizeMap || '',
+    productData.material || '',
+    productData.style || '',
+    productData.pattern || '',
+
+    // === ADDITIONAL INFO ===
+    productData.modelNumber || '',
+    productData.releaseDate || '',
+    productData.firstAvailableDate || '',
+    productData.packageQuantity || '',
+    productData.unitCount || '',
+    productData.unitCountType || '',
+    productData.countryOfOrigin || '',
+
+    // === WARRANTY & SUPPORT ===
+    productData.warranty || '',
+    productData.warrantyType || '',
+    productData.legalDisclaimer || '',
+
+    // === SAFETY & COMPLIANCE ===
+    productData.safetyWarning || '',
+    productData.hazmatType || '',
+    productData.batteryType || '',
+    productData.batteryWeight || '',
+    productData.numberOfBatteries || '',
+    productData.lithiumBatteryWeight || '',
+    productData.lithiumBatteryEnergyContent || '',
+
+    // === TARGET AUDIENCE ===
+    productData.targetGender || '',
+    productData.ageRangeDescription || '',
+    productData.recommendedAge || '',
+    productData.itemFormType || '',
+
+    // === PRODUCT TYPE SPECIFIC ===
+    productData.department || '',
+    productData.genericKeywords || '',
+    productData.platinumKeywords || '',
+    productData.searchTerms || '',
+
+    // === SHIPPING & AVAILABILITY ===
+    productData.isGiftWrapAvailable || '',
+    productData.isDiscontinuedByManufacturer || '',
+    productData.itemCondition || '',
+
+    // === SUMMARY FIELDS ===
+    productData.contributors || '',
+    productData.itemClassification || '',
+    productData.websiteDisplayGroup || '',
+    productData.websiteDisplayGroupName || '',
+
+    // === NOTES ===
+    '' // Notes column for user input
   ];
 
   sheet.appendRow(rowData);
