@@ -1741,3 +1741,150 @@ function handleError(functionName, error) {
 
   showError(`An error occurred: ${error.message}\n\nCheck Logs sheet for details.`);
 }
+
+// ========================================
+// SHEET MAINTENANCE FUNCTIONS
+// ========================================
+
+/**
+ * Fix/regenerate headers on existing ImportedProducts sheet
+ * This preserves existing data!
+ */
+function lukoFixImportedProductsHeaders() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('ImportedProducts');
+
+  if (!sheet) {
+    SpreadsheetApp.getUi().alert('Error', 'ImportedProducts sheet not found!', SpreadsheetApp.getUi().ButtonSet.OK);
+    return;
+  }
+
+  const headers = [
+    // === CONTROL ===
+    '☑️ Use', 'Import Date', 'Imported By', 'Marketplace',
+
+    // === PRIMARY IDENTIFIERS ===
+    'ASIN', 'SKU', 'EAN', 'UPC', 'ISBN', 'GTIN', 'GCID', 'PZN', 'MINSAN', 'Part Number', 'Item Model Number',
+
+    // === SELLER INFO ===
+    'Seller ID', 'Seller Name',
+
+    // === BASIC INFO ===
+    'Product Type', 'Title', 'Brand', 'Manufacturer',
+
+    // === BULLET POINTS ===
+    'Bullet Point 1', 'Bullet Point 2', 'Bullet Point 3', 'Bullet Point 4', 'Bullet Point 5',
+    'Bullet Point 6', 'Bullet Point 7', 'Bullet Point 8', 'Bullet Point 9',
+
+    // === DESCRIPTIONS ===
+    'Description', 'Short Description', 'Long Description',
+
+    // === IMAGES ===
+    'Main Image URL', 'Main Image Height', 'Main Image Width',
+    'Additional Image 1', 'Additional Image 2', 'Additional Image 3', 'Additional Image 4',
+    'Additional Image 5', 'Additional Image 6', 'Additional Image 7', 'Additional Image 8',
+    'Total Image Count',
+
+    // === PRICING ===
+    'List Price', 'Current Price', 'Currency',
+
+    // === INVENTORY ===
+    'Available Quantity',
+
+    // === ITEM DIMENSIONS ===
+    'Item Length', 'Item Length Unit', 'Item Width', 'Item Width Unit',
+    'Item Height', 'Item Height Unit', 'Item Weight', 'Item Weight Unit',
+
+    // === PACKAGE DIMENSIONS ===
+    'Package Length', 'Package Length Unit', 'Package Width', 'Package Width Unit',
+    'Package Height', 'Package Height Unit', 'Package Weight', 'Package Weight Unit',
+
+    // === SALES RANKS ===
+    'Sales Rank 1', 'Sales Rank 1 Category', 'Sales Rank 2', 'Sales Rank 2 Category',
+    'Sales Rank 3', 'Sales Rank 3 Category', 'Display Group Rank', 'Display Group Name',
+
+    // === BROWSE NODES / CLASSIFICATIONS ===
+    'Browse Node ID', 'Browse Node Name', 'Category Path', 'Browse Node 2 ID', 'Browse Node 2 Name',
+
+    // === VARIATIONS / RELATIONSHIPS ===
+    'Parent ASIN', 'Child ASINs', 'Child Count', 'Variation Theme',
+
+    // === PRODUCT ATTRIBUTES ===
+    'Color', 'Color Map', 'Size', 'Size Map', 'Material', 'Style', 'Pattern',
+
+    // === ADDITIONAL INFO ===
+    'Model Number', 'Release Date', 'First Available Date', 'Package Quantity',
+    'Unit Count', 'Unit Count Type', 'Country of Origin',
+
+    // === WARRANTY & SUPPORT ===
+    'Warranty', 'Warranty Type', 'Legal Disclaimer',
+
+    // === SAFETY & COMPLIANCE ===
+    'Safety Warning', 'Hazmat Type', 'Battery Type', 'Battery Weight',
+    'Number of Batteries', 'Lithium Battery Weight', 'Lithium Battery Energy Content',
+
+    // === TARGET AUDIENCE ===
+    'Target Gender', 'Age Range', 'Recommended Age', 'Item Form Type',
+
+    // === PRODUCT TYPE SPECIFIC ===
+    'Department', 'Generic Keywords', 'Platinum Keywords', 'Search Terms',
+
+    // === SHIPPING & AVAILABILITY ===
+    'Is Gift Wrap Available', 'Is Discontinued', 'Item Condition',
+
+    // === SUMMARY FIELDS ===
+    'Contributors', 'Item Classification', 'Website Display Group', 'Website Display Group Name',
+
+    // === A+ CONTENT ===
+    'Has A+', 'A+ Type', 'A+ Status', 'A+ Content ID', 'A+ Name',
+    'A+ Module Count', 'A+ Module Types', 'A+ Headline',
+    'A+ Text 1', 'A+ Text 2', 'A+ Text 3',
+    'A+ Image URL 1', 'A+ Image URL 2', 'A+ Image URL 3', 'A+ Image URL 4',
+
+    // === BRAND STORY ===
+    'Has Brand Story', 'Brand Story Headline', 'Brand Story Text', 'Brand Story Image URL',
+
+    // === NOTES ===
+    'Notes'
+  ];
+
+  // Write headers to row 1
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+  // Format headers
+  sheet.getRange(1, 1, 1, headers.length)
+    .setFontWeight('bold')
+    .setBackground('#34A853')
+    .setFontColor('#FFFFFF')
+    .setWrap(true)
+    .setVerticalAlignment('middle')
+    .setHorizontalAlignment('center');
+
+  // Freeze
+  sheet.setFrozenRows(1);
+  sheet.setFrozenColumns(5);
+
+  SpreadsheetApp.getUi().alert('Done!', `Headers fixed! Total: ${headers.length} columns (A to ${String.fromCharCode(64 + (headers.length % 26))}${headers.length > 26 ? Math.floor(headers.length / 26) : ''})`, SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+/**
+ * Regenerate ImportedProducts sheet (WARNING: deletes existing data!)
+ */
+function lukoRegenerateImportedProductsSheet() {
+  const ui = SpreadsheetApp.getUi();
+
+  const confirm = ui.alert(
+    'Regenerate ImportedProducts Sheet',
+    '⚠️ WARNING: This will DELETE the existing ImportedProducts sheet and create a new one.\n\n' +
+    'All existing imported data will be LOST!\n\n' +
+    'Continue?',
+    ui.ButtonSet.YES_NO
+  );
+
+  if (confirm !== ui.Button.YES) return;
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  generateImportedProductsSheet(ss);
+
+  ui.alert('Done!', 'ImportedProducts sheet has been regenerated with all columns including A+ Content and Brand Story.', ui.ButtonSet.OK);
+}
