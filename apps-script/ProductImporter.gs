@@ -342,7 +342,7 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig, options = {
   let failed = 0;
   let warnings = 0;
   const startTime = new Date().getTime();
-  const maxExecutionTime = 5 * 60 * 1000; // 5 minutes (leave 1 min buffer)
+  const maxExecutionTime = 4.5 * 60 * 1000; // 4.5 minutes (safe for both 6min and 30min accounts)
 
   for (let i = 0; i < asinsToImport.length; i++) {
     const asin = asinsToImport[i];
@@ -654,14 +654,21 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
   }
 
   // Extract list_price from attributes (more reliable than Pricing API)
-  // Format: [{"value_with_tax":15900,"currency":"EUR"}] - value is in cents!
+  // Format varies: {"value_with_tax":15900} (cents) or {"value_with_tax":20.22} (EUR)
   let catalogListPrice = '';
   let catalogCurrency = '';
   if (attributes.list_price && attributes.list_price[0]) {
     const priceData = attributes.list_price[0];
-    // value_with_tax is in cents, divide by 100
-    if (priceData.value_with_tax) {
-      catalogListPrice = (priceData.value_with_tax / 100).toFixed(2);
+    if (priceData.value_with_tax !== undefined) {
+      const rawValue = priceData.value_with_tax;
+      // Detect if value is in cents (whole number > 100) or already in EUR (has decimals or small)
+      if (Number.isInteger(rawValue) && rawValue > 100) {
+        // Likely cents (e.g., 15900 = 159.00 EUR)
+        catalogListPrice = (rawValue / 100).toFixed(2);
+      } else {
+        // Already in EUR (e.g., 20.22)
+        catalogListPrice = parseFloat(rawValue).toFixed(2);
+      }
     } else if (priceData.value) {
       catalogListPrice = priceData.value;
     }
