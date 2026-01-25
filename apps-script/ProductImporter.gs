@@ -1083,19 +1083,29 @@ function fetchAPlusContentByASIN(asin, marketplaceConfig, accessToken) {
  */
 function parseAPlusContentDocument(contentResponse, metadata) {
   Logger.log(`[A+ PARSE] Starting parse. Metadata: ${JSON.stringify(metadata).substring(0, 300)}`);
+  Logger.log(`[A+ PARSE] Top-level response keys: ${Object.keys(contentResponse).join(', ')}`);
 
-  const contentDocument = contentResponse.contentDocument || {};
+  // API returns contentRecord.contentDocument, NOT contentDocument directly!
+  const contentRecord = contentResponse.contentRecord || {};
+  const contentDocument = contentRecord.contentDocument || contentResponse.contentDocument || {};
+
+  Logger.log(`[A+ PARSE] contentRecord keys: ${Object.keys(contentRecord).join(', ')}`);
   Logger.log(`[A+ PARSE] contentDocument keys: ${Object.keys(contentDocument).join(', ')}`);
 
   const contentModuleList = contentDocument.contentModuleList || [];
   Logger.log(`[A+ PARSE] Found ${contentModuleList.length} modules`);
 
+  if (contentModuleList.length > 0) {
+    Logger.log(`[A+ PARSE] First module type: ${contentModuleList[0].contentModuleType}`);
+    Logger.log(`[A+ PARSE] First module keys: ${Object.keys(contentModuleList[0]).join(', ')}`);
+  }
+
   const aplusData = {
     hasAPlus: true,
     aplusType: contentDocument.contentType || metadata?.contentType || 'STANDARD',
-    aplusStatus: metadata?.status || '',
-    aplusContentId: contentDocument.contentReferenceKey || metadata?.contentReferenceKey || '',
-    aplusName: contentDocument.name || metadata?.name || '',
+    aplusStatus: metadata?.contentMetadata?.status || metadata?.status || '',
+    aplusContentId: contentDocument.contentReferenceKey || contentRecord.contentReferenceKey || metadata?.contentReferenceKey || '',
+    aplusName: contentDocument.name || metadata?.contentMetadata?.name || metadata?.name || '',
     aplusModuleCount: contentModuleList.length,
     aplusModuleTypes: contentModuleList.map(m => m.contentModuleType).filter(t => t).join(', '),
     aplusHeadline: '',
@@ -1117,43 +1127,71 @@ function parseAPlusContentDocument(contentResponse, metadata) {
 
   for (const module of contentModuleList) {
     const moduleType = module.contentModuleType || '';
+    Logger.log(`[A+ PARSE] Processing module: ${moduleType}`);
 
     // Brand Story detection
     if (moduleType.includes('BRAND') || moduleType.includes('HERO')) {
       aplusData.hasBrandStory = true;
     }
 
-    // Extract headline
-    if (module.standardHeaderTextModule?.headline?.value) {
-      aplusData.aplusHeadline = module.standardHeaderTextModule.headline.value;
+    // Extract headline from various module types
+    // API uses: standardText, standardHeaderText (NOT standardTextModule, standardHeaderTextModule!)
+    if (module.standardHeaderText?.headline?.value && !aplusData.aplusHeadline) {
+      aplusData.aplusHeadline = module.standardHeaderText.headline.value;
+      Logger.log(`[A+ PARSE] Found headline in standardHeaderText: ${aplusData.aplusHeadline.substring(0, 50)}`);
     }
 
-    // Extract texts
+    // Extract texts from STANDARD_TEXT module
+    // The actual API structure is: module.standardText.headline.value and module.standardText.body.textList[0].value
     const textSources = [
-      module.standardTextModule?.body?.textList?.[0]?.value,
-      module.standardTextModule?.headline?.value,
+      // STANDARD_TEXT module
+      module.standardText?.headline?.value,
+      module.standardText?.body?.textList?.[0]?.value,
+      // STANDARD_HEADER_TEXT module
+      module.standardHeaderText?.headline?.value,
+      module.standardHeaderText?.body?.textList?.[0]?.value,
+      // Comparison table
       module.standardComparisonTable?.headline?.value,
-      module.standardSingleImageHighlights?.headline?.value
+      // Single image highlights
+      module.standardSingleImageHighlights?.headline?.value,
+      // Image sidebar
+      module.standardImageSidebar?.descriptionTextBlock?.body?.textList?.[0]?.value,
+      // Multiple image text
+      module.standardMultipleImageText?.headline?.value,
+      // Product description
+      module.standardProductDescription?.body?.textList?.[0]?.value
     ];
 
     for (const text of textSources) {
       if (text && textIndex <= 3) {
         aplusData[`aplusText${textIndex}`] = text.substring(0, 1000);
+        Logger.log(`[A+ PARSE] Found text ${textIndex}: ${text.substring(0, 50)}...`);
         textIndex++;
       }
     }
 
-    // Extract images
+    // Extract images from various module types
+    // API uses different image structures
     const imageSources = [
+      // Single image highlights
       module.standardSingleImageHighlights?.image?.imageCropSpecification?.optimizedImage?.link,
-      module.standardImageTextOverlay?.image?.imageCropSpecification?.optimizedImage?.link,
+      module.standardSingleImageHighlights?.image?.uploadDestinationId,
+      // Image text overlay
+      module.standardImageTextOverlay?.overlayColorType ? null : module.standardImageTextOverlay?.image?.imageCropSpecification?.optimizedImage?.link,
+      // Image sidebar
       module.standardImageSidebar?.image?.imageCropSpecification?.optimizedImage?.link,
-      module.standardHeaderImageText?.image?.imageCropSpecification?.optimizedImage?.link
+      // Header image text
+      module.standardHeaderImageText?.image?.imageCropSpecification?.optimizedImage?.link,
+      // Single side image
+      module.standardSingleSideImage?.image?.imageCropSpecification?.optimizedImage?.link,
+      // Multiple image text
+      ...(module.standardMultipleImageText?.imageTextList || []).map(i => i.image?.imageCropSpecification?.optimizedImage?.link)
     ];
 
     for (const img of imageSources) {
       if (img && imageIndex <= 4) {
         aplusData[`aplusImageUrl${imageIndex}`] = img;
+        Logger.log(`[A+ PARSE] Found image ${imageIndex}: ${img.substring(0, 60)}...`);
         imageIndex++;
       }
     }
@@ -1170,6 +1208,8 @@ function parseAPlusContentDocument(contentResponse, metadata) {
       }
     }
   }
+
+  Logger.log(`[A+ PARSE] Final result - Headline: ${aplusData.aplusHeadline?.substring(0, 30) || 'none'}, Texts: ${textIndex - 1}, Images: ${imageIndex - 1}`);
 
   return aplusData;
 }
