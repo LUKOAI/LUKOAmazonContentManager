@@ -455,12 +455,18 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
   }
 
   // Extract list_price from attributes (more reliable than Pricing API)
+  // Format: [{"value_with_tax":15900,"currency":"EUR"}] - value is in cents!
   let catalogListPrice = '';
   let catalogCurrency = '';
   if (attributes.list_price && attributes.list_price[0]) {
-    const priceData = attributes.list_price[0].value || attributes.list_price[0];
-    catalogListPrice = priceData.value || priceData.amount || '';
-    catalogCurrency = priceData.currency || priceData.currency_code || 'EUR';
+    const priceData = attributes.list_price[0];
+    // value_with_tax is in cents, divide by 100
+    if (priceData.value_with_tax) {
+      catalogListPrice = (priceData.value_with_tax / 100).toFixed(2);
+    } else if (priceData.value) {
+      catalogListPrice = priceData.value;
+    }
+    catalogCurrency = priceData.currency || 'EUR';
     Logger.log(`[FETCH DEBUG] Extracted list_price from catalog: ${catalogListPrice} ${catalogCurrency}`);
   }
 
@@ -1797,7 +1803,7 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
 
   const rowData = [
     // === CONTROL ===
-    '', // empty for checkbox (insertCheckboxes makes it unchecked)
+    false, // unchecked checkbox (boolean false shows as empty checkbox)
     germanDate,
     productData.importedBy,
     marketplace,
