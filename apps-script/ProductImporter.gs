@@ -215,22 +215,11 @@ function lukoImportByASIN() {
     return;
   }
 
-  // Ask for marketplace
-  const marketplaceResponse = ui.prompt(
-    'Select Marketplace',
-    'Enter marketplace code (e.g., DE, FR, UK, IT, ES):',
-    ui.ButtonSet.OK_CANCEL
-  );
+  // Ask for marketplace using dropdown
+  const marketplace = showMarketplaceDropdown();
+  if (!marketplace) return; // User cancelled
 
-  if (marketplaceResponse.getSelectedButton() !== ui.Button.OK) return;
-
-  const marketplace = marketplaceResponse.getResponseText().trim().toUpperCase();
   const marketplaceConfig = getMarketplaceConfig(marketplace);
-
-  if (!marketplaceConfig) {
-    showError(`Invalid marketplace: ${marketplace}\n\nValid options: DE, FR, UK, IT, ES, NL, BE, PL, SE, IE`);
-    return;
-  }
 
   // Confirm import
   const confirmMsg = `Import ${asins.length} product(s) from Amazon ${marketplace}?\n\n` +
@@ -447,6 +436,25 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
     return found?.value || attrs[0]?.value || '';
   };
 
+  // DEBUG: Log available attributes to help diagnose missing fields
+  const attrKeys = Object.keys(attributes);
+  Logger.log(`[FETCH DEBUG] ASIN: ${asin}`);
+  Logger.log(`[FETCH DEBUG] Available attributes (${attrKeys.length}): ${attrKeys.join(', ')}`);
+
+  // Log specific attributes we're interested in
+  if (attributes.product_description) {
+    Logger.log(`[FETCH DEBUG] product_description: ${JSON.stringify(attributes.product_description).substring(0, 200)}`);
+  }
+  if (attributes.item_description) {
+    Logger.log(`[FETCH DEBUG] item_description: ${JSON.stringify(attributes.item_description).substring(0, 200)}`);
+  }
+  if (attributes.release_date) {
+    Logger.log(`[FETCH DEBUG] release_date: ${JSON.stringify(attributes.release_date)}`);
+  }
+  if (attributes.first_available_date) {
+    Logger.log(`[FETCH DEBUG] first_available_date: ${JSON.stringify(attributes.first_available_date)}`);
+  }
+
   // Extract identifiers (EAN, UPC, ISBN, GTIN, etc.)
   const identifiersData = {};
   for (const idGroup of identifiers) {
@@ -631,9 +639,10 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
     bulletPoint9: attributes.bullet_point?.[8]?.value || '',
 
     // === DESCRIPTIONS ===
-    description: getAttr('product_description'),
-    shortDescription: getAttr('short_description') || '',
-    longDescription: getAttr('long_description') || '',
+    // Try multiple attribute names for description
+    description: getAttr('product_description') || getAttr('item_description') || getAttrWithLanguage('product_description', 'de_DE') || '',
+    shortDescription: getAttr('short_description') || getAttr('product_description_short') || '',
+    longDescription: getAttr('long_description') || getAttr('product_description_long') || '',
 
     // === IMAGES ===
     mainImageURL: imagesData.mainImageURL,
@@ -751,50 +760,97 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
   };
 }
 
+/**
+ * Fetch seller information for an ASIN
+ * Note: This requires Product Pricing API access and may not always be available
+ */
 function fetchSellerByASIN(asin, marketplaceConfig, accessToken) {
   try {
-    const path = `/catalog/2022-04-01/items/${asin}/offers`;
+    // Try the Offers endpoint from Pricing API
+    const path = `/products/pricing/v0/listings/${asin}/offers`;
     const params = {
-      MarketplaceId: marketplaceConfig.marketplaceId
+      MarketplaceId: marketplaceConfig.marketplaceId,
+      ItemCondition: 'New'
     };
 
+    Logger.log(`[SELLER DEBUG] Fetching seller info for ${asin}...`);
     const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
 
-    const offers = response.offers || [];
+    // Log response structure
+    Logger.log(`[SELLER DEBUG] Response keys: ${Object.keys(response).join(', ')}`);
+
+    const offers = response.Offers || response.offers || [];
     if (offers.length > 0) {
       const offer = offers[0];
+      Logger.log(`[SELLER DEBUG] First offer: ${JSON.stringify(offer).substring(0, 300)}`);
       return {
-        sellerId: offer.SellerId || offer.sellerId || '',
-        sellerName: offer.SellerName || offer.sellerName || ''
+        sellerId: offer.SellerId || offer.sellerId || offer.SellerSKU || '',
+        sellerName: offer.SellerFeedbackRating?.SellerPositiveFeedbackRating ? `Rating: ${offer.SellerFeedbackRating.SellerPositiveFeedbackRating}%` : ''
       };
     }
 
   } catch (error) {
-    Logger.log(`Could not fetch seller info: ${error.message}`);
+    Logger.log(`[SELLER DEBUG] Error: ${error.message}`);
+    // Seller API access may be restricted - this is expected
   }
 
   return { sellerId: '', sellerName: '' };
 }
 
+/**
+ * Fetch pricing information for an ASIN
+ * Uses Product Pricing API
+ */
 function fetchProductPricing(asin, marketplaceConfig, accessToken) {
   try {
+    // Use the correct Pricing API endpoint
     const path = `/products/pricing/v0/items/${asin}/offers`;
     const params = {
       MarketplaceId: marketplaceConfig.marketplaceId,
       ItemCondition: 'New'
     };
 
+    Logger.log(`[PRICE DEBUG] Fetching pricing for ${asin}...`);
     const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
 
-    const summary = response.summary || {};
+    // Log response structure
+    Logger.log(`[PRICE DEBUG] Response keys: ${Object.keys(response).join(', ')}`);
+    Logger.log(`[PRICE DEBUG] Response: ${JSON.stringify(response).substring(0, 500)}`);
 
-    return {
-      listPrice: summary.ListPrice?.Amount || '',
-      currentPrice: summary.BuyBoxPrices?.[0]?.LandedPrice?.Amount || '',
-      currency: summary.ListPrice?.CurrencyCode || ''
-    };
+    // Try different response structures
+    const summary = response.Summary || response.summary || {};
+    const offers = response.Offers || response.offers || [];
+
+    let listPrice = '';
+    let currentPrice = '';
+    let currency = '';
+
+    // Extract from summary
+    if (summary.ListPrice) {
+      listPrice = summary.ListPrice.Amount || '';
+      currency = summary.ListPrice.CurrencyCode || currency;
+    }
+
+    // Extract BuyBox price
+    if (summary.BuyBoxPrices && summary.BuyBoxPrices.length > 0) {
+      const buyBox = summary.BuyBoxPrices[0];
+      currentPrice = buyBox.LandedPrice?.Amount || buyBox.ListingPrice?.Amount || '';
+      currency = buyBox.LandedPrice?.CurrencyCode || currency;
+    }
+
+    // Fallback: try to get from offers
+    if (!currentPrice && offers.length > 0) {
+      const offer = offers[0];
+      currentPrice = offer.ListingPrice?.Amount || offer.BuyingPrice?.Amount || '';
+      currency = offer.ListingPrice?.CurrencyCode || offer.BuyingPrice?.CurrencyCode || currency;
+    }
+
+    Logger.log(`[PRICE DEBUG] Extracted: listPrice=${listPrice}, currentPrice=${currentPrice}, currency=${currency}`);
+
+    return { listPrice, currentPrice, currency };
 
   } catch (error) {
+    Logger.log(`[PRICE DEBUG] Error: ${error.message}`);
     throw error;
   }
 }
@@ -1307,22 +1363,11 @@ function lukoSearchProducts() {
     return;
   }
 
-  // Ask for marketplace
-  const marketplaceResponse = ui.prompt(
-    'Select Marketplace',
-    'Enter marketplace code (e.g., DE, FR, UK):',
-    ui.ButtonSet.OK_CANCEL
-  );
+  // Ask for marketplace using dropdown
+  const marketplace = showMarketplaceDropdown();
+  if (!marketplace) return; // User cancelled
 
-  if (marketplaceResponse.getSelectedButton() !== ui.Button.OK) return;
-
-  const marketplace = marketplaceResponse.getResponseText().trim().toUpperCase();
   const marketplaceConfig = getMarketplaceConfig(marketplace);
-
-  if (!marketplaceConfig) {
-    showError(`Invalid marketplace: ${marketplace}`);
-    return;
-  }
 
   showProgress(`Searching for "${searchTerm}" in Amazon ${marketplace}...`);
 
@@ -1335,32 +1380,63 @@ function lukoSearchProducts() {
     const searchResults = searchProductsByKeyword(searchTerm, marketplaceConfig, tokens.access_token);
 
     if (searchResults.length === 0) {
-      ui.alert('No Results', `No products found for "${searchTerm}"`, ui.ButtonSet.OK);
+      ui.alert('Brak wyników', `Nie znaleziono produktów dla "${searchTerm}"`, ui.ButtonSet.OK);
       return;
     }
 
-    // Show results and confirm import
+    // Show results and ask how many to import
     const resultsList = searchResults.slice(0, 10).map(p =>
-      `${p.asin} - ${p.title.substring(0, 60)}...`
+      `${p.asin} - ${p.title.substring(0, 50)}...`
     ).join('\n');
 
-    const confirmMsg = `Found ${searchResults.length} products:\n\n${resultsList}\n\n` +
-      `${searchResults.length > 10 ? '...and more\n\n' : ''}` +
-      `Import all ${searchResults.length} products?`;
+    const infoMsg = `Znaleziono ${searchResults.length} produktów:\n\n${resultsList}\n\n` +
+      `${searchResults.length > 10 ? '...i więcej\n\n' : ''}`;
 
-    const confirm = ui.alert('Search Results', confirmMsg, ui.ButtonSet.YES_NO);
+    ui.alert('Wyniki wyszukiwania', infoMsg, ui.ButtonSet.OK);
+
+    // Ask how many to import
+    const countResponse = ui.prompt(
+      'Ile produktów zaimportować?',
+      `Znaleziono: ${searchResults.length} produktów\n\n` +
+      `Wpisz liczbę produktów do zaimportowania:\n` +
+      `- Wpisz liczbę (np. 10, 50, 100)\n` +
+      `- Wpisz "all" lub zostaw puste aby zaimportować wszystkie\n` +
+      `- Wpisz "0" aby anulować`,
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (countResponse.getSelectedButton() !== ui.Button.OK) return;
+
+    let countInput = countResponse.getResponseText().trim().toLowerCase();
+    let importCount = searchResults.length; // Default: all
+
+    if (countInput === '0') {
+      return; // Cancel
+    } else if (countInput && countInput !== 'all' && countInput !== '') {
+      const parsed = parseInt(countInput, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        importCount = Math.min(parsed, searchResults.length);
+      }
+    }
+
+    // Confirm import
+    const confirmMsg = `Zaimportować ${importCount} z ${searchResults.length} produktów?`;
+    const confirm = ui.alert('Potwierdź import', confirmMsg, ui.ButtonSet.YES_NO);
 
     if (confirm !== ui.Button.YES) return;
 
-    // Import all found products
-    const asins = searchResults.map(p => p.asin);
-    const results = importProductsByASIN(asins, marketplace, marketplaceConfig);
+    // Import selected number of products
+    const asinsToImport = searchResults.slice(0, importCount).map(p => p.asin);
+    showProgress(`Importuję ${importCount} produktów...`);
+
+    const results = importProductsByASIN(asinsToImport, marketplace, marketplaceConfig);
 
     ui.alert(
-      'Import Complete',
-      `✅ Successfully imported: ${results.success}\n` +
-      `❌ Failed: ${results.failed}\n\n` +
-      `Products saved to "ImportedProducts" sheet.`,
+      'Import zakończony',
+      `✅ Zaimportowano: ${results.success}\n` +
+      `❌ Błędy: ${results.failed}\n` +
+      `⚠️ Ostrzeżenia: ${results.warnings}\n\n` +
+      `Produkty zapisane w arkuszu "ImportedProducts".`,
       ui.ButtonSet.OK
     );
 
@@ -1369,19 +1445,50 @@ function lukoSearchProducts() {
   }
 }
 
+/**
+ * Search products by keyword with pagination
+ * Fetches ALL results from Amazon
+ */
 function searchProductsByKeyword(searchTerm, marketplaceConfig, accessToken) {
   const path = '/catalog/2022-04-01/items';
-  const params = {
-    marketplaceIds: marketplaceConfig.marketplaceId,
-    keywords: searchTerm,
-    pageSize: 20
-  };
+  let allItems = [];
+  let nextToken = null;
+  let pageCount = 0;
+  const maxPages = 10; // Safety limit (10 pages x 20 items = 200 max)
 
-  const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
+  do {
+    const params = {
+      marketplaceIds: marketplaceConfig.marketplaceId,
+      keywords: searchTerm,
+      pageSize: 20,
+      includedData: 'summaries'
+    };
 
-  const items = response.items || [];
+    if (nextToken) {
+      params.pageToken = nextToken;
+    }
 
-  return items.map(item => ({
+    Logger.log(`[SEARCH] Fetching page ${pageCount + 1} for "${searchTerm}"...`);
+    const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
+
+    const items = response.items || [];
+    allItems = allItems.concat(items);
+
+    nextToken = response.pagination?.nextToken;
+    pageCount++;
+
+    Logger.log(`[SEARCH] Page ${pageCount}: Found ${items.length} items. Total so far: ${allItems.length}`);
+
+    // Rate limiting
+    if (nextToken) {
+      Utilities.sleep(300);
+    }
+
+  } while (nextToken && pageCount < maxPages);
+
+  Logger.log(`[SEARCH] Total items found: ${allItems.length}`);
+
+  return allItems.map(item => ({
     asin: item.asin,
     title: item.summaries?.[0]?.itemName || 'Unknown Title'
   }));
@@ -1646,10 +1753,17 @@ function generateImportedProductsSheet(ss) {
 
 function appendProductToImportedSheet(sheet, productData, marketplace) {
   // Row data must match the headers order in generateImportedProductsSheet
+  // Format date in German format with German timezone
+  const germanDate = Utilities.formatDate(
+    productData.importDate,
+    'Europe/Berlin',
+    'dd.MM.yyyy HH:mm:ss'
+  );
+
   const rowData = [
     // === CONTROL ===
-    false, // checkbox
-    productData.importDate,
+    '', // empty for checkbox (insertCheckboxes makes it unchecked)
+    germanDate,
     productData.importedBy,
     marketplace,
 
@@ -1813,7 +1927,7 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
     productData.websiteDisplayGroupName || '',
 
     // === A+ CONTENT ===
-    productData.hasAPlus ? 'Yes' : 'No',
+    productData.hasAPlus ? 'Tak' : 'Brak dostępu',
     productData.aplusType || '',
     productData.aplusStatus || '',
     productData.aplusContentId || '',
@@ -1830,7 +1944,7 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
     productData.aplusImageUrl4 || '',
 
     // === BRAND STORY ===
-    productData.hasBrandStory ? 'Yes' : 'No',
+    productData.hasBrandStory ? 'Tak' : 'Brak dostępu',
     productData.brandStoryHeadline || '',
     productData.brandStoryText || '',
     productData.brandStoryImageUrl || '',
@@ -1845,6 +1959,43 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
 // ========================================
 // HELPER FUNCTIONS
 // ========================================
+
+/**
+ * Show marketplace selection dialog
+ * Returns selected marketplace code or null if cancelled
+ * Default is DE if user leaves input empty
+ */
+function showMarketplaceDropdown() {
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.prompt(
+    'Wybierz Marketplace',
+    'Wpisz kod marketplace:\n\n' +
+    '🇩🇪 DE - Niemcy (domyślnie)\n' +
+    '🇫🇷 FR - Francja\n' +
+    '🇬🇧 UK - Wielka Brytania\n' +
+    '🇮🇹 IT - Włochy\n' +
+    '🇪🇸 ES - Hiszpania\n' +
+    '🇳🇱 NL - Holandia\n' +
+    '🇧🇪 BE - Belgia\n' +
+    '🇵🇱 PL - Polska\n' +
+    '🇸🇪 SE - Szwecja\n' +
+    '🇮🇪 IE - Irlandia',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() !== ui.Button.OK) return null;
+
+  let marketplace = response.getResponseText().trim().toUpperCase();
+  if (!marketplace) marketplace = 'DE'; // Default to DE
+
+  const validMarketplaces = ['DE', 'FR', 'UK', 'IT', 'ES', 'NL', 'BE', 'PL', 'SE', 'IE'];
+  if (!validMarketplaces.includes(marketplace)) {
+    showError(`Nieprawidłowy marketplace: ${marketplace}\n\nDostępne: ${validMarketplaces.join(', ')}`);
+    return null;
+  }
+
+  return marketplace;
+}
 
 function showProgress(message) {
   SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Processing...', 30);
