@@ -302,14 +302,16 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
       // Fetch pricing (may hit rate limits - that's OK)
       try {
         const pricing = fetchProductPricing(asin, marketplaceConfig, tokens.access_token);
-        productData.listPrice = pricing.listPrice || '';
+        // Use Pricing API values, fallback to catalog attributes
+        productData.listPrice = pricing.listPrice || productData.catalogListPrice || '';
         productData.currentPrice = pricing.currentPrice || '';
-        productData.currency = pricing.currency || '';
+        productData.currency = pricing.currency || productData.catalogCurrency || '';
       } catch (e) {
         Logger.log(`Could not fetch pricing for ${asin}: ${e.message}`);
-        productData.listPrice = '';
+        // Fallback to catalog price
+        productData.listPrice = productData.catalogListPrice || '';
         productData.currentPrice = '';
-        productData.currency = '';
+        productData.currency = productData.catalogCurrency || '';
         warnings++;
       }
 
@@ -445,14 +447,28 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
   if (attributes.product_description) {
     Logger.log(`[FETCH DEBUG] product_description: ${JSON.stringify(attributes.product_description).substring(0, 200)}`);
   }
-  if (attributes.item_description) {
-    Logger.log(`[FETCH DEBUG] item_description: ${JSON.stringify(attributes.item_description).substring(0, 200)}`);
+  if (attributes.list_price) {
+    Logger.log(`[FETCH DEBUG] list_price: ${JSON.stringify(attributes.list_price)}`);
   }
-  if (attributes.release_date) {
-    Logger.log(`[FETCH DEBUG] release_date: ${JSON.stringify(attributes.release_date)}`);
+  if (attributes.product_site_launch_date) {
+    Logger.log(`[FETCH DEBUG] product_site_launch_date: ${JSON.stringify(attributes.product_site_launch_date)}`);
   }
-  if (attributes.first_available_date) {
-    Logger.log(`[FETCH DEBUG] first_available_date: ${JSON.stringify(attributes.first_available_date)}`);
+
+  // Extract list_price from attributes (more reliable than Pricing API)
+  let catalogListPrice = '';
+  let catalogCurrency = '';
+  if (attributes.list_price && attributes.list_price[0]) {
+    const priceData = attributes.list_price[0].value || attributes.list_price[0];
+    catalogListPrice = priceData.value || priceData.amount || '';
+    catalogCurrency = priceData.currency || priceData.currency_code || 'EUR';
+    Logger.log(`[FETCH DEBUG] Extracted list_price from catalog: ${catalogListPrice} ${catalogCurrency}`);
+  }
+
+  // Extract first available date from product_site_launch_date
+  let firstAvailableFromCatalog = '';
+  if (attributes.product_site_launch_date && attributes.product_site_launch_date[0]) {
+    firstAvailableFromCatalog = attributes.product_site_launch_date[0].value || '';
+    Logger.log(`[FETCH DEBUG] Extracted launch date: ${firstAvailableFromCatalog}`);
   }
 
   // Extract identifiers (EAN, UPC, ISBN, GTIN, etc.)
@@ -711,7 +727,11 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
     // === ADDITIONAL ATTRIBUTES ===
     modelNumber: getAttr('model_number') || getAttr('model') || '',
     releaseDate: getAttr('release_date') || getAttr('item_release_date') || '',
-    firstAvailableDate: getAttr('first_available_date') || '',
+    firstAvailableDate: firstAvailableFromCatalog || getAttr('first_available_date') || '',
+
+    // === CATALOG PRICE (from attributes) ===
+    catalogListPrice: catalogListPrice,
+    catalogCurrency: catalogCurrency,
     packageQuantity: getAttr('package_quantity') || getAttr('number_of_items') || '',
     unitCount: getAttr('unit_count') || '',
     unitCountType: getAttr('unit_count_type') || '',
@@ -762,12 +782,12 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
 
 /**
  * Fetch seller information for an ASIN
- * Note: This requires Product Pricing API access and may not always be available
+ * Note: Getting seller info from pricing API - Offers array contains seller data
  */
 function fetchSellerByASIN(asin, marketplaceConfig, accessToken) {
   try {
-    // Try the Offers endpoint from Pricing API
-    const path = `/products/pricing/v0/listings/${asin}/offers`;
+    // Use the same pricing endpoint which includes Offers with seller info
+    const path = `/products/pricing/v0/items/${asin}/offers`;
     const params = {
       MarketplaceId: marketplaceConfig.marketplaceId,
       ItemCondition: 'New'
@@ -776,22 +796,34 @@ function fetchSellerByASIN(asin, marketplaceConfig, accessToken) {
     Logger.log(`[SELLER DEBUG] Fetching seller info for ${asin}...`);
     const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
 
-    // Log response structure
-    Logger.log(`[SELLER DEBUG] Response keys: ${Object.keys(response).join(', ')}`);
+    const payload = response.payload || response;
+    const offers = payload.Offers || payload.offers || [];
 
-    const offers = response.Offers || response.offers || [];
+    Logger.log(`[SELLER DEBUG] Found ${offers.length} offers`);
+
     if (offers.length > 0) {
       const offer = offers[0];
-      Logger.log(`[SELLER DEBUG] First offer: ${JSON.stringify(offer).substring(0, 300)}`);
-      return {
-        sellerId: offer.SellerId || offer.sellerId || offer.SellerSKU || '',
-        sellerName: offer.SellerFeedbackRating?.SellerPositiveFeedbackRating ? `Rating: ${offer.SellerFeedbackRating.SellerPositiveFeedbackRating}%` : ''
-      };
+      Logger.log(`[SELLER DEBUG] First offer keys: ${Object.keys(offer).join(', ')}`);
+
+      // Extract seller info from offer
+      const sellerId = offer.SellerId || offer.sellerId || '';
+      const isFBA = offer.IsFulfilledByAmazon || offer.isFulfilledByAmazon || false;
+      const rating = offer.SellerFeedbackRating?.SellerPositiveFeedbackRating;
+
+      let sellerName = '';
+      if (isFBA) {
+        sellerName = 'Fulfilled by Amazon (FBA)';
+      } else if (rating) {
+        sellerName = `Rating: ${rating}%`;
+      }
+
+      Logger.log(`[SELLER DEBUG] Extracted: sellerId=${sellerId}, sellerName=${sellerName}`);
+
+      return { sellerId, sellerName };
     }
 
   } catch (error) {
     Logger.log(`[SELLER DEBUG] Error: ${error.message}`);
-    // Seller API access may be restricted - this is expected
   }
 
   return { sellerId: '', sellerName: '' };
@@ -813,39 +845,42 @@ function fetchProductPricing(asin, marketplaceConfig, accessToken) {
     Logger.log(`[PRICE DEBUG] Fetching pricing for ${asin}...`);
     const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
 
-    // Log response structure
-    Logger.log(`[PRICE DEBUG] Response keys: ${Object.keys(response).join(', ')}`);
-    Logger.log(`[PRICE DEBUG] Response: ${JSON.stringify(response).substring(0, 500)}`);
+    // API returns { payload: { Summary: { LowestPrices: [...] } } }
+    const payload = response.payload || response;
+    const summary = payload.Summary || payload.summary || {};
 
-    // Try different response structures
-    const summary = response.Summary || response.summary || {};
-    const offers = response.Offers || response.offers || [];
+    Logger.log(`[PRICE DEBUG] Summary keys: ${Object.keys(summary).join(', ')}`);
 
     let listPrice = '';
     let currentPrice = '';
-    let currency = '';
+    let currency = 'EUR';
 
-    // Extract from summary
-    if (summary.ListPrice) {
-      listPrice = summary.ListPrice.Amount || '';
-      currency = summary.ListPrice.CurrencyCode || currency;
+    // Extract from LowestPrices array (actual API response structure)
+    const lowestPrices = summary.LowestPrices || [];
+    Logger.log(`[PRICE DEBUG] LowestPrices count: ${lowestPrices.length}`);
+
+    if (lowestPrices.length > 0) {
+      // Find Amazon (FBA) price first, then Merchant price
+      const fbaPrice = lowestPrices.find(p => p.fulfillmentChannel === 'Amazon');
+      const merchantPrice = lowestPrices.find(p => p.fulfillmentChannel === 'Merchant');
+
+      const bestPrice = fbaPrice || merchantPrice || lowestPrices[0];
+
+      currentPrice = bestPrice.LandedPrice?.Amount || bestPrice.ListingPrice?.Amount || '';
+      currency = bestPrice.LandedPrice?.CurrencyCode || bestPrice.ListingPrice?.CurrencyCode || 'EUR';
+      listPrice = bestPrice.ListingPrice?.Amount || '';
+
+      Logger.log(`[PRICE DEBUG] Best price from ${bestPrice.fulfillmentChannel}: ${currentPrice} ${currency}`);
     }
 
-    // Extract BuyBox price
-    if (summary.BuyBoxPrices && summary.BuyBoxPrices.length > 0) {
+    // Fallback: try BuyBoxPrices
+    if (!currentPrice && summary.BuyBoxPrices && summary.BuyBoxPrices.length > 0) {
       const buyBox = summary.BuyBoxPrices[0];
       currentPrice = buyBox.LandedPrice?.Amount || buyBox.ListingPrice?.Amount || '';
       currency = buyBox.LandedPrice?.CurrencyCode || currency;
     }
 
-    // Fallback: try to get from offers
-    if (!currentPrice && offers.length > 0) {
-      const offer = offers[0];
-      currentPrice = offer.ListingPrice?.Amount || offer.BuyingPrice?.Amount || '';
-      currency = offer.ListingPrice?.CurrencyCode || offer.BuyingPrice?.CurrencyCode || currency;
-    }
-
-    Logger.log(`[PRICE DEBUG] Extracted: listPrice=${listPrice}, currentPrice=${currentPrice}, currency=${currency}`);
+    Logger.log(`[PRICE DEBUG] Final: listPrice=${listPrice}, currentPrice=${currentPrice}, currency=${currency}`);
 
     return { listPrice, currentPrice, currency };
 
