@@ -259,13 +259,20 @@ function lukoImportByASIN() {
       resultMsg += `\n⏭️ Pominięte (duplikaty): ${results.skipped}`;
     }
 
+    if (results.autoResumeScheduled) {
+      resultMsg += `\n\n⏳ POZOSTAŁO: ${results.remaining} produktów`;
+      resultMsg += `\n🔄 Auto-wznowienie za 1 minutę...`;
+      resultMsg += `\n\n(Możesz zamknąć arkusz - import będzie kontynuowany automatycznie)`;
+    }
+
     if (results.message) {
       resultMsg += `\n\n${results.message}`;
     }
 
     resultMsg += `\n\nProdukty w arkuszu "ImportedProducts".`;
 
-    ui.alert('Import zakończony', resultMsg, ui.ButtonSet.OK);
+    const title = results.autoResumeScheduled ? 'Import w toku...' : 'Import zakończony';
+    ui.alert(title, resultMsg, ui.ButtonSet.OK);
 
   } catch (error) {
     handleError('lukoImportByASIN', error);
@@ -288,6 +295,7 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig, options = {
   // Options with defaults
   const skipAPlus = options.skipAPlus || false;
   const skipExisting = options.skipExisting !== false; // default true
+  const isAutoResume = options.isAutoResume || false;
 
   // Get already imported ASINs to skip duplicates
   let existingAsins = new Set();
@@ -309,10 +317,11 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig, options = {
 
   if (skippedCount > 0) {
     Logger.log(`[IMPORT] Skipping ${skippedCount} already imported ASINs`);
-    showProgress(`Pomijam ${skippedCount} już zaimportowanych ASIN...`);
+    if (!isAutoResume) showProgress(`Pomijam ${skippedCount} już zaimportowanych ASIN...`);
   }
 
   if (asinsToImport.length === 0) {
+    clearImportState(); // Clear any pending auto-resume
     return { success: 0, failed: 0, warnings: 0, skipped: skippedCount, message: 'Wszystkie ASIN-y już zaimportowane!' };
   }
 
@@ -320,7 +329,7 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig, options = {
   let aplusCache = null;
   if (!skipAPlus) {
     try {
-      showProgress('Pobieranie listy A+ Content (jednorazowo)...');
+      if (!isAutoResume) showProgress('Pobieranie listy A+ Content (jednorazowo)...');
       aplusCache = fetchAPlusContentList(marketplaceConfig, tokens.access_token);
       Logger.log(`[IMPORT] A+ cache loaded with ${aplusCache.allRecords.length} documents and ${Object.keys(aplusCache.asinToContent).length} ASIN mappings`);
     } catch (e) {
@@ -335,13 +344,20 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig, options = {
   const startTime = new Date().getTime();
   const maxExecutionTime = 5 * 60 * 1000; // 5 minutes (leave 1 min buffer)
 
-  for (const asin of asinsToImport) {
+  for (let i = 0; i < asinsToImport.length; i++) {
+    const asin = asinsToImport[i];
+
     // Check if we're running out of time
     const elapsed = new Date().getTime() - startTime;
     if (elapsed > maxExecutionTime) {
-      Logger.log(`[IMPORT] Approaching timeout after ${Math.round(elapsed/1000)}s. Stopping to save progress.`);
-      showProgress(`Timeout! Zaimportowano ${success} produktów. Uruchom ponownie aby kontynuować.`);
-      break;
+      const remainingAsins = asinsToImport.slice(i);
+      Logger.log(`[IMPORT] Timeout after ${Math.round(elapsed/1000)}s. ${remainingAsins.length} ASINs remaining. Scheduling auto-resume...`);
+
+      // Schedule automatic continuation
+      scheduleImportContinuation(remainingAsins, marketplace, { skipAPlus });
+      showProgress(`Timeout! Zaimportowano ${success}. Auto-wznowienie za 1 min (pozostało: ${remainingAsins.length})...`);
+
+      return { success, failed, warnings, skipped: skippedCount, autoResumeScheduled: true, remaining: remainingAsins.length };
     }
 
     try {
@@ -451,7 +467,143 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig, options = {
     Utilities.sleep(500);
   }
 
+  // All done - clear any pending auto-resume state
+  clearImportState();
+
   return { success, failed, warnings, skipped: skippedCount };
+}
+
+// ========================================
+// AUTO-RESUME FUNCTIONS
+// ========================================
+
+/**
+ * Schedule automatic continuation of import after timeout
+ */
+function scheduleImportContinuation(remainingAsins, marketplace, options) {
+  const props = PropertiesService.getScriptProperties();
+
+  // Save state for continuation
+  const state = {
+    asins: remainingAsins,
+    marketplace: marketplace,
+    options: options,
+    scheduledAt: new Date().toISOString()
+  };
+
+  props.setProperty('IMPORT_RESUME_STATE', JSON.stringify(state));
+  Logger.log(`[AUTO-RESUME] Saved state with ${remainingAsins.length} ASINs`);
+
+  // Delete any existing triggers first
+  deleteImportTriggers();
+
+  // Create a new trigger to run in 1 minute
+  ScriptApp.newTrigger('autoResumeImport')
+    .timeBased()
+    .after(60 * 1000) // 1 minute
+    .create();
+
+  Logger.log(`[AUTO-RESUME] Trigger scheduled for 1 minute from now`);
+}
+
+/**
+ * Auto-resume function called by trigger
+ */
+function autoResumeImport() {
+  Logger.log(`[AUTO-RESUME] Trigger fired - resuming import...`);
+
+  const props = PropertiesService.getScriptProperties();
+  const stateJson = props.getProperty('IMPORT_RESUME_STATE');
+
+  if (!stateJson) {
+    Logger.log(`[AUTO-RESUME] No saved state found. Nothing to resume.`);
+    deleteImportTriggers();
+    return;
+  }
+
+  try {
+    const state = JSON.parse(stateJson);
+    Logger.log(`[AUTO-RESUME] Resuming with ${state.asins.length} ASINs for marketplace ${state.marketplace}`);
+
+    const marketplaceConfig = getMarketplaceConfig(state.marketplace);
+    if (!marketplaceConfig) {
+      Logger.log(`[AUTO-RESUME] Invalid marketplace: ${state.marketplace}`);
+      clearImportState();
+      return;
+    }
+
+    // Show toast notification
+    try {
+      SpreadsheetApp.getActiveSpreadsheet().toast(
+        `Auto-wznowienie: ${state.asins.length} ASIN-ów do zaimportowania...`,
+        'Import kontynuowany',
+        10
+      );
+    } catch (e) {
+      // Toast may fail if no active user
+    }
+
+    // Resume import with isAutoResume flag
+    const options = state.options || {};
+    options.isAutoResume = true;
+
+    const results = importProductsByASIN(state.asins, state.marketplace, marketplaceConfig, options);
+
+    Logger.log(`[AUTO-RESUME] Batch complete: ${results.success} success, ${results.failed} failed`);
+
+    if (results.autoResumeScheduled) {
+      Logger.log(`[AUTO-RESUME] Another batch scheduled`);
+    } else {
+      Logger.log(`[AUTO-RESUME] Import fully completed!`);
+
+      // Show completion notification
+      try {
+        SpreadsheetApp.getActiveSpreadsheet().toast(
+          `Import zakończony! ${results.success} produktów zaimportowanych.`,
+          'Sukces!',
+          10
+        );
+      } catch (e) {
+        // Toast may fail
+      }
+    }
+
+  } catch (error) {
+    Logger.log(`[AUTO-RESUME] Error: ${error.message}`);
+    clearImportState();
+  }
+}
+
+/**
+ * Clear saved import state and triggers
+ */
+function clearImportState() {
+  const props = PropertiesService.getScriptProperties();
+  props.deleteProperty('IMPORT_RESUME_STATE');
+  deleteImportTriggers();
+  Logger.log(`[AUTO-RESUME] State cleared`);
+}
+
+/**
+ * Delete all import-related triggers
+ */
+function deleteImportTriggers() {
+  const triggers = ScriptApp.getProjectTriggers();
+  for (const trigger of triggers) {
+    if (trigger.getHandlerFunction() === 'autoResumeImport') {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log(`[AUTO-RESUME] Deleted trigger: ${trigger.getUniqueId()}`);
+    }
+  }
+}
+
+/**
+ * Manual function to cancel any pending auto-resume
+ */
+function lukoCancelAutoResume() {
+  clearImportState();
+  SpreadsheetApp.getActiveSpreadsheet().toast('Auto-wznowienie anulowane.', 'Anulowano', 5);
+  Logger.log(`[AUTO-RESUME] Manually cancelled by user`);
 }
 
 function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
@@ -1642,14 +1794,24 @@ function lukoSearchProducts() {
 
     const results = importProductsByASIN(asinsToImport, marketplace, marketplaceConfig, { skipAPlus });
 
-    ui.alert(
-      'Import zakończony',
-      `✅ Zaimportowano: ${results.success}\n` +
+    let searchResultMsg = `✅ Zaimportowano: ${results.success}\n` +
       `❌ Błędy: ${results.failed}\n` +
-      `⚠️ Ostrzeżenia: ${results.warnings}\n\n` +
-      `Produkty zapisane w arkuszu "ImportedProducts".`,
-      ui.ButtonSet.OK
-    );
+      `⚠️ Ostrzeżenia: ${results.warnings}`;
+
+    if (results.skipped > 0) {
+      searchResultMsg += `\n⏭️ Pominięte (duplikaty): ${results.skipped}`;
+    }
+
+    if (results.autoResumeScheduled) {
+      searchResultMsg += `\n\n⏳ POZOSTAŁO: ${results.remaining} produktów`;
+      searchResultMsg += `\n🔄 Auto-wznowienie za 1 minutę...`;
+      searchResultMsg += `\n\n(Możesz zamknąć arkusz - import kontynuuje się automatycznie)`;
+    }
+
+    searchResultMsg += `\n\nProdukty w arkuszu "ImportedProducts".`;
+
+    const searchTitle = results.autoResumeScheduled ? 'Import w toku...' : 'Import zakończony';
+    ui.alert(searchTitle, searchResultMsg, ui.ButtonSet.OK);
 
   } catch (error) {
     handleError('lukoSearchProducts', error);
