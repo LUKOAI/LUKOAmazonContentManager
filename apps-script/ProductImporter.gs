@@ -1034,27 +1034,50 @@ function fetchAPlusContentByASIN(asin, marketplaceConfig, accessToken) {
   };
 
   try {
-    // Get list of all content documents
-    const path = '/aplus/2020-11-01/contentDocuments';
-    const params = {
-      marketplaceId: marketplaceConfig.marketplaceId
-    };
+    // Get ALL content documents with pagination
+    let allContentRecords = [];
+    let pageToken = null;
+    let pageCount = 0;
+    const maxPages = 5; // Safety limit
 
-    Logger.log(`[A+ DEBUG] Fetching A+ content list for marketplace`);
-    const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
+    do {
+      const path = '/aplus/2020-11-01/contentDocuments';
+      const params = {
+        marketplaceId: marketplaceConfig.marketplaceId
+      };
+      if (pageToken) {
+        params.pageToken = pageToken;
+      }
 
-    const contentRecords = response.contentMetadataRecords || [];
-    Logger.log(`[A+ DEBUG] Found ${contentRecords.length} total content records`);
+      Logger.log(`[A+ DEBUG] Fetching A+ content list (page ${pageCount + 1})`);
+      const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
 
-    if (contentRecords.length === 0) {
+      const contentRecords = response.contentMetadataRecords || [];
+      allContentRecords = allContentRecords.concat(contentRecords);
+
+      pageToken = response.nextPageToken;
+      pageCount++;
+
+      Logger.log(`[A+ DEBUG] Page ${pageCount}: Found ${contentRecords.length} records. Total so far: ${allContentRecords.length}`);
+
+      // Rate limiting
+      if (pageToken) {
+        Utilities.sleep(100);
+      }
+    } while (pageToken && pageCount < maxPages);
+
+    Logger.log(`[A+ DEBUG] Total content records found: ${allContentRecords.length}`);
+
+    if (allContentRecords.length === 0) {
       Logger.log(`[A+ DEBUG] No A+ content documents found`);
       return emptyResult;
     }
 
-    // Search through content documents to find the one associated with our ASIN
-    for (let i = 0; i < Math.min(contentRecords.length, 20); i++) {  // Check up to 20 documents
-      const record = contentRecords[i];
+    // Search through ALL content documents to find the one associated with our ASIN
+    for (let i = 0; i < allContentRecords.length; i++) {
+      const record = allContentRecords[i];
       const contentReferenceKey = record.contentReferenceKey;
+      const contentName = record.contentMetadata?.name || contentReferenceKey;
 
       try {
         // Check which ASINs are associated with this content document
@@ -1063,17 +1086,15 @@ function fetchAPlusContentByASIN(asin, marketplaceConfig, accessToken) {
           marketplaceId: marketplaceConfig.marketplaceId
         };
 
-        Logger.log(`[A+ DEBUG] Checking ASINs for content: ${record.contentMetadata?.name || contentReferenceKey}`);
+        Logger.log(`[A+ DEBUG] [${i + 1}/${allContentRecords.length}] Checking: ${contentName}`);
         const asinsResponse = callSPAPI('GET', asinsPath, marketplaceConfig.marketplaceId, asinsParams, accessToken);
 
         const asinMetadataSet = asinsResponse.asinMetadataSet || [];
         const associatedAsins = asinMetadataSet.map(a => a.asin);
 
-        Logger.log(`[A+ DEBUG] Content "${record.contentMetadata?.name}" has ${associatedAsins.length} ASINs`);
-
         // Check if our ASIN is in the list
         if (associatedAsins.includes(asin)) {
-          Logger.log(`[A+ DEBUG] FOUND! Content "${record.contentMetadata?.name}" is associated with ASIN ${asin}`);
+          Logger.log(`[A+ DEBUG] ✓ FOUND! "${contentName}" is associated with ASIN ${asin}`);
 
           // Fetch full content
           const contentPath = `/aplus/2020-11-01/contentDocuments/${contentReferenceKey}`;
@@ -1083,13 +1104,11 @@ function fetchAPlusContentByASIN(asin, marketplaceConfig, accessToken) {
           };
 
           const contentResponse = callSPAPI('GET', contentPath, marketplaceConfig.marketplaceId, contentParams, accessToken);
-          Logger.log(`[A+ DEBUG] Content response keys: ${Object.keys(contentResponse).join(', ')}`);
-
           return parseAPlusContentDocument(contentResponse, record);
         }
 
         // Rate limiting between API calls
-        Utilities.sleep(100);
+        Utilities.sleep(50);
 
       } catch (innerError) {
         Logger.log(`[A+ DEBUG] Error checking content ${contentReferenceKey}: ${innerError.message}`);
@@ -1097,7 +1116,7 @@ function fetchAPlusContentByASIN(asin, marketplaceConfig, accessToken) {
       }
     }
 
-    Logger.log(`[A+ DEBUG] No A+ content found associated with ASIN ${asin} after checking ${Math.min(contentRecords.length, 20)} documents`);
+    Logger.log(`[A+ DEBUG] No A+ content found associated with ASIN ${asin} after checking ALL ${allContentRecords.length} documents`);
     return emptyResult;
 
   } catch (error) {
