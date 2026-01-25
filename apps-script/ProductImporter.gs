@@ -221,44 +221,58 @@ function lukoImportByASIN() {
 
   const marketplaceConfig = getMarketplaceConfig(marketplace);
 
-  // Confirm import
-  const confirmMsg = `Import ${asins.length} product(s) from Amazon ${marketplace}?\n\n` +
-    `ASINs: ${asins.slice(0, 5).join(', ')}${asins.length > 5 ? '...' : ''}\n\n` +
-    `This will fetch ALL available product data including:\n` +
-    `- Product details\n` +
-    `- Images\n` +
-    `- Dimensions\n` +
-    `- Seller information\n` +
-    `- Pricing\n` +
-    `- Inventory`;
+  // Ask about A+ checking (it's slow!)
+  const aplusConfirm = ui.alert(
+    'Sprawdzanie A+ Content',
+    'Czy sprawdzać A+ Content?\n\n' +
+    '⚠️ Spowalnia import (~2 sek/produkt)\n' +
+    'A+ działa tylko dla produktów TWOJEJ marki.\n\n' +
+    'Tak = Sprawdzaj A+\n' +
+    'Nie = Pomiń A+ (szybciej)',
+    ui.ButtonSet.YES_NO
+  );
 
-  const confirm = ui.alert('Confirm Import', confirmMsg, ui.ButtonSet.YES_NO);
+  const skipAPlus = (aplusConfirm !== ui.Button.YES);
+
+  // Confirm import
+  const confirmMsg = `Zaimportować ${asins.length} produkt(ów) z Amazon ${marketplace}?\n\n` +
+    `ASIN: ${asins.slice(0, 5).join(', ')}${asins.length > 5 ? '...' : ''}\n\n` +
+    `A+ Content: ${skipAPlus ? 'POMINIĘTE' : 'SPRAWDZANE'}\n` +
+    `Duplikaty: Pomijane automatycznie`;
+
+  const confirm = ui.alert('Potwierdź import', confirmMsg, ui.ButtonSet.YES_NO);
 
   if (confirm !== ui.Button.YES) return;
 
   // Import products
-  showProgress(`Importing ${asins.length} products from Amazon ${marketplace}...`);
+  showProgress(`Importuję ${asins.length} produktów z Amazon ${marketplace}...`);
 
   try {
-    const results = importProductsByASIN(asins, marketplace, marketplaceConfig);
+    const results = importProductsByASIN(asins, marketplace, marketplaceConfig, { skipAPlus });
 
     // Show results
-    ui.alert(
-      'Import Complete',
-      `✅ Successfully imported: ${results.success}\n` +
-      `❌ Failed: ${results.failed}\n` +
-      `⚠️ Warnings: ${results.warnings}\n\n` +
-      `Products saved to "ImportedProducts" sheet.\n` +
-      `Check Logs sheet for details.`,
-      ui.ButtonSet.OK
-    );
+    let resultMsg = `✅ Zaimportowano: ${results.success}\n` +
+      `❌ Błędy: ${results.failed}\n` +
+      `⚠️ Ostrzeżenia: ${results.warnings}`;
+
+    if (results.skipped > 0) {
+      resultMsg += `\n⏭️ Pominięte (duplikaty): ${results.skipped}`;
+    }
+
+    if (results.message) {
+      resultMsg += `\n\n${results.message}`;
+    }
+
+    resultMsg += `\n\nProdukty w arkuszu "ImportedProducts".`;
+
+    ui.alert('Import zakończony', resultMsg, ui.ButtonSet.OK);
 
   } catch (error) {
     handleError('lukoImportByASIN', error);
   }
 }
 
-function importProductsByASIN(asins, marketplace, marketplaceConfig) {
+function importProductsByASIN(asins, marketplace, marketplaceConfig, options = {}) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('ImportedProducts');
 
@@ -271,19 +285,73 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
   const config = getConfig();
   const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
 
+  // Options with defaults
+  const skipAPlus = options.skipAPlus || false;
+  const skipExisting = options.skipExisting !== false; // default true
+
+  // Get already imported ASINs to skip duplicates
+  let existingAsins = new Set();
+  if (skipExisting) {
+    const dataRange = sheet.getDataRange();
+    const data = dataRange.getValues();
+    const asinCol = 4; // Column E (0-indexed = 4) is ASIN
+    for (let i = 1; i < data.length; i++) { // Skip header
+      if (data[i][asinCol]) {
+        existingAsins.add(data[i][asinCol].toString());
+      }
+    }
+    Logger.log(`[IMPORT] Found ${existingAsins.size} existing ASINs in sheet`);
+  }
+
+  // Filter out already imported ASINs
+  const asinsToImport = asins.filter(asin => !existingAsins.has(asin));
+  const skippedCount = asins.length - asinsToImport.length;
+
+  if (skippedCount > 0) {
+    Logger.log(`[IMPORT] Skipping ${skippedCount} already imported ASINs`);
+    showProgress(`Pomijam ${skippedCount} już zaimportowanych ASIN...`);
+  }
+
+  if (asinsToImport.length === 0) {
+    return { success: 0, failed: 0, warnings: 0, skipped: skippedCount, message: 'Wszystkie ASIN-y już zaimportowane!' };
+  }
+
+  // Pre-fetch A+ content list ONCE if A+ checking is enabled
+  let aplusCache = null;
+  if (!skipAPlus) {
+    try {
+      showProgress('Pobieranie listy A+ Content (jednorazowo)...');
+      aplusCache = fetchAPlusContentList(marketplaceConfig, tokens.access_token);
+      Logger.log(`[IMPORT] A+ cache loaded with ${aplusCache.allRecords.length} documents and ${Object.keys(aplusCache.asinToContent).length} ASIN mappings`);
+    } catch (e) {
+      Logger.log(`[IMPORT] Could not pre-fetch A+ content list: ${e.message}`);
+      aplusCache = { allRecords: [], asinToContent: {} };
+    }
+  }
+
   let success = 0;
   let failed = 0;
   let warnings = 0;
+  const startTime = new Date().getTime();
+  const maxExecutionTime = 5 * 60 * 1000; // 5 minutes (leave 1 min buffer)
 
-  for (const asin of asins) {
+  for (const asin of asinsToImport) {
+    // Check if we're running out of time
+    const elapsed = new Date().getTime() - startTime;
+    if (elapsed > maxExecutionTime) {
+      Logger.log(`[IMPORT] Approaching timeout after ${Math.round(elapsed/1000)}s. Stopping to save progress.`);
+      showProgress(`Timeout! Zaimportowano ${success} produktów. Uruchom ponownie aby kontynuować.`);
+      break;
+    }
+
     try {
-      showProgress(`Fetching ${asin}... (${success + failed + 1}/${asins.length})`);
+      showProgress(`Pobieram ${asin}... (${success + failed + 1}/${asinsToImport.length})`);
 
       // Fetch product data from SP-API
       const productData = fetchProductByASIN(asin, marketplaceConfig, tokens.access_token);
 
-      // Rate limiting: wait 500ms between product fetches
-      Utilities.sleep(500);
+      // Rate limiting: wait 300ms between product fetches
+      Utilities.sleep(300);
 
       // Fetch seller information (may fail due to permissions - that's OK)
       try {
@@ -292,51 +360,30 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
         productData.sellerName = sellerInfo.sellerName || '';
       } catch (e) {
         Logger.log(`Could not fetch seller info for ${asin}: ${e.message}`);
-        productData.sellerId = 'N/A (requires permission)';
+        productData.sellerId = '';
         productData.sellerName = '';
       }
 
-      // Rate limiting: wait 300ms
-      Utilities.sleep(300);
+      // Rate limiting: wait 200ms
+      Utilities.sleep(200);
 
       // Fetch pricing (may hit rate limits - that's OK)
       try {
         const pricing = fetchProductPricing(asin, marketplaceConfig, tokens.access_token);
-        // Use Pricing API values, fallback to catalog attributes
         productData.listPrice = pricing.listPrice || productData.catalogListPrice || '';
         productData.currentPrice = pricing.currentPrice || '';
         productData.currency = pricing.currency || productData.catalogCurrency || '';
       } catch (e) {
         Logger.log(`Could not fetch pricing for ${asin}: ${e.message}`);
-        // Fallback to catalog price
         productData.listPrice = productData.catalogListPrice || '';
         productData.currentPrice = '';
         productData.currency = productData.catalogCurrency || '';
         warnings++;
       }
 
-      // Rate limiting: wait 300ms
-      Utilities.sleep(300);
-
-      // Fetch inventory (if available)
-      try {
-        const inventory = fetchProductInventory(asin, marketplaceConfig, tokens.access_token);
-        productData.availableQuantity = inventory.quantity || '';
-      } catch (e) {
-        Logger.log(`Could not fetch inventory for ${asin}: ${e.message}`);
-        productData.availableQuantity = '';
-        warnings++;
-      }
-
-      // Rate limiting: wait 300ms
-      Utilities.sleep(300);
-
-      // Fetch A+ Content (may fail due to permissions - that's OK)
-      try {
-        showProgress(`Fetching A+ Content for ${asin}...`);
-        const aplusData = fetchAPlusContentByASIN(asin, marketplaceConfig, tokens.access_token);
-
-        // Merge A+ data into product data
+      // A+ Content - use cache if available, skip if disabled
+      if (!skipAPlus && aplusCache) {
+        const aplusData = getAPlusFromCache(asin, aplusCache, marketplaceConfig, tokens.access_token);
         productData.hasAPlus = aplusData.hasAPlus || false;
         productData.aplusType = aplusData.aplusType || '';
         productData.aplusStatus = aplusData.aplusStatus || '';
@@ -356,14 +403,14 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
         productData.brandStoryHeadline = aplusData.brandStoryHeadline || '';
         productData.brandStoryText = aplusData.brandStoryText || '';
         productData.brandStoryImageUrl = aplusData.brandStoryImageUrl || '';
-      } catch (e) {
-        Logger.log(`Could not fetch A+ content for ${asin}: ${e.message}`);
-        productData.hasAPlus = false;
+      } else {
+        // A+ skipped - mark as not checked
+        productData.hasAPlus = null; // Will show "Nie sprawdzono"
         productData.aplusType = '';
         productData.aplusStatus = '';
         productData.aplusContentId = '';
         productData.aplusName = '';
-        productData.aplusModuleCount = 0;
+        productData.aplusModuleCount = '';
         productData.aplusModuleTypes = '';
         productData.aplusHeadline = '';
         productData.aplusText1 = '';
@@ -373,16 +420,14 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
         productData.aplusImageUrl2 = '';
         productData.aplusImageUrl3 = '';
         productData.aplusImageUrl4 = '';
-        productData.hasBrandStory = false;
+        productData.hasBrandStory = null;
         productData.brandStoryHeadline = '';
         productData.brandStoryText = '';
         productData.brandStoryImageUrl = '';
-        warnings++;
       }
 
       // Add to sheet
       appendProductToImportedSheet(sheet, productData, marketplace);
-
       success++;
 
     } catch (error) {
@@ -390,21 +435,23 @@ function importProductsByASIN(asins, marketplace, marketplaceConfig) {
       failed++;
 
       // Log error
-      logOperations([{
-        asin: asin,
-        marketplace: marketplace,
-        status: 'ERROR',
-        message: error.message
-      }], marketplace, 'IMPORT_BY_ASIN');
+      try {
+        logOperations([{
+          asin: asin,
+          marketplace: marketplace,
+          status: 'ERROR',
+          message: error.message
+        }], marketplace, 'IMPORT_BY_ASIN');
+      } catch (logError) {
+        Logger.log(`Could not log error: ${logError.message}`);
+      }
     }
 
-    // Rate limiting between products: wait 1 second
-    if (success + failed < asins.length) {
-      Utilities.sleep(1000);
-    }
+    // Rate limiting between products: wait 500ms
+    Utilities.sleep(500);
   }
 
-  return { success, failed, warnings };
+  return { success, failed, warnings, skipped: skippedCount };
 }
 
 function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
@@ -1107,6 +1154,112 @@ function fetchAPlusContent(asin, marketplaceConfig, accessToken) {
 }
 
 /**
+ * Pre-fetch ALL A+ content documents and build ASIN mapping cache
+ * This is MUCH faster than checking each ASIN individually
+ */
+function fetchAPlusContentList(marketplaceConfig, accessToken) {
+  const cache = {
+    allRecords: [],
+    asinToContent: {} // Map of ASIN -> contentReferenceKey
+  };
+
+  try {
+    // Fetch all content documents with pagination
+    let pageToken = null;
+    let pageCount = 0;
+    const maxPages = 10;
+
+    do {
+      const path = '/aplus/2020-11-01/contentDocuments';
+      const params = { marketplaceId: marketplaceConfig.marketplaceId };
+      if (pageToken) params.pageToken = pageToken;
+
+      Logger.log(`[A+ CACHE] Fetching content list (page ${pageCount + 1})...`);
+      const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
+
+      const contentRecords = response.contentMetadataRecords || [];
+      cache.allRecords = cache.allRecords.concat(contentRecords);
+
+      pageToken = response.nextPageToken;
+      pageCount++;
+
+      if (pageToken) Utilities.sleep(100);
+    } while (pageToken && pageCount < maxPages);
+
+    Logger.log(`[A+ CACHE] Total content documents: ${cache.allRecords.length}`);
+
+    // Now fetch ASIN associations for each document (this is the slow part, but only done once)
+    for (let i = 0; i < cache.allRecords.length; i++) {
+      const record = cache.allRecords[i];
+      const contentKey = record.contentReferenceKey;
+
+      try {
+        const asinsPath = `/aplus/2020-11-01/contentDocuments/${contentKey}/asins`;
+        const asinsParams = { marketplaceId: marketplaceConfig.marketplaceId };
+        const asinsResponse = callSPAPI('GET', asinsPath, marketplaceConfig.marketplaceId, asinsParams, accessToken);
+
+        const asinMetadataSet = asinsResponse.asinMetadataSet || [];
+        for (const asinMeta of asinMetadataSet) {
+          cache.asinToContent[asinMeta.asin] = contentKey;
+        }
+
+        Utilities.sleep(50); // Small delay to avoid rate limits
+      } catch (e) {
+        Logger.log(`[A+ CACHE] Error fetching ASINs for ${contentKey}: ${e.message}`);
+      }
+
+      // Progress update every 10 documents
+      if ((i + 1) % 10 === 0) {
+        showProgress(`Buduję cache A+: ${i + 1}/${cache.allRecords.length}...`);
+      }
+    }
+
+    Logger.log(`[A+ CACHE] Cache built: ${Object.keys(cache.asinToContent).length} ASIN mappings`);
+
+  } catch (error) {
+    Logger.log(`[A+ CACHE] Error building cache: ${error.message}`);
+  }
+
+  return cache;
+}
+
+/**
+ * Get A+ content for ASIN from pre-built cache
+ * Only fetches full content if ASIN is found in cache
+ */
+function getAPlusFromCache(asin, cache, marketplaceConfig, accessToken) {
+  const emptyResult = {
+    hasAPlus: false,
+    aplusType: '', aplusStatus: '', aplusContentId: '', aplusName: '',
+    aplusModuleCount: 0, aplusModuleTypes: '', aplusHeadline: '',
+    aplusText1: '', aplusText2: '', aplusText3: '',
+    aplusImageUrl1: '', aplusImageUrl2: '', aplusImageUrl3: '', aplusImageUrl4: '',
+    hasBrandStory: false, brandStoryHeadline: '', brandStoryText: '', brandStoryImageUrl: ''
+  };
+
+  // Quick lookup in cache
+  const contentKey = cache.asinToContent[asin];
+  if (!contentKey) {
+    Logger.log(`[A+ CACHE] No A+ content for ASIN ${asin} (not in cache)`);
+    return emptyResult;
+  }
+
+  // Found in cache - fetch full content
+  try {
+    Logger.log(`[A+ CACHE] Found A+ content for ${asin}: ${contentKey}`);
+    const contentPath = `/aplus/2020-11-01/contentDocuments/${contentKey}`;
+    const contentParams = { marketplaceId: marketplaceConfig.marketplaceId, includedDataSet: 'CONTENTS' };
+    const contentResponse = callSPAPI('GET', contentPath, marketplaceConfig.marketplaceId, contentParams, accessToken);
+
+    const record = cache.allRecords.find(r => r.contentReferenceKey === contentKey);
+    return parseAPlusContentDocument(contentResponse, record);
+  } catch (e) {
+    Logger.log(`[A+ CACHE] Error fetching A+ content for ${asin}: ${e.message}`);
+    return emptyResult;
+  }
+}
+
+/**
  * Fetch A+ Content by ASIN using content association
  * Searches through all content documents to find the one associated with this ASIN
  */
@@ -1463,8 +1616,22 @@ function lukoSearchProducts() {
       }
     }
 
+    // Ask about A+ checking (it's slow!)
+    const aplusConfirm = ui.alert(
+      'Sprawdzanie A+ Content',
+      'Czy sprawdzać A+ Content dla każdego produktu?\n\n' +
+      '⚠️ UWAGA: Spowalnia import (~2 sekundy na produkt)\n' +
+      'A+ działa tylko dla produktów TWOJEJ marki.\n\n' +
+      'Tak = Sprawdzaj A+ (wolniej)\n' +
+      'Nie = Pomiń A+ (szybciej)',
+      ui.ButtonSet.YES_NO
+    );
+
+    const skipAPlus = (aplusConfirm !== ui.Button.YES);
+
     // Confirm import
-    const confirmMsg = `Zaimportować ${importCount} z ${searchResults.length} produktów?`;
+    const confirmMsg = `Zaimportować ${importCount} z ${searchResults.length} produktów?\n\n` +
+      `A+ Content: ${skipAPlus ? 'POMINIĘTE (szybki import)' : 'SPRAWDZANE (wolniejszy import)'}`;
     const confirm = ui.alert('Potwierdź import', confirmMsg, ui.ButtonSet.YES_NO);
 
     if (confirm !== ui.Button.YES) return;
@@ -1473,7 +1640,7 @@ function lukoSearchProducts() {
     const asinsToImport = searchResults.slice(0, importCount).map(p => p.asin);
     showProgress(`Importuję ${importCount} produktów...`);
 
-    const results = importProductsByASIN(asinsToImport, marketplace, marketplaceConfig);
+    const results = importProductsByASIN(asinsToImport, marketplace, marketplaceConfig, { skipAPlus });
 
     ui.alert(
       'Import zakończony',
@@ -1971,7 +2138,7 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
     productData.websiteDisplayGroupName || '',
 
     // === A+ CONTENT ===
-    productData.hasAPlus ? 'Tak' : 'Brak dostępu',
+    productData.hasAPlus === null ? 'Nie sprawdzono' : (productData.hasAPlus ? 'Tak' : 'Brak dostępu'),
     productData.aplusType || '',
     productData.aplusStatus || '',
     productData.aplusContentId || '',
@@ -1988,7 +2155,7 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
     productData.aplusImageUrl4 || '',
 
     // === BRAND STORY ===
-    productData.hasBrandStory ? 'Tak' : 'Brak dostępu',
+    productData.hasBrandStory === null ? 'Nie sprawdzono' : (productData.hasBrandStory ? 'Tak' : 'Brak dostępu'),
     productData.brandStoryHeadline || '',
     productData.brandStoryText || '',
     productData.brandStoryImageUrl || '',
