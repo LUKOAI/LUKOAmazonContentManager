@@ -1019,11 +1019,15 @@ function fetchAPlusContentByASIN(asin, marketplaceConfig, accessToken) {
       asin: asin
     };
 
+    Logger.log(`[A+ DEBUG] Fetching A+ content for ASIN: ${asin}`);
     const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
+    Logger.log(`[A+ DEBUG] Response keys: ${Object.keys(response).join(', ')}`);
 
     const contentRecords = response.contentMetadataRecords || [];
+    Logger.log(`[A+ DEBUG] Found ${contentRecords.length} content records`);
 
     if (contentRecords.length === 0) {
+      Logger.log(`[A+ DEBUG] No A+ content found for ${asin}`);
       return {
         hasAPlus: false,
         aplusType: '',
@@ -1049,7 +1053,9 @@ function fetchAPlusContentByASIN(asin, marketplaceConfig, accessToken) {
 
     // Get the first content document
     const firstRecord = contentRecords[0];
+    Logger.log(`[A+ DEBUG] First record: ${JSON.stringify(firstRecord).substring(0, 500)}`);
     const contentReferenceKey = firstRecord.contentReferenceKey;
+    Logger.log(`[A+ DEBUG] Content Reference Key: ${contentReferenceKey}`);
 
     // Fetch full content
     const contentPath = `/aplus/2020-11-01/contentDocuments/${contentReferenceKey}`;
@@ -1058,12 +1064,16 @@ function fetchAPlusContentByASIN(asin, marketplaceConfig, accessToken) {
       includedDataSet: 'CONTENTS'
     };
 
+    Logger.log(`[A+ DEBUG] Fetching content document: ${contentPath}`);
     const contentResponse = callSPAPI('GET', contentPath, marketplaceConfig.marketplaceId, contentParams, accessToken);
+    Logger.log(`[A+ DEBUG] Content response keys: ${Object.keys(contentResponse).join(', ')}`);
+    Logger.log(`[A+ DEBUG] Content response (first 1000 chars): ${JSON.stringify(contentResponse).substring(0, 1000)}`);
 
     return parseAPlusContentDocument(contentResponse, firstRecord);
 
   } catch (error) {
-    Logger.log(`Could not fetch A+ content by ASIN for ${asin}: ${error.message}`);
+    Logger.log(`[A+ DEBUG] ERROR fetching A+ for ${asin}: ${error.message}`);
+    Logger.log(`[A+ DEBUG] Falling back to fetchAPlusContent`);
     return fetchAPlusContent(asin, marketplaceConfig, accessToken);
   }
 }
@@ -1072,15 +1082,20 @@ function fetchAPlusContentByASIN(asin, marketplaceConfig, accessToken) {
  * Parse A+ Content document into structured data
  */
 function parseAPlusContentDocument(contentResponse, metadata) {
+  Logger.log(`[A+ PARSE] Starting parse. Metadata: ${JSON.stringify(metadata).substring(0, 300)}`);
+
   const contentDocument = contentResponse.contentDocument || {};
+  Logger.log(`[A+ PARSE] contentDocument keys: ${Object.keys(contentDocument).join(', ')}`);
+
   const contentModuleList = contentDocument.contentModuleList || [];
+  Logger.log(`[A+ PARSE] Found ${contentModuleList.length} modules`);
 
   const aplusData = {
     hasAPlus: true,
-    aplusType: contentDocument.contentType || 'STANDARD',
+    aplusType: contentDocument.contentType || metadata?.contentType || 'STANDARD',
     aplusStatus: metadata?.status || '',
-    aplusContentId: contentDocument.contentReferenceKey || '',
-    aplusName: contentDocument.name || '',
+    aplusContentId: contentDocument.contentReferenceKey || metadata?.contentReferenceKey || '',
+    aplusName: contentDocument.name || metadata?.name || '',
     aplusModuleCount: contentModuleList.length,
     aplusModuleTypes: contentModuleList.map(m => m.contentModuleType).filter(t => t).join(', '),
     aplusHeadline: '',
