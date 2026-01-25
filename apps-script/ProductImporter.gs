@@ -269,10 +269,11 @@ function lukoImportByASIN() {
       resultMsg += `\n\n${results.message}`;
     }
 
-    resultMsg += `\n\nProdukty w arkuszu "ImportedProducts".`;
-
+    // Use toast instead of alert to avoid blocking the script execution
+    // (ui.alert blocks and counts toward execution time limit!)
     const title = results.autoResumeScheduled ? 'Import w toku...' : 'Import zakończony';
-    ui.alert(title, resultMsg, ui.ButtonSet.OK);
+    SpreadsheetApp.getActiveSpreadsheet().toast(resultMsg, title, 30);
+    Logger.log(`[IMPORT] ${title}: ${resultMsg.replace(/\n/g, ' | ')}`);
 
   } catch (error) {
     handleError('lukoImportByASIN', error);
@@ -1815,10 +1816,11 @@ function lukoSearchProducts() {
       searchResultMsg += `\n\n(Możesz zamknąć arkusz - import kontynuuje się automatycznie)`;
     }
 
-    searchResultMsg += `\n\nProdukty w arkuszu "ImportedProducts".`;
-
+    // Use toast instead of alert to avoid blocking the script execution
+    // (ui.alert blocks and counts toward execution time limit!)
     const searchTitle = results.autoResumeScheduled ? 'Import w toku...' : 'Import zakończony';
-    ui.alert(searchTitle, searchResultMsg, ui.ButtonSet.OK);
+    SpreadsheetApp.getActiveSpreadsheet().toast(searchResultMsg, searchTitle, 30);
+    Logger.log(`[SEARCH] ${searchTitle}: ${searchResultMsg.replace(/\n/g, ' | ')}`);
 
   } catch (error) {
     handleError('lukoSearchProducts', error);
