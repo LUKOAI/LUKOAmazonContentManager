@@ -816,16 +816,19 @@ function fetchSellerByASIN(asin, marketplaceConfig, accessToken) {
       const isFBA = offer.IsFulfilledByAmazon || offer.isFulfilledByAmazon || false;
       const rating = offer.SellerFeedbackRating?.SellerPositiveFeedbackRating;
 
-      let sellerName = '';
-      if (isFBA) {
-        sellerName = 'Fulfilled by Amazon (FBA)';
+      // Build seller name info (API doesn't provide actual name, only ID and metadata)
+      let sellerInfo = '';
+      if (isFBA && rating) {
+        sellerInfo = `FBA, ${rating}%`;
+      } else if (isFBA) {
+        sellerInfo = 'FBA';
       } else if (rating) {
-        sellerName = `Rating: ${rating}%`;
+        sellerInfo = `${rating}%`;
       }
 
-      Logger.log(`[SELLER DEBUG] Extracted: sellerId=${sellerId}, sellerName=${sellerName}`);
+      Logger.log(`[SELLER DEBUG] Extracted: sellerId=${sellerId}, sellerInfo=${sellerInfo}`);
 
-      return { sellerId, sellerName };
+      return { sellerId, sellerName: sellerInfo };
     }
 
   } catch (error) {
