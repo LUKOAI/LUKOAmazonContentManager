@@ -1008,73 +1008,101 @@ function fetchAPlusContent(asin, marketplaceConfig, accessToken) {
 
 /**
  * Fetch A+ Content by ASIN using content association
- * Alternative method that searches by ASIN directly
+ * Searches through all content documents to find the one associated with this ASIN
  */
 function fetchAPlusContentByASIN(asin, marketplaceConfig, accessToken) {
+  const emptyResult = {
+    hasAPlus: false,
+    aplusType: '',
+    aplusStatus: '',
+    aplusContentId: '',
+    aplusName: '',
+    aplusModuleCount: 0,
+    aplusModuleTypes: '',
+    aplusHeadline: '',
+    aplusText1: '',
+    aplusText2: '',
+    aplusText3: '',
+    aplusImageUrl1: '',
+    aplusImageUrl2: '',
+    aplusImageUrl3: '',
+    aplusImageUrl4: '',
+    hasBrandStory: false,
+    brandStoryHeadline: '',
+    brandStoryText: '',
+    brandStoryImageUrl: ''
+  };
+
   try {
-    // Try to get A+ content associated with specific ASIN
+    // Get list of all content documents
     const path = '/aplus/2020-11-01/contentDocuments';
     const params = {
-      marketplaceId: marketplaceConfig.marketplaceId,
-      asin: asin
+      marketplaceId: marketplaceConfig.marketplaceId
     };
 
-    Logger.log(`[A+ DEBUG] Fetching A+ content for ASIN: ${asin}`);
+    Logger.log(`[A+ DEBUG] Fetching A+ content list for marketplace`);
     const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
-    Logger.log(`[A+ DEBUG] Response keys: ${Object.keys(response).join(', ')}`);
 
     const contentRecords = response.contentMetadataRecords || [];
-    Logger.log(`[A+ DEBUG] Found ${contentRecords.length} content records`);
+    Logger.log(`[A+ DEBUG] Found ${contentRecords.length} total content records`);
 
     if (contentRecords.length === 0) {
-      Logger.log(`[A+ DEBUG] No A+ content found for ${asin}`);
-      return {
-        hasAPlus: false,
-        aplusType: '',
-        aplusStatus: '',
-        aplusContentId: '',
-        aplusName: '',
-        aplusModuleCount: 0,
-        aplusModuleTypes: '',
-        aplusHeadline: '',
-        aplusText1: '',
-        aplusText2: '',
-        aplusText3: '',
-        aplusImageUrl1: '',
-        aplusImageUrl2: '',
-        aplusImageUrl3: '',
-        aplusImageUrl4: '',
-        hasBrandStory: false,
-        brandStoryHeadline: '',
-        brandStoryText: '',
-        brandStoryImageUrl: ''
-      };
+      Logger.log(`[A+ DEBUG] No A+ content documents found`);
+      return emptyResult;
     }
 
-    // Get the first content document
-    const firstRecord = contentRecords[0];
-    Logger.log(`[A+ DEBUG] First record: ${JSON.stringify(firstRecord).substring(0, 500)}`);
-    const contentReferenceKey = firstRecord.contentReferenceKey;
-    Logger.log(`[A+ DEBUG] Content Reference Key: ${contentReferenceKey}`);
+    // Search through content documents to find the one associated with our ASIN
+    for (let i = 0; i < Math.min(contentRecords.length, 20); i++) {  // Check up to 20 documents
+      const record = contentRecords[i];
+      const contentReferenceKey = record.contentReferenceKey;
 
-    // Fetch full content
-    const contentPath = `/aplus/2020-11-01/contentDocuments/${contentReferenceKey}`;
-    const contentParams = {
-      marketplaceId: marketplaceConfig.marketplaceId,
-      includedDataSet: 'CONTENTS'
-    };
+      try {
+        // Check which ASINs are associated with this content document
+        const asinsPath = `/aplus/2020-11-01/contentDocuments/${contentReferenceKey}/asins`;
+        const asinsParams = {
+          marketplaceId: marketplaceConfig.marketplaceId
+        };
 
-    Logger.log(`[A+ DEBUG] Fetching content document: ${contentPath}`);
-    const contentResponse = callSPAPI('GET', contentPath, marketplaceConfig.marketplaceId, contentParams, accessToken);
-    Logger.log(`[A+ DEBUG] Content response keys: ${Object.keys(contentResponse).join(', ')}`);
-    Logger.log(`[A+ DEBUG] Content response (first 1000 chars): ${JSON.stringify(contentResponse).substring(0, 1000)}`);
+        Logger.log(`[A+ DEBUG] Checking ASINs for content: ${record.contentMetadata?.name || contentReferenceKey}`);
+        const asinsResponse = callSPAPI('GET', asinsPath, marketplaceConfig.marketplaceId, asinsParams, accessToken);
 
-    return parseAPlusContentDocument(contentResponse, firstRecord);
+        const asinMetadataSet = asinsResponse.asinMetadataSet || [];
+        const associatedAsins = asinMetadataSet.map(a => a.asin);
+
+        Logger.log(`[A+ DEBUG] Content "${record.contentMetadata?.name}" has ${associatedAsins.length} ASINs`);
+
+        // Check if our ASIN is in the list
+        if (associatedAsins.includes(asin)) {
+          Logger.log(`[A+ DEBUG] FOUND! Content "${record.contentMetadata?.name}" is associated with ASIN ${asin}`);
+
+          // Fetch full content
+          const contentPath = `/aplus/2020-11-01/contentDocuments/${contentReferenceKey}`;
+          const contentParams = {
+            marketplaceId: marketplaceConfig.marketplaceId,
+            includedDataSet: 'CONTENTS'
+          };
+
+          const contentResponse = callSPAPI('GET', contentPath, marketplaceConfig.marketplaceId, contentParams, accessToken);
+          Logger.log(`[A+ DEBUG] Content response keys: ${Object.keys(contentResponse).join(', ')}`);
+
+          return parseAPlusContentDocument(contentResponse, record);
+        }
+
+        // Rate limiting between API calls
+        Utilities.sleep(100);
+
+      } catch (innerError) {
+        Logger.log(`[A+ DEBUG] Error checking content ${contentReferenceKey}: ${innerError.message}`);
+        continue;
+      }
+    }
+
+    Logger.log(`[A+ DEBUG] No A+ content found associated with ASIN ${asin} after checking ${Math.min(contentRecords.length, 20)} documents`);
+    return emptyResult;
 
   } catch (error) {
     Logger.log(`[A+ DEBUG] ERROR fetching A+ for ${asin}: ${error.message}`);
-    Logger.log(`[A+ DEBUG] Falling back to fetchAPlusContent`);
-    return fetchAPlusContent(asin, marketplaceConfig, accessToken);
+    return emptyResult;
   }
 }
 
@@ -1171,25 +1199,47 @@ function parseAPlusContentDocument(contentResponse, metadata) {
     }
 
     // Extract images from various module types
-    // API uses different image structures
+    // Log module structure for debugging
+    if (module.standardSingleSideImage) {
+      Logger.log(`[A+ PARSE] standardSingleSideImage keys: ${JSON.stringify(Object.keys(module.standardSingleSideImage))}`);
+      Logger.log(`[A+ PARSE] standardSingleSideImage content: ${JSON.stringify(module.standardSingleSideImage).substring(0, 500)}`);
+    }
+
+    // API uses different image structures - try multiple paths
     const imageSources = [
       // Single image highlights
       module.standardSingleImageHighlights?.image?.imageCropSpecification?.optimizedImage?.link,
-      module.standardSingleImageHighlights?.image?.uploadDestinationId,
       // Image text overlay
-      module.standardImageTextOverlay?.overlayColorType ? null : module.standardImageTextOverlay?.image?.imageCropSpecification?.optimizedImage?.link,
+      module.standardImageTextOverlay?.image?.imageCropSpecification?.optimizedImage?.link,
       // Image sidebar
       module.standardImageSidebar?.image?.imageCropSpecification?.optimizedImage?.link,
       // Header image text
       module.standardHeaderImageText?.image?.imageCropSpecification?.optimizedImage?.link,
-      // Single side image
+
+      // Single side image - try multiple paths
+      module.standardSingleSideImage?.imageCropSpecification?.optimizedImage?.link,
       module.standardSingleSideImage?.image?.imageCropSpecification?.optimizedImage?.link,
+      module.standardSingleSideImage?.imageLocator?.link,
+      module.standardSingleSideImage?.altText ? `[Image: ${module.standardSingleSideImage.altText}]` : null,
+
+      // Company logo
+      module.standardCompanyLogo?.image?.imageCropSpecification?.optimizedImage?.link,
+
+      // Tech specs image
+      module.standardTechSpecs?.image?.imageCropSpecification?.optimizedImage?.link,
+
+      // Four image text
+      ...(module.standardFourImageText?.fourImageTextList || []).map(i => i.image?.imageCropSpecification?.optimizedImage?.link),
+
       // Multiple image text
-      ...(module.standardMultipleImageText?.imageTextList || []).map(i => i.image?.imageCropSpecification?.optimizedImage?.link)
+      ...(module.standardMultipleImageText?.imageTextList || []).map(i => i.image?.imageCropSpecification?.optimizedImage?.link),
+
+      // Three image text
+      ...(module.standardThreeImageText?.imageTextList || []).map(i => i.image?.imageCropSpecification?.optimizedImage?.link)
     ];
 
     for (const img of imageSources) {
-      if (img && imageIndex <= 4) {
+      if (img && imageIndex <= 4 && !img.startsWith('[Image:')) {
         aplusData[`aplusImageUrl${imageIndex}`] = img;
         Logger.log(`[A+ PARSE] Found image ${imageIndex}: ${img.substring(0, 60)}...`);
         imageIndex++;
