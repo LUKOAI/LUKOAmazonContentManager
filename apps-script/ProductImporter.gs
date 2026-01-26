@@ -2087,7 +2087,10 @@ function generateImportedProductsSheet(ss) {
     'Brand Story Image URL',
 
     // === NOTES ===
-    'Notes'
+    'Notes',
+
+    // === LINK ===
+    'Link'
   ];
 
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -2332,7 +2335,10 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
     productData.brandStoryImageUrl || '',
 
     // === NOTES ===
-    '' // Notes column for user input
+    '', // Notes column for user input
+
+    // === LINK ===
+    getAmazonProductLink(productData.asin, marketplace)
   ];
 
   sheet.appendRow(rowData);
@@ -2377,6 +2383,26 @@ function showMarketplaceDropdown() {
   }
 
   return marketplace;
+}
+
+/**
+ * Get Amazon product link for an ASIN based on marketplace
+ */
+function getAmazonProductLink(asin, marketplace) {
+  const domains = {
+    'DE': 'www.amazon.de',
+    'FR': 'www.amazon.fr',
+    'UK': 'www.amazon.co.uk',
+    'IT': 'www.amazon.it',
+    'ES': 'www.amazon.es',
+    'NL': 'www.amazon.nl',
+    'BE': 'www.amazon.com.be',
+    'PL': 'www.amazon.pl',
+    'SE': 'www.amazon.se',
+    'IE': 'www.amazon.ie'
+  };
+  const domain = domains[marketplace] || 'www.amazon.de';
+  return `https://${domain}/dp/${asin}`;
 }
 
 function showProgress(message) {
@@ -2503,7 +2529,10 @@ function lukoFixImportedProductsHeaders() {
     'Has Brand Story', 'Brand Story Headline', 'Brand Story Text', 'Brand Story Image URL',
 
     // === NOTES ===
-    'Notes'
+    'Notes',
+
+    // === LINK ===
+    'Link'
   ];
 
   // Write headers to row 1
