@@ -187,10 +187,10 @@ function menuSPApiFetchByASIN() {
 }
 
 /**
- * Menu: Fetch ASIN + similar/related products via SP-API
- * Main product = Główny, variations/siblings = Podobny
+ * Menu: Fetch ASIN + child variants (same Parent ASIN)
+ * Main product = Główny, child variations = Wariant
  */
-function menuSPApiFetchWithSimilar() {
+function menuSPApiFetchWithVariants() {
   const ui = SpreadsheetApp.getUi();
 
   if (!spHasCredentials()) {
@@ -201,12 +201,12 @@ function menuSPApiFetchWithSimilar() {
   }
 
   const response = ui.prompt(
-    'SP-API: Pobierz ASIN + podobne produkty',
+    'SP-API: Pobierz ASIN + warianty',
     'Wpisz ASIN(y) do pobrania:\n\n' +
     'Jeden: B08N5WRWNW\n' +
     'Wiele: B08N5WRWNW, B07XJ8C8F5\n\n' +
     'Dla kazdego ASIN zostaną pobrane rowniez\n' +
-    'podobne produkty (warianty/rodzenstwo).\n\n' +
+    'inne ASIN-y tego samego Parent ASIN (warianty).\n\n' +
     'Oddziel przecinkami.',
     ui.ButtonSet.OK_CANCEL
   );
@@ -226,20 +226,20 @@ function menuSPApiFetchWithSimilar() {
   const marketplace = spShowMarketplaceSelector();
   if (!marketplace) return;
 
-  const confirmMsg = `Pobrac ${asins.length} produkt(ow) + podobne z Amazon ${marketplace}?\n\n` +
+  const confirmMsg = `Pobrac ${asins.length} produkt(ow) + warianty z Amazon ${marketplace}?\n\n` +
     `ASIN: ${asins.slice(0, 5).join(', ')}${asins.length > 5 ? '...' : ''}\n\n` +
     `Glowny ASIN -> ASIN_Type = "Glowny"\n` +
-    `Podobne/warianty -> ASIN_Type = "Podobny"\n` +
+    `Warianty (ASIN Child) -> ASIN_Type = "Wariant"\n` +
     `Dane zapisane w: RESEARCH tab`;
 
   if (ui.alert('Potwierdzenie', confirmMsg, ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
 
   try {
-    SpreadsheetApp.getActiveSpreadsheet().toast(`Pobieram ${asins.length} produktow + podobne z SP-API...`, 'SP-API', 30);
+    SpreadsheetApp.getActiveSpreadsheet().toast(`Pobieram ${asins.length} produktow + warianty z SP-API...`, 'SP-API', 30);
     const results = spFetchAndWriteProducts(asins, marketplace, { fetchSimilar: true });
 
     let resultMsg = `Glowne: ${results.success}\n` +
-      `Podobne: ${results.similar}\n` +
+      `Warianty: ${results.similar}\n` +
       `Bledy: ${results.failed}\n` +
       `Pominiete (duplikaty): ${results.skipped}`;
 
@@ -455,7 +455,7 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
       existing.add(key);
       results.success++;
 
-      // Fetch similar products if requested
+      // Fetch variants (child ASINs) if requested
       if (options.fetchSimilar && productData.childAsins) {
         const childList = productData.childAsins.split(',').map(a => a.trim()).filter(a => a && a !== asin);
         const maxSimilar = Math.min(childList.length, 20);
@@ -469,7 +469,7 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
 
           try {
             SpreadsheetApp.getActiveSpreadsheet().toast(
-              `Podobny ${childAsin} (${j + 1}/${maxSimilar})...`, 'SP-API', 30);
+              `Wariant ${childAsin} (${j + 1}/${maxSimilar})...`, 'SP-API', 30);
 
             const childData = spFetchProductData(childAsin, mpConfig, accessToken);
             Utilities.sleep(300);
@@ -486,21 +486,21 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
             }
             Utilities.sleep(200);
 
-            childData.asinType = 'Podobny';
+            childData.asinType = 'Wariant';
             childData.relatedToAsin = asin;
             spWriteProductRow(researchSheet, headerInfo, childData, marketplace);
             existing.add(childKey);
             results.similar++;
 
           } catch (e) {
-            Logger.log(`[SP-API] Similar ${childAsin} failed: ${e.message}`);
+            Logger.log(`[SP-API] Variant ${childAsin} failed: ${e.message}`);
           }
 
           Utilities.sleep(500);
         }
       }
 
-      // If no children but has parent, try siblings
+      // If no children but has parent, try sibling variants
       if (options.fetchSimilar && !productData.childAsins && productData.parentAsin) {
         const parentAsin = productData.parentAsin;
         const parentKey = `${parentAsin}|${marketplace}|SP-API`;
@@ -524,19 +524,19 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
 
                 try {
                   SpreadsheetApp.getActiveSpreadsheet().toast(
-                    `Podobny ${sibAsin} (${j + 1}/${maxSiblings})...`, 'SP-API', 30);
+                    `Wariant ${sibAsin} (${j + 1}/${maxSiblings})...`, 'SP-API', 30);
 
                   const sibData = spFetchProductData(sibAsin, mpConfig, accessToken);
                   Utilities.sleep(300);
 
-                  sibData.asinType = 'Podobny';
+                  sibData.asinType = 'Wariant';
                   sibData.relatedToAsin = asin;
                   spWriteProductRow(researchSheet, headerInfo, sibData, marketplace);
                   existing.add(sibKey);
                   results.similar++;
 
                 } catch (e) {
-                  Logger.log(`[SP-API] Sibling ${sibAsin} failed: ${e.message}`);
+                  Logger.log(`[SP-API] Variant sibling ${sibAsin} failed: ${e.message}`);
                 }
 
                 Utilities.sleep(500);

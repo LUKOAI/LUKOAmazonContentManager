@@ -9,7 +9,7 @@
  *
  *   .addSubMenu(ui.createMenu('📡 SP-API Data Collection')
  *     .addItem('🔍 Pobierz po ASIN (tylko glowny)', 'menuSPApiFetchByASIN')
- *     .addItem('🔍 Pobierz ASIN + podobne produkty', 'menuSPApiFetchWithSimilar')
+ *     .addItem('🔍 Pobierz ASIN + warianty', 'menuSPApiFetchWithVariants')
  *     .addItem('🔎 Szukaj po slowie kluczowym', 'menuSPApiSearchByKeyword')
  *     .addItem('📋 Pobierz z zaznaczonych komorek', 'menuSPApiFetchFromSelection')
  *     .addSeparator()
@@ -36,7 +36,7 @@
  *     // NEW: SP-API submenu (v2.0 - writes to existing PA-API columns)
  *     .addSubMenu(ui.createMenu('📡 SP-API Data Collection')
  *       .addItem('🔍 Pobierz po ASIN (tylko glowny)', 'menuSPApiFetchByASIN')
- *       .addItem('🔍 Pobierz ASIN + podobne produkty', 'menuSPApiFetchWithSimilar')
+ *       .addItem('🔍 Pobierz ASIN + warianty', 'menuSPApiFetchWithVariants')
  *       .addItem('🔎 Szukaj po slowie kluczowym', 'menuSPApiSearchByKeyword')
  *       .addItem('📋 Pobierz z zaznaczonych komorek', 'menuSPApiFetchFromSelection')
  *       .addSeparator()
@@ -54,10 +54,10 @@
  * - SP-API data now writes to EXISTING PA-API columns (no new columns created)
  * - Fetch date goes to Timestamp_Research (not Fetch_Date)
  * - Data_Source column distinguishes SP-API vs PA-API entries
- * - New: menuSPApiFetchWithSimilar() - fetches main ASIN + similar products
+ * - New: menuSPApiFetchWithVariants() - fetches main ASIN + child variants
  *   (uses SP-API relationships: child variations / sibling lookup via parent)
- * - ASIN_Type = "Glowny" for main product, "Podobny" for related
- * - Related_To_ASIN links similar products back to the main ASIN
+ * - ASIN_Type = "Glowny" for main product, "Wariant" for child variants
+ * - Related_To_ASIN links variants back to the main ASIN
  */
 
 // This file serves as documentation for menu integration.
