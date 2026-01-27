@@ -271,6 +271,7 @@ function lukoImportByASIN() {
     }
 
     // Use toast instead of alert to avoid blocking the script execution
+    // (ui.alert blocks and counts toward execution time limit!)
     const title = results.autoResumeScheduled ? 'Import w toku...' : 'Import zakończony';
     SpreadsheetApp.getActiveSpreadsheet().toast(resultMsg, title, 30);
     Logger.log(`[IMPORT] ${title}: ${resultMsg.replace(/\n/g, ' | ')}`);
@@ -663,15 +664,19 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
   }
 
   // Extract list_price from attributes (more reliable than Pricing API)
+  // Format varies: {"value_with_tax":15900} (cents) or {"value_with_tax":20.22} (EUR)
   let catalogListPrice = '';
   let catalogCurrency = '';
   if (attributes.list_price && attributes.list_price[0]) {
     const priceData = attributes.list_price[0];
     if (priceData.value_with_tax !== undefined) {
       const rawValue = priceData.value_with_tax;
+      // Detect if value is in cents (whole number > 100) or already in EUR (has decimals or small)
       if (Number.isInteger(rawValue) && rawValue > 100) {
+        // Likely cents (e.g., 15900 = 159.00 EUR)
         catalogListPrice = (rawValue / 100).toFixed(2);
       } else {
+        // Already in EUR (e.g., 20.22)
         catalogListPrice = parseFloat(rawValue).toFixed(2);
       }
     } else if (priceData.value) {
@@ -714,6 +719,7 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
       const itemDims = dim.item || {};
       const packageDims = dim.package || {};
 
+      // Item dimensions with units
       dimensionsData.itemLength = itemDims.length?.value || '';
       dimensionsData.itemLengthUnit = itemDims.length?.unit || '';
       dimensionsData.itemWidth = itemDims.width?.value || '';
@@ -723,6 +729,7 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
       dimensionsData.itemWeight = itemDims.weight?.value || '';
       dimensionsData.itemWeightUnit = itemDims.weight?.unit || '';
 
+      // Package dimensions with units
       dimensionsData.packageLength = packageDims.length?.value || '';
       dimensionsData.packageLengthUnit = packageDims.length?.unit || '';
       dimensionsData.packageWidth = packageDims.width?.value || '';
@@ -739,6 +746,7 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
   const salesRanksData = {};
   for (const rankGroup of salesRanks) {
     if (rankGroup.marketplaceId === marketplaceConfig.marketplaceId) {
+      // Classification ranks (category-specific)
       const classRanks = rankGroup.classificationRanks || [];
       if (classRanks.length > 0) {
         salesRanksData.salesRank1 = classRanks[0]?.rank || '';
@@ -754,6 +762,7 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
         }
       }
 
+      // Display group ranks (department-level)
       const displayRanks = rankGroup.displayGroupRanks || [];
       if (displayRanks.length > 0) {
         salesRanksData.displayGroupRank = displayRanks[0]?.rank || '';
@@ -770,11 +779,13 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
     if (relGroup.marketplaceId === marketplaceConfig.marketplaceId) {
       const rels = relGroup.relationships || [];
 
+      // Find parent relationship
       const parentRel = rels.find(r => r.type === 'VARIATION' && r.parentAsins);
       if (parentRel && parentRel.parentAsins?.length > 0) {
         relationshipsData.parentAsin = parentRel.parentAsins[0];
       }
 
+      // Find child variations
       const childRels = rels.filter(r => r.type === 'VARIATION' && r.childAsins);
       if (childRels.length > 0) {
         const allChildAsins = childRels.flatMap(r => r.childAsins || []);
@@ -782,6 +793,7 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
         relationshipsData.childCount = allChildAsins.length;
       }
 
+      // Variation theme
       const variationRel = rels.find(r => r.variationTheme);
       if (variationRel) {
         relationshipsData.variationTheme = variationRel.variationTheme.attributes?.join(', ') || '';
@@ -799,9 +811,11 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
         classificationsData.browseNodeId = nodes[0]?.classificationId || '';
         classificationsData.browseNodeName = nodes[0]?.displayName || '';
 
+        // Build category path
         const categoryPath = nodes.map(n => n.displayName).join(' > ');
         classificationsData.categoryPath = categoryPath;
 
+        // Additional browse nodes
         if (nodes.length > 1) {
           classificationsData.browseNode2Id = nodes[1]?.classificationId || '';
           classificationsData.browseNode2Name = nodes[1]?.displayName || '';
@@ -822,12 +836,14 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
   imagesData.mainImageHeight = imageGroup.find(i => i.variant === 'MAIN')?.height || '';
   imagesData.mainImageWidth = imageGroup.find(i => i.variant === 'MAIN')?.width || '';
 
+  // Get additional images (non-MAIN variants)
   const additionalImages = imageGroup.filter(i => i.variant !== 'MAIN');
   for (let i = 0; i < 8; i++) {
     imagesData[`additionalImage${i + 1}`] = additionalImages[i]?.link || '';
     imagesData[`additionalImage${i + 1}Variant`] = additionalImages[i]?.variant || '';
   }
 
+  // Count total images
   imagesData.totalImageCount = imageGroup.length;
 
   return {
@@ -844,8 +860,8 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
     isbn: identifiersData.isbn || '',
     gtin: identifiersData.gtin || '',
     gcid: identifiersData.gcid || '',
-    pzn: identifiersData.pzn || '',
-    minsan: identifiersData.minsan || '',
+    pzn: identifiersData.pzn || '',  // German pharmacy number
+    minsan: identifiersData.minsan || '',  // Italian pharmacy number
     partNumber: getAttr('part_number') || getAttr('manufacturer_part_number') || '',
     itemModelNumber: getAttr('item_model_number') || '',
 
@@ -861,6 +877,7 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
     bulletPoint9: attributes.bullet_point?.[8]?.value || '',
 
     // === DESCRIPTIONS ===
+    // Try multiple attribute names for description
     description: getAttr('product_description') || getAttr('item_description') || getAttrWithLanguage('product_description', 'de_DE') || '',
     shortDescription: getAttr('short_description') || getAttr('product_description_short') || '',
     longDescription: getAttr('long_description') || getAttr('product_description_long') || '',
@@ -987,9 +1004,11 @@ function fetchProductByASIN(asin, marketplaceConfig, accessToken) {
 
 /**
  * Fetch seller information for an ASIN
+ * Note: Getting seller info from pricing API - Offers array contains seller data
  */
 function fetchSellerByASIN(asin, marketplaceConfig, accessToken) {
   try {
+    // Use the same pricing endpoint which includes Offers with seller info
     const path = `/products/pricing/v0/items/${asin}/offers`;
     const params = {
       MarketplaceId: marketplaceConfig.marketplaceId,
@@ -1008,10 +1027,12 @@ function fetchSellerByASIN(asin, marketplaceConfig, accessToken) {
       const offer = offers[0];
       Logger.log(`[SELLER DEBUG] First offer keys: ${Object.keys(offer).join(', ')}`);
 
+      // Extract seller info from offer
       const sellerId = offer.SellerId || offer.sellerId || '';
       const isFBA = offer.IsFulfilledByAmazon || offer.isFulfilledByAmazon || false;
       const rating = offer.SellerFeedbackRating?.SellerPositiveFeedbackRating;
 
+      // Build seller name info (API doesn't provide actual name, only ID and metadata)
       let sellerInfo = '';
       if (isFBA && rating) {
         sellerInfo = `FBA, ${rating}%`;
@@ -1035,9 +1056,11 @@ function fetchSellerByASIN(asin, marketplaceConfig, accessToken) {
 
 /**
  * Fetch pricing information for an ASIN
+ * Uses Product Pricing API
  */
 function fetchProductPricing(asin, marketplaceConfig, accessToken) {
   try {
+    // Use the correct Pricing API endpoint
     const path = `/products/pricing/v0/items/${asin}/offers`;
     const params = {
       MarketplaceId: marketplaceConfig.marketplaceId,
@@ -1047,6 +1070,7 @@ function fetchProductPricing(asin, marketplaceConfig, accessToken) {
     Logger.log(`[PRICE DEBUG] Fetching pricing for ${asin}...`);
     const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
 
+    // API returns { payload: { Summary: { LowestPrices: [...] } } }
     const payload = response.payload || response;
     const summary = payload.Summary || payload.summary || {};
 
@@ -1056,10 +1080,12 @@ function fetchProductPricing(asin, marketplaceConfig, accessToken) {
     let currentPrice = '';
     let currency = 'EUR';
 
+    // Extract from LowestPrices array (actual API response structure)
     const lowestPrices = summary.LowestPrices || [];
     Logger.log(`[PRICE DEBUG] LowestPrices count: ${lowestPrices.length}`);
 
     if (lowestPrices.length > 0) {
+      // Find Amazon (FBA) price first, then Merchant price
       const fbaPrice = lowestPrices.find(p => p.fulfillmentChannel === 'Amazon');
       const merchantPrice = lowestPrices.find(p => p.fulfillmentChannel === 'Merchant');
 
@@ -1072,6 +1098,7 @@ function fetchProductPricing(asin, marketplaceConfig, accessToken) {
       Logger.log(`[PRICE DEBUG] Best price from ${bestPrice.fulfillmentChannel}: ${currentPrice} ${currency}`);
     }
 
+    // Fallback: try BuyBoxPrices
     if (!currentPrice && summary.BuyBoxPrices && summary.BuyBoxPrices.length > 0) {
       const buyBox = summary.BuyBoxPrices[0];
       currentPrice = buyBox.LandedPrice?.Amount || buyBox.ListingPrice?.Amount || '';
@@ -1089,6 +1116,8 @@ function fetchProductPricing(asin, marketplaceConfig, accessToken) {
 }
 
 function fetchProductInventory(asin, marketplaceConfig, accessToken) {
+  // Note: Inventory requires FBA API or Inventory API
+  // This is a placeholder - actual implementation depends on fulfillment type
   return { quantity: '' };
 }
 
@@ -1097,15 +1126,214 @@ function fetchProductInventory(asin, marketplaceConfig, accessToken) {
 // ========================================
 
 /**
+ * Fetch A+ Content for an ASIN
+ * Uses the A+ Content Management API
+ * @param {string} asin - The ASIN to fetch A+ content for
+ * @param {Object} marketplaceConfig - Marketplace configuration
+ * @param {string} accessToken - SP-API access token
+ * @returns {Object} A+ content data
+ */
+function fetchAPlusContent(asin, marketplaceConfig, accessToken) {
+  try {
+    // Search for A+ content documents associated with this ASIN
+    const searchPath = '/aplus/2020-11-01/contentDocuments';
+    const searchParams = {
+      marketplaceId: marketplaceConfig.marketplaceId,
+      pageToken: ''
+    };
+
+    const searchResponse = callSPAPI('GET', searchPath, marketplaceConfig.marketplaceId, searchParams, accessToken);
+
+    const contentDocuments = searchResponse.contentMetadataRecords || [];
+
+    // Find content that includes our ASIN
+    let aplusData = {
+      hasAPlus: false,
+      aplusType: '',
+      aplusStatus: '',
+      aplusContentId: '',
+      aplusName: '',
+      aplusModuleCount: 0,
+      aplusModuleTypes: '',
+      aplusHeadline: '',
+      aplusText1: '',
+      aplusText2: '',
+      aplusText3: '',
+      aplusImageUrl1: '',
+      aplusImageUrl2: '',
+      aplusImageUrl3: '',
+      aplusImageUrl4: '',
+      hasBrandStory: false,
+      brandStoryHeadline: '',
+      brandStoryText: '',
+      brandStoryImageUrl: ''
+    };
+
+    // Search through content documents to find one with this ASIN
+    for (const record of contentDocuments) {
+      const contentReferenceKey = record.contentReferenceKey;
+
+      // Check if this content is associated with our ASIN
+      // We need to get the full content document to see the ASINs
+      try {
+        const contentPath = `/aplus/2020-11-01/contentDocuments/${contentReferenceKey}`;
+        const contentParams = {
+          marketplaceId: marketplaceConfig.marketplaceId,
+          includedDataSet: 'CONTENTS'
+        };
+
+        const contentResponse = callSPAPI('GET', contentPath, marketplaceConfig.marketplaceId, contentParams, accessToken);
+
+        const contentDocument = contentResponse.contentDocument || {};
+        const contentModuleList = contentDocument.contentModuleList || [];
+
+        // Check if this document is for our ASIN by looking at associated ASINs
+        // Note: The API might not return ASIN list directly, so we'll take what we find
+        if (contentDocument.contentReferenceKey) {
+          aplusData.hasAPlus = true;
+          aplusData.aplusContentId = contentDocument.contentReferenceKey || '';
+          aplusData.aplusName = contentDocument.name || '';
+          aplusData.aplusStatus = record.status || '';
+          aplusData.aplusType = contentDocument.contentType || 'STANDARD';
+          aplusData.aplusModuleCount = contentModuleList.length;
+
+          // Extract module types
+          const moduleTypes = contentModuleList.map(m => m.contentModuleType).filter(t => t);
+          aplusData.aplusModuleTypes = moduleTypes.join(', ');
+
+          // Extract content from modules
+          let textIndex = 1;
+          let imageIndex = 1;
+
+          for (const module of contentModuleList) {
+            const moduleType = module.contentModuleType || '';
+
+            // Check for Brand Story module
+            if (moduleType.includes('BRAND_STORY') || moduleType === 'STANDARD_BRAND_CONTENT_HERO') {
+              aplusData.hasBrandStory = true;
+
+              // Extract Brand Story content
+              if (module.standardHeaderImageText) {
+                aplusData.brandStoryHeadline = module.standardHeaderImageText.headline?.value || '';
+                aplusData.brandStoryText = module.standardHeaderImageText.block?.textList?.[0]?.value || '';
+                aplusData.brandStoryImageUrl = module.standardHeaderImageText.image?.imageCropSpecification?.optimizedImage?.link || '';
+              }
+            }
+
+            // Extract headline from header modules
+            if (module.standardHeaderTextModule) {
+              aplusData.aplusHeadline = module.standardHeaderTextModule.headline?.value || aplusData.aplusHeadline;
+            }
+
+            // Extract text from various module types
+            if (module.standardTextModule && textIndex <= 3) {
+              const text = module.standardTextModule.body?.textList?.[0]?.value || '';
+              if (text) {
+                aplusData[`aplusText${textIndex}`] = text;
+                textIndex++;
+              }
+            }
+
+            // Extract text from comparison tables, etc.
+            if (module.standardComparisonTable) {
+              const headline = module.standardComparisonTable.headline?.value || '';
+              if (headline && textIndex <= 3) {
+                aplusData[`aplusText${textIndex}`] = headline;
+                textIndex++;
+              }
+            }
+
+            // Extract images from various module types
+            if (module.standardSingleImageHighlights && imageIndex <= 4) {
+              const img = module.standardSingleImageHighlights.image?.imageCropSpecification?.optimizedImage?.link || '';
+              if (img) {
+                aplusData[`aplusImageUrl${imageIndex}`] = img;
+                imageIndex++;
+              }
+            }
+
+            if (module.standardImageTextOverlay && imageIndex <= 4) {
+              const img = module.standardImageTextOverlay.image?.imageCropSpecification?.optimizedImage?.link || '';
+              if (img) {
+                aplusData[`aplusImageUrl${imageIndex}`] = img;
+                imageIndex++;
+              }
+            }
+
+            if (module.standardFourImageText && imageIndex <= 4) {
+              const images = module.standardFourImageText.fourImageTextList || [];
+              for (const item of images) {
+                if (imageIndex > 4) break;
+                const img = item.image?.imageCropSpecification?.optimizedImage?.link || '';
+                if (img) {
+                  aplusData[`aplusImageUrl${imageIndex}`] = img;
+                  imageIndex++;
+                }
+              }
+            }
+
+            // Standard image and text modules
+            if (module.standardImageSidebar && imageIndex <= 4) {
+              const img = module.standardImageSidebar.image?.imageCropSpecification?.optimizedImage?.link || '';
+              if (img) {
+                aplusData[`aplusImageUrl${imageIndex}`] = img;
+                imageIndex++;
+              }
+            }
+          }
+
+          // Found A+ content, break the loop (take first match)
+          break;
+        }
+      } catch (innerError) {
+        Logger.log(`Could not fetch content document ${contentReferenceKey}: ${innerError.message}`);
+        continue;
+      }
+
+      // Rate limiting between document fetches
+      Utilities.sleep(200);
+    }
+
+    return aplusData;
+
+  } catch (error) {
+    Logger.log(`Could not fetch A+ content for ${asin}: ${error.message}`);
+    return {
+      hasAPlus: false,
+      aplusType: '',
+      aplusStatus: '',
+      aplusContentId: '',
+      aplusName: '',
+      aplusModuleCount: 0,
+      aplusModuleTypes: '',
+      aplusHeadline: '',
+      aplusText1: '',
+      aplusText2: '',
+      aplusText3: '',
+      aplusImageUrl1: '',
+      aplusImageUrl2: '',
+      aplusImageUrl3: '',
+      aplusImageUrl4: '',
+      hasBrandStory: false,
+      brandStoryHeadline: '',
+      brandStoryText: '',
+      brandStoryImageUrl: ''
+    };
+  }
+}
+
+/**
  * Pre-fetch ALL A+ content documents and build ASIN mapping cache
+ * This is MUCH faster than checking each ASIN individually
  */
 function fetchAPlusContentList(marketplaceConfig, accessToken) {
   const cache = {
     allRecords: [],
-    asinToContent: {}
+    asinToContent: {} // Map of ASIN -> contentReferenceKey
   };
 
   try {
+    // Fetch all content documents with pagination
     let pageToken = null;
     let pageCount = 0;
     const maxPages = 10;
@@ -1129,6 +1357,7 @@ function fetchAPlusContentList(marketplaceConfig, accessToken) {
 
     Logger.log(`[A+ CACHE] Total content documents: ${cache.allRecords.length}`);
 
+    // Now fetch ASIN associations for each document (this is the slow part, but only done once)
     for (let i = 0; i < cache.allRecords.length; i++) {
       const record = cache.allRecords[i];
       const contentKey = record.contentReferenceKey;
@@ -1143,11 +1372,12 @@ function fetchAPlusContentList(marketplaceConfig, accessToken) {
           cache.asinToContent[asinMeta.asin] = contentKey;
         }
 
-        Utilities.sleep(50);
+        Utilities.sleep(50); // Small delay to avoid rate limits
       } catch (e) {
         Logger.log(`[A+ CACHE] Error fetching ASINs for ${contentKey}: ${e.message}`);
       }
 
+      // Progress update every 10 documents
       if ((i + 1) % 10 === 0) {
         showProgress(`Buduję cache A+: ${i + 1}/${cache.allRecords.length}...`);
       }
@@ -1164,6 +1394,7 @@ function fetchAPlusContentList(marketplaceConfig, accessToken) {
 
 /**
  * Get A+ content for ASIN from pre-built cache
+ * Only fetches full content if ASIN is found in cache
  */
 function getAPlusFromCache(asin, cache, marketplaceConfig, accessToken) {
   const emptyResult = {
@@ -1175,12 +1406,14 @@ function getAPlusFromCache(asin, cache, marketplaceConfig, accessToken) {
     hasBrandStory: false, brandStoryHeadline: '', brandStoryText: '', brandStoryImageUrl: ''
   };
 
+  // Quick lookup in cache
   const contentKey = cache.asinToContent[asin];
   if (!contentKey) {
     Logger.log(`[A+ CACHE] No A+ content for ASIN ${asin} (not in cache)`);
     return emptyResult;
   }
 
+  // Found in cache - fetch full content
   try {
     Logger.log(`[A+ CACHE] Found A+ content for ${asin}: ${contentKey}`);
     const contentPath = `/aplus/2020-11-01/contentDocuments/${contentKey}`;
@@ -1196,16 +1429,145 @@ function getAPlusFromCache(asin, cache, marketplaceConfig, accessToken) {
 }
 
 /**
+ * Fetch A+ Content by ASIN using content association
+ * Searches through all content documents to find the one associated with this ASIN
+ */
+function fetchAPlusContentByASIN(asin, marketplaceConfig, accessToken) {
+  const emptyResult = {
+    hasAPlus: false,
+    aplusType: '',
+    aplusStatus: '',
+    aplusContentId: '',
+    aplusName: '',
+    aplusModuleCount: 0,
+    aplusModuleTypes: '',
+    aplusHeadline: '',
+    aplusText1: '',
+    aplusText2: '',
+    aplusText3: '',
+    aplusImageUrl1: '',
+    aplusImageUrl2: '',
+    aplusImageUrl3: '',
+    aplusImageUrl4: '',
+    hasBrandStory: false,
+    brandStoryHeadline: '',
+    brandStoryText: '',
+    brandStoryImageUrl: ''
+  };
+
+  try {
+    // Get ALL content documents with pagination
+    let allContentRecords = [];
+    let pageToken = null;
+    let pageCount = 0;
+    const maxPages = 5; // Safety limit
+
+    do {
+      const path = '/aplus/2020-11-01/contentDocuments';
+      const params = {
+        marketplaceId: marketplaceConfig.marketplaceId
+      };
+      if (pageToken) {
+        params.pageToken = pageToken;
+      }
+
+      Logger.log(`[A+ DEBUG] Fetching A+ content list (page ${pageCount + 1})`);
+      const response = callSPAPI('GET', path, marketplaceConfig.marketplaceId, params, accessToken);
+
+      const contentRecords = response.contentMetadataRecords || [];
+      allContentRecords = allContentRecords.concat(contentRecords);
+
+      pageToken = response.nextPageToken;
+      pageCount++;
+
+      Logger.log(`[A+ DEBUG] Page ${pageCount}: Found ${contentRecords.length} records. Total so far: ${allContentRecords.length}`);
+
+      // Rate limiting
+      if (pageToken) {
+        Utilities.sleep(100);
+      }
+    } while (pageToken && pageCount < maxPages);
+
+    Logger.log(`[A+ DEBUG] Total content records found: ${allContentRecords.length}`);
+
+    if (allContentRecords.length === 0) {
+      Logger.log(`[A+ DEBUG] No A+ content documents found`);
+      return emptyResult;
+    }
+
+    // Search through ALL content documents to find the one associated with our ASIN
+    for (let i = 0; i < allContentRecords.length; i++) {
+      const record = allContentRecords[i];
+      const contentReferenceKey = record.contentReferenceKey;
+      const contentName = record.contentMetadata?.name || contentReferenceKey;
+
+      try {
+        // Check which ASINs are associated with this content document
+        const asinsPath = `/aplus/2020-11-01/contentDocuments/${contentReferenceKey}/asins`;
+        const asinsParams = {
+          marketplaceId: marketplaceConfig.marketplaceId
+        };
+
+        Logger.log(`[A+ DEBUG] [${i + 1}/${allContentRecords.length}] Checking: ${contentName}`);
+        const asinsResponse = callSPAPI('GET', asinsPath, marketplaceConfig.marketplaceId, asinsParams, accessToken);
+
+        const asinMetadataSet = asinsResponse.asinMetadataSet || [];
+        const associatedAsins = asinMetadataSet.map(a => a.asin);
+
+        // Check if our ASIN is in the list
+        if (associatedAsins.includes(asin)) {
+          Logger.log(`[A+ DEBUG] ✓ FOUND! "${contentName}" is associated with ASIN ${asin}`);
+
+          // Fetch full content
+          const contentPath = `/aplus/2020-11-01/contentDocuments/${contentReferenceKey}`;
+          const contentParams = {
+            marketplaceId: marketplaceConfig.marketplaceId,
+            includedDataSet: 'CONTENTS'
+          };
+
+          const contentResponse = callSPAPI('GET', contentPath, marketplaceConfig.marketplaceId, contentParams, accessToken);
+          return parseAPlusContentDocument(contentResponse, record);
+        }
+
+        // Rate limiting between API calls
+        Utilities.sleep(50);
+
+      } catch (innerError) {
+        Logger.log(`[A+ DEBUG] Error checking content ${contentReferenceKey}: ${innerError.message}`);
+        continue;
+      }
+    }
+
+    Logger.log(`[A+ DEBUG] No A+ content found associated with ASIN ${asin} after checking ALL ${allContentRecords.length} documents`);
+    return emptyResult;
+
+  } catch (error) {
+    Logger.log(`[A+ DEBUG] ERROR fetching A+ for ${asin}: ${error.message}`);
+    return emptyResult;
+  }
+}
+
+/**
  * Parse A+ Content document into structured data
  */
 function parseAPlusContentDocument(contentResponse, metadata) {
   Logger.log(`[A+ PARSE] Starting parse. Metadata: ${JSON.stringify(metadata).substring(0, 300)}`);
+  Logger.log(`[A+ PARSE] Top-level response keys: ${Object.keys(contentResponse).join(', ')}`);
 
+  // API returns contentRecord.contentDocument, NOT contentDocument directly!
   const contentRecord = contentResponse.contentRecord || {};
   const contentDocument = contentRecord.contentDocument || contentResponse.contentDocument || {};
-  const contentModuleList = contentDocument.contentModuleList || [];
 
+  Logger.log(`[A+ PARSE] contentRecord keys: ${Object.keys(contentRecord).join(', ')}`);
+  Logger.log(`[A+ PARSE] contentDocument keys: ${Object.keys(contentDocument).join(', ')}`);
+
+  const contentModuleList = contentDocument.contentModuleList || [];
   Logger.log(`[A+ PARSE] Found ${contentModuleList.length} modules`);
+
+  if (contentModuleList.length > 0) {
+    Logger.log(`[A+ PARSE] First module type: ${contentModuleList[0].contentModuleType}`);
+    Logger.log(`[A+ PARSE] First module keys: ${Object.keys(contentModuleList[0]).join(', ')}`);
+  }
 
   const aplusData = {
     hasAPlus: true,
@@ -1234,55 +1596,111 @@ function parseAPlusContentDocument(contentResponse, metadata) {
 
   for (const module of contentModuleList) {
     const moduleType = module.contentModuleType || '';
+    Logger.log(`[A+ PARSE] Processing module: ${moduleType}`);
 
+    // Brand Story detection
     if (moduleType.includes('BRAND') || moduleType.includes('HERO')) {
       aplusData.hasBrandStory = true;
     }
 
+    // Extract headline from various module types
+    // API uses: standardText, standardHeaderText (NOT standardTextModule, standardHeaderTextModule!)
     if (module.standardHeaderText?.headline?.value && !aplusData.aplusHeadline) {
       aplusData.aplusHeadline = module.standardHeaderText.headline.value;
+      Logger.log(`[A+ PARSE] Found headline in standardHeaderText: ${aplusData.aplusHeadline.substring(0, 50)}`);
     }
 
+    // Extract texts from STANDARD_TEXT module
+    // The actual API structure is: module.standardText.headline.value and module.standardText.body.textList[0].value
     const textSources = [
+      // STANDARD_TEXT module
       module.standardText?.headline?.value,
       module.standardText?.body?.textList?.[0]?.value,
+      // STANDARD_HEADER_TEXT module
       module.standardHeaderText?.headline?.value,
       module.standardHeaderText?.body?.textList?.[0]?.value,
+      // Comparison table
       module.standardComparisonTable?.headline?.value,
+      // Single image highlights
       module.standardSingleImageHighlights?.headline?.value,
+      // Image sidebar
       module.standardImageSidebar?.descriptionTextBlock?.body?.textList?.[0]?.value,
+      // Multiple image text
       module.standardMultipleImageText?.headline?.value,
+      // Product description
       module.standardProductDescription?.body?.textList?.[0]?.value
     ];
 
     for (const text of textSources) {
       if (text && textIndex <= 3) {
         aplusData[`aplusText${textIndex}`] = text.substring(0, 1000);
+        Logger.log(`[A+ PARSE] Found text ${textIndex}: ${text.substring(0, 50)}...`);
         textIndex++;
       }
     }
 
+    // Extract images from various module types
+    // Log module structure for debugging
+    if (module.standardSingleSideImage) {
+      Logger.log(`[A+ PARSE] standardSingleSideImage keys: ${JSON.stringify(Object.keys(module.standardSingleSideImage))}`);
+      Logger.log(`[A+ PARSE] standardSingleSideImage content: ${JSON.stringify(module.standardSingleSideImage).substring(0, 500)}`);
+    }
+
+    // API uses different image structures - try multiple paths
     const imageSources = [
+      // Single image highlights
       module.standardSingleImageHighlights?.image?.imageCropSpecification?.optimizedImage?.link,
+      // Image text overlay
       module.standardImageTextOverlay?.image?.imageCropSpecification?.optimizedImage?.link,
+      // Image sidebar
       module.standardImageSidebar?.image?.imageCropSpecification?.optimizedImage?.link,
+      // Header image text
       module.standardHeaderImageText?.image?.imageCropSpecification?.optimizedImage?.link,
+
+      // Single side image - try multiple paths
       module.standardSingleSideImage?.imageCropSpecification?.optimizedImage?.link,
       module.standardSingleSideImage?.image?.imageCropSpecification?.optimizedImage?.link,
+      module.standardSingleSideImage?.imageLocator?.link,
+      module.standardSingleSideImage?.altText ? `[Image: ${module.standardSingleSideImage.altText}]` : null,
+
+      // Company logo
       module.standardCompanyLogo?.image?.imageCropSpecification?.optimizedImage?.link,
+
+      // Tech specs image
       module.standardTechSpecs?.image?.imageCropSpecification?.optimizedImage?.link,
+
+      // Four image text
       ...(module.standardFourImageText?.fourImageTextList || []).map(i => i.image?.imageCropSpecification?.optimizedImage?.link),
+
+      // Multiple image text
       ...(module.standardMultipleImageText?.imageTextList || []).map(i => i.image?.imageCropSpecification?.optimizedImage?.link),
+
+      // Three image text
       ...(module.standardThreeImageText?.imageTextList || []).map(i => i.image?.imageCropSpecification?.optimizedImage?.link)
     ];
 
     for (const img of imageSources) {
-      if (img && imageIndex <= 4) {
+      if (img && imageIndex <= 4 && !img.startsWith('[Image:')) {
         aplusData[`aplusImageUrl${imageIndex}`] = img;
+        Logger.log(`[A+ PARSE] Found image ${imageIndex}: ${img.substring(0, 60)}...`);
         imageIndex++;
       }
     }
+
+    // Extract from four-image modules
+    if (module.standardFourImageText?.fourImageTextList) {
+      for (const item of module.standardFourImageText.fourImageTextList) {
+        if (imageIndex > 4) break;
+        const img = item.image?.imageCropSpecification?.optimizedImage?.link;
+        if (img) {
+          aplusData[`aplusImageUrl${imageIndex}`] = img;
+          imageIndex++;
+        }
+      }
+    }
   }
+
+  Logger.log(`[A+ PARSE] Final result - Headline: ${aplusData.aplusHeadline?.substring(0, 30) || 'none'}, Texts: ${textIndex - 1}, Images: ${imageIndex - 1}`);
 
   return aplusData;
 }
@@ -1313,7 +1731,7 @@ function lukoSearchProducts() {
 
   // Ask for marketplace using dropdown
   const marketplace = showMarketplaceDropdown();
-  if (!marketplace) return;
+  if (!marketplace) return; // User cancelled
 
   const marketplaceConfig = getMarketplaceConfig(marketplace);
 
@@ -1324,6 +1742,7 @@ function lukoSearchProducts() {
     const config = getConfig();
     const tokens = getAccessTokenFromRefresh(credentials.refreshToken, config);
 
+    // Search using Catalog API
     const searchResults = searchProductsByKeyword(searchTerm, marketplaceConfig, tokens.access_token);
 
     if (searchResults.length === 0) {
@@ -1331,6 +1750,7 @@ function lukoSearchProducts() {
       return;
     }
 
+    // Show results and ask how many to import
     const resultsList = searchResults.slice(0, 10).map(p =>
       `${p.asin} - ${p.title.substring(0, 50)}...`
     ).join('\n');
@@ -1340,6 +1760,7 @@ function lukoSearchProducts() {
 
     ui.alert('Wyniki wyszukiwania', infoMsg, ui.ButtonSet.OK);
 
+    // Ask how many to import
     const countResponse = ui.prompt(
       'Ile produktów zaimportować?',
       `Znaleziono: ${searchResults.length} produktów\n\n` +
@@ -1353,10 +1774,10 @@ function lukoSearchProducts() {
     if (countResponse.getSelectedButton() !== ui.Button.OK) return;
 
     let countInput = countResponse.getResponseText().trim().toLowerCase();
-    let importCount = searchResults.length;
+    let importCount = searchResults.length; // Default: all
 
     if (countInput === '0') {
-      return;
+      return; // Cancel
     } else if (countInput && countInput !== 'all' && countInput !== '') {
       const parsed = parseInt(countInput, 10);
       if (!isNaN(parsed) && parsed > 0) {
@@ -1364,6 +1785,7 @@ function lukoSearchProducts() {
       }
     }
 
+    // Ask about A+ checking (it's slow!)
     const aplusConfirm = ui.alert(
       'Sprawdzanie A+ Content',
       'Czy sprawdzać A+ Content dla każdego produktu?\n\n' +
@@ -1376,12 +1798,14 @@ function lukoSearchProducts() {
 
     const skipAPlus = (aplusConfirm !== ui.Button.YES);
 
+    // Confirm import
     const confirmMsg = `Zaimportować ${importCount} z ${searchResults.length} produktów?\n\n` +
       `A+ Content: ${skipAPlus ? 'POMINIĘTE (szybki import)' : 'SPRAWDZANE (wolniejszy import)'}`;
     const confirm = ui.alert('Potwierdź import', confirmMsg, ui.ButtonSet.YES_NO);
 
     if (confirm !== ui.Button.YES) return;
 
+    // Import selected number of products
     const asinsToImport = searchResults.slice(0, importCount).map(p => p.asin);
     showProgress(`Importuję ${importCount} produktów...`);
 
@@ -1398,8 +1822,11 @@ function lukoSearchProducts() {
     if (results.autoResumeScheduled) {
       searchResultMsg += `\n\n⏳ POZOSTAŁO: ${results.remaining} produktów`;
       searchResultMsg += `\n🔄 Auto-wznowienie za 1 minutę...`;
+      searchResultMsg += `\n\n(Możesz zamknąć arkusz - import kontynuuje się automatycznie)`;
     }
 
+    // Use toast instead of alert to avoid blocking the script execution
+    // (ui.alert blocks and counts toward execution time limit!)
     const searchTitle = results.autoResumeScheduled ? 'Import w toku...' : 'Import zakończony';
     SpreadsheetApp.getActiveSpreadsheet().toast(searchResultMsg, searchTitle, 30);
     Logger.log(`[SEARCH] ${searchTitle}: ${searchResultMsg.replace(/\n/g, ' | ')}`);
@@ -1411,13 +1838,14 @@ function lukoSearchProducts() {
 
 /**
  * Search products by keyword with pagination
+ * Fetches ALL results from Amazon
  */
 function searchProductsByKeyword(searchTerm, marketplaceConfig, accessToken) {
   const path = '/catalog/2022-04-01/items';
   let allItems = [];
   let nextToken = null;
   let pageCount = 0;
-  const maxPages = 10;
+  const maxPages = 10; // Safety limit (10 pages x 20 items = 200 max)
 
   do {
     const params = {
@@ -1442,6 +1870,7 @@ function searchProductsByKeyword(searchTerm, marketplaceConfig, accessToken) {
 
     Logger.log(`[SEARCH] Page ${pageCount}: Found ${items.length} items. Total so far: ${allItems.length}`);
 
+    // Rate limiting
     if (nextToken) {
       Utilities.sleep(300);
     }
@@ -1462,6 +1891,7 @@ function searchProductsByKeyword(searchTerm, marketplaceConfig, accessToken) {
 
 /**
  * Generate ImportedProducts sheet with ALL available fields
+ * This is a comprehensive sheet with 100+ columns for all Amazon product data
  */
 function generateImportedProductsSheet(ss) {
   let sheet = ss.getSheetByName('ImportedProducts');
@@ -1471,127 +1901,199 @@ function generateImportedProductsSheet(ss) {
   }
 
   sheet = ss.insertSheet('ImportedProducts');
+
+  // Unfreeze columns
   sheet.setFrozenColumns(0);
 
-  const headers = getImportedProductsHeaders();
-
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-
-  sheet.getRange(1, 1, 1, headers.length)
-    .setFontWeight('bold')
-    .setBackground('#34A853')
-    .setFontColor('#FFFFFF')
-    .setWrap(true)
-    .setVerticalAlignment('middle')
-    .setHorizontalAlignment('center');
-
-  sheet.setColumnWidth(1, 50);
-  sheet.setColumnWidth(2, 120);
-  sheet.setColumnWidth(5, 120);
-  sheet.setColumnWidth(20, 300);
-  sheet.setColumnWidth(24, 400);
-  sheet.setColumnWidth(33, 400);
-
-  sheet.setFrozenRows(1);
-  sheet.setFrozenColumns(5);
-
-  const checkboxRange = sheet.getRange('A2:A1000');
-  checkboxRange.insertCheckboxes();
-
-  Logger.log(`ImportedProducts sheet generated with ${headers.length} columns`);
-
-  return sheet;
-}
-
-/**
- * Get headers array for ImportedProducts sheet
- * Extracted to separate function so it can be reused
- */
-function getImportedProductsHeaders() {
-  return [
+  // Headers - organized by category
+  const headers = [
     // === CONTROL ===
-    '☑️ Use', 'Import Date', 'Imported By', 'Marketplace',
+    '☑️ Use',
+    'Import Date',
+    'Imported By',
+    'Marketplace',
 
     // === PRIMARY IDENTIFIERS ===
-    'ASIN', 'SKU', 'EAN', 'UPC', 'ISBN', 'GTIN', 'GCID', 'PZN', 'MINSAN', 'Part Number', 'Item Model Number',
+    'ASIN',
+    'SKU',
+    'EAN',
+    'UPC',
+    'ISBN',
+    'GTIN',
+    'GCID',
+    'PZN',
+    'MINSAN',
+    'Part Number',
+    'Item Model Number',
 
     // === SELLER INFO ===
-    'Seller ID', 'Seller Name',
+    'Seller ID',
+    'Seller Name',
 
     // === BASIC INFO ===
-    'Product Type', 'Title', 'Brand', 'Manufacturer',
+    'Product Type',
+    'Title',
+    'Brand',
+    'Manufacturer',
 
     // === BULLET POINTS ===
-    'Bullet Point 1', 'Bullet Point 2', 'Bullet Point 3', 'Bullet Point 4', 'Bullet Point 5',
-    'Bullet Point 6', 'Bullet Point 7', 'Bullet Point 8', 'Bullet Point 9',
+    'Bullet Point 1',
+    'Bullet Point 2',
+    'Bullet Point 3',
+    'Bullet Point 4',
+    'Bullet Point 5',
+    'Bullet Point 6',
+    'Bullet Point 7',
+    'Bullet Point 8',
+    'Bullet Point 9',
 
     // === DESCRIPTIONS ===
-    'Description', 'Short Description', 'Long Description',
+    'Description',
+    'Short Description',
+    'Long Description',
 
     // === IMAGES ===
-    'Main Image URL', 'Main Image Height', 'Main Image Width',
-    'Additional Image 1', 'Additional Image 2', 'Additional Image 3', 'Additional Image 4',
-    'Additional Image 5', 'Additional Image 6', 'Additional Image 7', 'Additional Image 8',
+    'Main Image URL',
+    'Main Image Height',
+    'Main Image Width',
+    'Additional Image 1',
+    'Additional Image 2',
+    'Additional Image 3',
+    'Additional Image 4',
+    'Additional Image 5',
+    'Additional Image 6',
+    'Additional Image 7',
+    'Additional Image 8',
     'Total Image Count',
 
     // === PRICING ===
-    'List Price', 'Current Price', 'Currency',
+    'List Price',
+    'Current Price',
+    'Currency',
 
     // === INVENTORY ===
     'Available Quantity',
 
     // === ITEM DIMENSIONS ===
-    'Item Length', 'Item Length Unit', 'Item Width', 'Item Width Unit',
-    'Item Height', 'Item Height Unit', 'Item Weight', 'Item Weight Unit',
+    'Item Length',
+    'Item Length Unit',
+    'Item Width',
+    'Item Width Unit',
+    'Item Height',
+    'Item Height Unit',
+    'Item Weight',
+    'Item Weight Unit',
 
     // === PACKAGE DIMENSIONS ===
-    'Package Length', 'Package Length Unit', 'Package Width', 'Package Width Unit',
-    'Package Height', 'Package Height Unit', 'Package Weight', 'Package Weight Unit',
+    'Package Length',
+    'Package Length Unit',
+    'Package Width',
+    'Package Width Unit',
+    'Package Height',
+    'Package Height Unit',
+    'Package Weight',
+    'Package Weight Unit',
 
     // === SALES RANKS ===
-    'Sales Rank 1', 'Sales Rank 1 Category', 'Sales Rank 2', 'Sales Rank 2 Category',
-    'Sales Rank 3', 'Sales Rank 3 Category', 'Display Group Rank', 'Display Group Name',
+    'Sales Rank 1',
+    'Sales Rank 1 Category',
+    'Sales Rank 2',
+    'Sales Rank 2 Category',
+    'Sales Rank 3',
+    'Sales Rank 3 Category',
+    'Display Group Rank',
+    'Display Group Name',
 
     // === BROWSE NODES / CLASSIFICATIONS ===
-    'Browse Node ID', 'Browse Node Name', 'Category Path', 'Browse Node 2 ID', 'Browse Node 2 Name',
+    'Browse Node ID',
+    'Browse Node Name',
+    'Category Path',
+    'Browse Node 2 ID',
+    'Browse Node 2 Name',
 
     // === VARIATIONS / RELATIONSHIPS ===
-    'Parent ASIN', 'Child ASINs', 'Child Count', 'Variation Theme',
+    'Parent ASIN',
+    'Child ASINs',
+    'Child Count',
+    'Variation Theme',
 
     // === PRODUCT ATTRIBUTES ===
-    'Color', 'Color Map', 'Size', 'Size Map', 'Material', 'Style', 'Pattern',
+    'Color',
+    'Color Map',
+    'Size',
+    'Size Map',
+    'Material',
+    'Style',
+    'Pattern',
 
     // === ADDITIONAL INFO ===
-    'Model Number', 'Release Date', 'First Available Date', 'Package Quantity',
-    'Unit Count', 'Unit Count Type', 'Country of Origin',
+    'Model Number',
+    'Release Date',
+    'First Available Date',
+    'Package Quantity',
+    'Unit Count',
+    'Unit Count Type',
+    'Country of Origin',
 
     // === WARRANTY & SUPPORT ===
-    'Warranty', 'Warranty Type', 'Legal Disclaimer',
+    'Warranty',
+    'Warranty Type',
+    'Legal Disclaimer',
 
     // === SAFETY & COMPLIANCE ===
-    'Safety Warning', 'Hazmat Type', 'Battery Type', 'Battery Weight',
-    'Number of Batteries', 'Lithium Battery Weight', 'Lithium Battery Energy Content',
+    'Safety Warning',
+    'Hazmat Type',
+    'Battery Type',
+    'Battery Weight',
+    'Number of Batteries',
+    'Lithium Battery Weight',
+    'Lithium Battery Energy Content',
 
     // === TARGET AUDIENCE ===
-    'Target Gender', 'Age Range', 'Recommended Age', 'Item Form Type',
+    'Target Gender',
+    'Age Range',
+    'Recommended Age',
+    'Item Form Type',
 
     // === PRODUCT TYPE SPECIFIC ===
-    'Department', 'Generic Keywords', 'Platinum Keywords', 'Search Terms',
+    'Department',
+    'Generic Keywords',
+    'Platinum Keywords',
+    'Search Terms',
 
     // === SHIPPING & AVAILABILITY ===
-    'Is Gift Wrap Available', 'Is Discontinued', 'Item Condition',
+    'Is Gift Wrap Available',
+    'Is Discontinued',
+    'Item Condition',
 
     // === SUMMARY FIELDS ===
-    'Contributors', 'Item Classification', 'Website Display Group', 'Website Display Group Name',
+    'Contributors',
+    'Item Classification',
+    'Website Display Group',
+    'Website Display Group Name',
 
     // === A+ CONTENT ===
-    'Has A+', 'A+ Type', 'A+ Status', 'A+ Content ID', 'A+ Name',
-    'A+ Module Count', 'A+ Module Types', 'A+ Headline',
-    'A+ Text 1', 'A+ Text 2', 'A+ Text 3',
-    'A+ Image URL 1', 'A+ Image URL 2', 'A+ Image URL 3', 'A+ Image URL 4',
+    'Has A+',
+    'A+ Type',
+    'A+ Status',
+    'A+ Content ID',
+    'A+ Name',
+    'A+ Module Count',
+    'A+ Module Types',
+    'A+ Headline',
+    'A+ Text 1',
+    'A+ Text 2',
+    'A+ Text 3',
+    'A+ Image URL 1',
+    'A+ Image URL 2',
+    'A+ Image URL 3',
+    'A+ Image URL 4',
 
     // === BRAND STORY ===
-    'Has Brand Story', 'Brand Story Headline', 'Brand Story Text', 'Brand Story Image URL',
+    'Has Brand Story',
+    'Brand Story Headline',
+    'Brand Story Text',
+    'Brand Story Image URL',
 
     // === NOTES ===
     'Notes',
@@ -1599,9 +2101,53 @@ function getImportedProductsHeaders() {
     // === LINK ===
     'Link'
   ];
+
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+  // Format headers with different colors for each section
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange
+    .setFontWeight('bold')
+    .setBackground('#34A853')
+    .setFontColor('#FFFFFF')
+    .setWrap(true)
+    .setVerticalAlignment('middle')
+    .setHorizontalAlignment('center');
+
+  // Set column widths for key columns
+  sheet.setColumnWidth(1, 50);   // Checkbox
+  sheet.setColumnWidth(2, 120);  // Import Date
+  sheet.setColumnWidth(5, 120);  // ASIN
+  sheet.setColumnWidth(20, 300); // Title
+  sheet.setColumnWidth(24, 400); // Bullet Point 1
+  sheet.setColumnWidth(33, 400); // Description
+
+  // Freeze header row and first few columns
+  sheet.setFrozenRows(1);
+  sheet.setFrozenColumns(5);
+
+  // Add data validation for checkbox
+  const checkboxRange = sheet.getRange('A2:A1000');
+  checkboxRange.insertCheckboxes();
+
+  // Add conditional formatting for Sales Rank (green = good rank)
+  const salesRankRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenNumberLessThan(1000)
+    .setBackground('#C6EFCE')
+    .setRanges([sheet.getRange('BQ2:BQ1000')])
+    .build();
+
+  const rules = [salesRankRule];
+  sheet.setConditionalFormatRules(rules);
+
+  Logger.log(`ImportedProducts sheet generated with ${headers.length} columns`);
+
+  return sheet;
 }
 
 function appendProductToImportedSheet(sheet, productData, marketplace) {
+  // Row data must match the headers order in generateImportedProductsSheet
+  // Format date in German format with German timezone
   const germanDate = Utilities.formatDate(
     productData.importDate,
     'Europe/Berlin',
@@ -1610,7 +2156,7 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
 
   const rowData = [
     // === CONTROL ===
-    false,
+    false, // unchecked checkbox (boolean false shows as empty checkbox)
     germanDate,
     productData.importedBy,
     marketplace,
@@ -1798,7 +2344,7 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
     productData.brandStoryImageUrl || '',
 
     // === NOTES ===
-    '',
+    '', // Notes column for user input
 
     // === LINK ===
     getAmazonProductLink(productData.asin, marketplace)
@@ -1813,6 +2359,8 @@ function appendProductToImportedSheet(sheet, productData, marketplace) {
 
 /**
  * Show marketplace selection dialog
+ * Returns selected marketplace code or null if cancelled
+ * Default is DE if user leaves input empty
  */
 function showMarketplaceDropdown() {
   const ui = SpreadsheetApp.getUi();
@@ -1835,7 +2383,7 @@ function showMarketplaceDropdown() {
   if (response.getSelectedButton() !== ui.Button.OK) return null;
 
   let marketplace = response.getResponseText().trim().toUpperCase();
-  if (!marketplace) marketplace = 'DE';
+  if (!marketplace) marketplace = 'DE'; // Default to DE
 
   const validMarketplaces = ['DE', 'FR', 'UK', 'IT', 'ES', 'NL', 'BE', 'PL', 'SE', 'IE'];
   if (!validMarketplaces.includes(marketplace)) {
@@ -1893,6 +2441,7 @@ function handleError(functionName, error) {
 /**
  * Fix/regenerate headers on existing ImportedProducts sheet
  * This preserves existing data!
+ * Can be run directly from Apps Script editor
  */
 function lukoFixImportedProductsHeaders() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1903,10 +2452,102 @@ function lukoFixImportedProductsHeaders() {
     return;
   }
 
-  const headers = getImportedProductsHeaders();
+  const headers = [
+    // === CONTROL ===
+    '☑️ Use', 'Import Date', 'Imported By', 'Marketplace',
 
+    // === PRIMARY IDENTIFIERS ===
+    'ASIN', 'SKU', 'EAN', 'UPC', 'ISBN', 'GTIN', 'GCID', 'PZN', 'MINSAN', 'Part Number', 'Item Model Number',
+
+    // === SELLER INFO ===
+    'Seller ID', 'Seller Name',
+
+    // === BASIC INFO ===
+    'Product Type', 'Title', 'Brand', 'Manufacturer',
+
+    // === BULLET POINTS ===
+    'Bullet Point 1', 'Bullet Point 2', 'Bullet Point 3', 'Bullet Point 4', 'Bullet Point 5',
+    'Bullet Point 6', 'Bullet Point 7', 'Bullet Point 8', 'Bullet Point 9',
+
+    // === DESCRIPTIONS ===
+    'Description', 'Short Description', 'Long Description',
+
+    // === IMAGES ===
+    'Main Image URL', 'Main Image Height', 'Main Image Width',
+    'Additional Image 1', 'Additional Image 2', 'Additional Image 3', 'Additional Image 4',
+    'Additional Image 5', 'Additional Image 6', 'Additional Image 7', 'Additional Image 8',
+    'Total Image Count',
+
+    // === PRICING ===
+    'List Price', 'Current Price', 'Currency',
+
+    // === INVENTORY ===
+    'Available Quantity',
+
+    // === ITEM DIMENSIONS ===
+    'Item Length', 'Item Length Unit', 'Item Width', 'Item Width Unit',
+    'Item Height', 'Item Height Unit', 'Item Weight', 'Item Weight Unit',
+
+    // === PACKAGE DIMENSIONS ===
+    'Package Length', 'Package Length Unit', 'Package Width', 'Package Width Unit',
+    'Package Height', 'Package Height Unit', 'Package Weight', 'Package Weight Unit',
+
+    // === SALES RANKS ===
+    'Sales Rank 1', 'Sales Rank 1 Category', 'Sales Rank 2', 'Sales Rank 2 Category',
+    'Sales Rank 3', 'Sales Rank 3 Category', 'Display Group Rank', 'Display Group Name',
+
+    // === BROWSE NODES / CLASSIFICATIONS ===
+    'Browse Node ID', 'Browse Node Name', 'Category Path', 'Browse Node 2 ID', 'Browse Node 2 Name',
+
+    // === VARIATIONS / RELATIONSHIPS ===
+    'Parent ASIN', 'Child ASINs', 'Child Count', 'Variation Theme',
+
+    // === PRODUCT ATTRIBUTES ===
+    'Color', 'Color Map', 'Size', 'Size Map', 'Material', 'Style', 'Pattern',
+
+    // === ADDITIONAL INFO ===
+    'Model Number', 'Release Date', 'First Available Date', 'Package Quantity',
+    'Unit Count', 'Unit Count Type', 'Country of Origin',
+
+    // === WARRANTY & SUPPORT ===
+    'Warranty', 'Warranty Type', 'Legal Disclaimer',
+
+    // === SAFETY & COMPLIANCE ===
+    'Safety Warning', 'Hazmat Type', 'Battery Type', 'Battery Weight',
+    'Number of Batteries', 'Lithium Battery Weight', 'Lithium Battery Energy Content',
+
+    // === TARGET AUDIENCE ===
+    'Target Gender', 'Age Range', 'Recommended Age', 'Item Form Type',
+
+    // === PRODUCT TYPE SPECIFIC ===
+    'Department', 'Generic Keywords', 'Platinum Keywords', 'Search Terms',
+
+    // === SHIPPING & AVAILABILITY ===
+    'Is Gift Wrap Available', 'Is Discontinued', 'Item Condition',
+
+    // === SUMMARY FIELDS ===
+    'Contributors', 'Item Classification', 'Website Display Group', 'Website Display Group Name',
+
+    // === A+ CONTENT ===
+    'Has A+', 'A+ Type', 'A+ Status', 'A+ Content ID', 'A+ Name',
+    'A+ Module Count', 'A+ Module Types', 'A+ Headline',
+    'A+ Text 1', 'A+ Text 2', 'A+ Text 3',
+    'A+ Image URL 1', 'A+ Image URL 2', 'A+ Image URL 3', 'A+ Image URL 4',
+
+    // === BRAND STORY ===
+    'Has Brand Story', 'Brand Story Headline', 'Brand Story Text', 'Brand Story Image URL',
+
+    // === NOTES ===
+    'Notes',
+
+    // === LINK ===
+    'Link'
+  ];
+
+  // Write headers to row 1
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
+  // Format headers
   sheet.getRange(1, 1, 1, headers.length)
     .setFontWeight('bold')
     .setBackground('#34A853')
@@ -1915,6 +2556,7 @@ function lukoFixImportedProductsHeaders() {
     .setVerticalAlignment('middle')
     .setHorizontalAlignment('center');
 
+  // Freeze
   sheet.setFrozenRows(1);
   sheet.setFrozenColumns(5);
 
@@ -1923,6 +2565,7 @@ function lukoFixImportedProductsHeaders() {
 
 /**
  * Regenerate ImportedProducts sheet (WARNING: deletes existing data!)
+ * Can be run directly from Apps Script editor
  */
 function lukoRegenerateImportedProductsSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
