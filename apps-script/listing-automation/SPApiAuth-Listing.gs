@@ -38,7 +38,7 @@ function spGetConfig() {
   const configSheet = ss.getSheetByName('Config');
 
   if (!configSheet) {
-    throw new Error('Config sheet not found! Run Setup first.');
+    return { clientId: '', clientSecret: '', refreshToken: '', sellerId: '' };
   }
 
   const data = configSheet.getDataRange().getValues();
@@ -233,8 +233,18 @@ function spSetupCredentials() {
   let configSheet = ss.getSheetByName('Config');
 
   if (!configSheet) {
-    ui.alert('Brak Config', 'Config sheet nie istnieje. Najpierw uruchom Setup: Create Sheets.', ui.ButtonSet.OK);
-    return;
+    // Create Config sheet if it doesn't exist
+    configSheet = ss.insertSheet('Config');
+    configSheet.getRange(1, 1, 1, 3).setValues([['Key', 'Value', 'Description']]);
+    configSheet.getRange(1, 1, 1, 3)
+      .setFontWeight('bold')
+      .setBackground('#4285F4')
+      .setFontColor('#FFFFFF');
+    configSheet.setColumnWidth(1, 200);
+    configSheet.setColumnWidth(2, 350);
+    configSheet.setColumnWidth(3, 250);
+    configSheet.setFrozenRows(1);
+    Logger.log('[SP-API] Created Config sheet');
   }
 
   // Check which SP-API keys already exist
