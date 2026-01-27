@@ -8,7 +8,8 @@
  * In your existing onOpen(), after the PA-API Data Collection submenu, add:
  *
  *   .addSubMenu(ui.createMenu('📡 SP-API Data Collection')
- *     .addItem('🔍 Pobierz po ASIN', 'menuSPApiFetchByASIN')
+ *     .addItem('🔍 Pobierz po ASIN (tylko glowny)', 'menuSPApiFetchByASIN')
+ *     .addItem('🔍 Pobierz ASIN + podobne produkty', 'menuSPApiFetchWithSimilar')
  *     .addItem('🔎 Szukaj po slowie kluczowym', 'menuSPApiSearchByKeyword')
  *     .addItem('📋 Pobierz z zaznaczonych komorek', 'menuSPApiFetchFromSelection')
  *     .addSeparator()
@@ -32,9 +33,10 @@
  *       .addItem('✅ Sprawdź ASIN (tylko główny)', 'menuFetchMainProductOnly')
  *       .addItem('✅ Sprawdź ASIN + podobne produkty', 'menuFetchMainProductWithSimilar'))
  *
- *     // NEW: SP-API submenu
+ *     // NEW: SP-API submenu (v2.0 - writes to existing PA-API columns)
  *     .addSubMenu(ui.createMenu('📡 SP-API Data Collection')
- *       .addItem('🔍 Pobierz po ASIN', 'menuSPApiFetchByASIN')
+ *       .addItem('🔍 Pobierz po ASIN (tylko glowny)', 'menuSPApiFetchByASIN')
+ *       .addItem('🔍 Pobierz ASIN + podobne produkty', 'menuSPApiFetchWithSimilar')
  *       .addItem('🔎 Szukaj po slowie kluczowym', 'menuSPApiSearchByKeyword')
  *       .addItem('📋 Pobierz z zaznaczonych komorek', 'menuSPApiFetchFromSelection')
  *       .addSeparator()
@@ -45,14 +47,23 @@
  *     .addToUi();
  * }
  *
- * @version 1.0
+ * @version 2.0
  * @author NetAnaliza / LUKO
+ *
+ * CHANGELOG v2.0:
+ * - SP-API data now writes to EXISTING PA-API columns (no new columns created)
+ * - Fetch date goes to Timestamp_Research (not Fetch_Date)
+ * - Data_Source column distinguishes SP-API vs PA-API entries
+ * - New: menuSPApiFetchWithSimilar() - fetches main ASIN + similar products
+ *   (uses SP-API relationships: child variations / sibling lookup via parent)
+ * - ASIN_Type = "Glowny" for main product, "Podobny" for related
+ * - Related_To_ASIN links similar products back to the main ASIN
  */
 
 // This file serves as documentation for menu integration.
 // The actual SP-API functions are in:
 // - SPApiAuth-Listing.gs (authentication, token management, marketplace config)
-// - SPApiDataCollection.gs (data fetching, RESEARCH tab management)
+// - SPApiDataCollection.gs (data fetching, writes to RESEARCH tab existing columns)
 //
 // FILES TO ADD TO AmazonListingAutomation PROJECT:
 // 1. SPApiAuth-Listing.gs
@@ -71,6 +82,12 @@
 // 9. Fill in Config sheet: SP_LWA_Client_ID, SP_LWA_Client_Secret, SP_Refresh_Token, SP_Seller_ID
 // 10. Test: SP-API Data Collection > Test SP-API Connection
 // 11. Use: SP-API Data Collection > Pobierz po ASIN
+//
+// IMPORTANT: SP-API writes to the same columns PA-API uses in RESEARCH tab.
+// If you previously used v1.0 which added extra columns at the end,
+// you should DELETE those old SP-API columns (Fetch_Date, Brand, Product_Type,
+// Description, Main_Image_URL, etc.) from the end of the RESEARCH tab.
+// SP-API v2.0 maps data to the correct PA-API columns automatically.
 //
 // CONFIG SHEET KEYS TO ADD:
 // | Key                    | Value                      | Description                    |

@@ -2,111 +2,128 @@
  * SP-API Data Collection for AmazonListingAutomation
  * Fetches product data via Amazon SP-API and writes to RESEARCH tab
  *
- * Works alongside existing PA-API data collection.
- * Adds "Data_Source" column to distinguish SP-API vs PA-API data.
+ * KEY: Maps SP-API data to EXISTING PA-API columns in RESEARCH tab.
+ * Only adds new columns if they don't already exist.
  *
  * SP-API endpoints used:
- * - /catalog/2022-04-01/items/{asin} - Product details (attributes, images, identifiers, salesRanks, etc.)
+ * - /catalog/2022-04-01/items/{asin} - Product details
  * - /catalog/2022-04-01/items - Search by keyword
  * - /products/pricing/v0/items/{asin}/offers - Pricing & seller info
  * - /aplus/2020-11-01/contentDocuments - A+ Content (optional)
  *
- * @version 1.0
+ * @version 2.0
  * @author NetAnaliza / LUKO
  */
 
-// ==================== RESEARCH TAB COLUMN DEFINITIONS ====================
+// ==================== COLUMN MAPPING: SP-API -> PA-API ====================
 
 /**
- * Column headers for SP-API data in RESEARCH tab
- * These columns are appended to the right if they don't already exist
+ * Maps SP-API data fields to existing PA-API column names in RESEARCH tab.
+ * If a PA-API column exists, SP-API data goes there.
+ * If no match, a new column may be added (only for SP-API-specific fields).
  */
-const SP_RESEARCH_HEADERS = [
-  'Data_Source',       // SP-API or PA-API
-  'Fetch_Date',        // When data was fetched
-  'Marketplace',       // DE, FR, UK, etc.
-  'ASIN',
-  'Title',
-  'Brand',
-  'Manufacturer',
-  'Product_Type',
+function spGetColumnMapping() {
+  return {
+    // Field name -> list of possible PA-API column names (first match wins)
+    'dataSource':       ['Data_Source'],
+    'fetchDate':        ['Timestamp_Research'],
+    'marketplace':      ['Marketplace'],
+    'asin':             ['ASIN'],
+    'asinType':         ['ASIN_Type'],
+    'relatedToAsin':    ['Related_To_ASIN'],
+    'title':            ['Title'],
+    'brand':            ['BrandName', 'brand_name', 'Brand'],
+    'brandLower':       ['BrandNameLower'],
+    'manufacturer':     ['Manufacturer'],
+    'productType':      ['ProductGroup', 'product_group', 'Product_Type'],
+    'binding':          ['Binding', 'binding'],
 
-  // Identifiers
-  'EAN',
-  'UPC',
-  'GTIN',
+    // Identifiers
+    'ean':              ['EAN', 'EAN1', 'PrimaryEAN'],
+    'upc':              ['UPC'],
+    'gtin':             ['GTIN'],
+    'partNumber':       ['PartNumber', 'part_number'],
+    'modelNumber':      ['Model', 'model_number'],
 
-  // Bullet Points
-  'Bullet_1',
-  'Bullet_2',
-  'Bullet_3',
-  'Bullet_4',
-  'Bullet_5',
+    // Bullet points -> both BulletPoint AND Feature columns
+    'bullet1':          ['BulletPoint1', 'Feature1'],
+    'bullet2':          ['BulletPoint2', 'Feature2'],
+    'bullet3':          ['BulletPoint3', 'Feature3'],
+    'bullet4':          ['BulletPoint4', 'Feature4'],
+    'bullet5':          ['BulletPoint5', 'Feature5'],
 
-  // Description
-  'Description',
+    // Description
+    'description':      ['Description'],
 
-  // Images
-  'Main_Image_URL',
-  'Image_Count',
-  'Image_2_URL',
-  'Image_3_URL',
-  'Image_4_URL',
-  'Image_5_URL',
-  'Image_6_URL',
-  'Image_7_URL',
+    // Images -> PA-API uses Image0Source, Image1Source...
+    'mainImageURL':     ['Image0Source', 'image_0_source', 'FeaturedImageSource', 'featured_image_source', 'Main_Image_URL'],
+    'image2':           ['Image1Source', 'image_1_source', 'Image_2_URL'],
+    'image3':           ['Image2Source', 'Image_3_URL'],
+    'image4':           ['Image3Source', 'Image_4_URL'],
+    'image5':           ['Image4Source', 'Image_5_URL'],
+    'image6':           ['Image5Source', 'Image_6_URL'],
+    'image7':           ['Image6Source', 'Image_7_URL'],
+    'imageCount':       ['TotalImagesCount', 'Image_Count'],
 
-  // Pricing
-  'List_Price',
-  'Current_Price',
-  'Currency',
+    // Pricing
+    'price':            ['Price', 'price', 'List_Price'],
+    'currentPrice':     ['Current_Price'],
+    'currency':         ['PriceCurrency', 'currency', 'Currency'],
 
-  // Dimensions
-  'Item_Weight',
-  'Item_Weight_Unit',
-  'Package_Weight',
-  'Package_Weight_Unit',
+    // Dimensions
+    'itemWeight':       ['ItemWeight', 'Item_Weight'],
+    'itemWeightUnit':   ['ItemWeightUnitOfMeasure', 'ItemWeightUnit', 'Item_Weight_Unit'],
+    'itemHeight':       ['ItemHeight', 'Item_Height'],
+    'itemHeightUnit':   ['ItemHeightUnitOfMeasure', 'ItemHeightUnit'],
+    'itemWidth':        ['ItemWidth', 'Item_Width'],
+    'itemWidthUnit':    ['ItemWidthUnitOfMeasure', 'ItemWidthUnit'],
+    'itemLength':       ['ItemLength', 'Item_Length'],
+    'itemLengthUnit':   ['ItemLengthUnitOfMeasure', 'ItemLengthUnit'],
+    'packageWeight':    ['Package_Weight'],
+    'packageWeightUnit':['Package_Weight_Unit'],
 
-  // Sales Ranks
-  'Sales_Rank_1',
-  'Sales_Rank_1_Category',
-  'Sales_Rank_2',
-  'Sales_Rank_2_Category',
-  'Display_Group_Rank',
-  'Display_Group_Name',
+    // Sales Ranks
+    'salesRank1':       ['BestSellerRank', 'BestSellerRank1', 'best_seller_rank_1', 'best_seller_main_rank', 'Sales_Rank_1'],
+    'salesRank1Cat':    ['BSRProductCategoryName', 'category_name', 'Sales_Rank_1_Category'],
+    'salesRank2':       ['Sales_Rank_2'],
+    'salesRank2Cat':    ['Sales_Rank_2_Category'],
+    'displayGroupRank': ['Display_Group_Rank'],
+    'displayGroupName': ['Display_Group_Name'],
 
-  // Categories
-  'Browse_Node_ID',
-  'Browse_Node_Name',
-  'Category_Path',
+    // Browse Nodes / Categories
+    'browseNodeId':     ['BrowseNodeId', 'browse_node_id', 'Browse_Node_ID'],
+    'browseNodeName':   ['BrowseNodeDisplayName', 'Browse_Node_Name'],
+    'categoryPath':     ['Category_Path'],
 
-  // Variations
-  'Parent_ASIN',
-  'Variation_Theme',
-  'Child_Count',
+    // Relationships
+    'parentAsin':       ['ParentAsin', 'parent_asin', 'Parent_ASIN'],
+    'variationTheme':   ['Variation_Theme'],
+    'childCount':       ['Child_Count'],
 
-  // Product Attributes
-  'Color',
-  'Size',
-  'Material',
+    // Product Attributes
+    'color':            ['ColorName', 'color_name', 'Color'],
+    'size':             ['SizeName', 'size_name', 'Size'],
+    'material':         ['Material'],
+    'unitCount':        ['UnitCount', 'unit_count'],
 
-  // A+ Content
-  'Has_APlus',
-  'APlus_Type',
-  'APlus_Module_Count',
+    // A+ Content
+    'hasAPlus':         ['Has_APlus'],
+    'aplusType':        ['APlus_Type'],
+    'aplusModuleCount': ['APlus_Module_Count'],
 
-  // Seller
-  'Seller_ID',
-  'Seller_Info',
+    // Seller
+    'sellerId':         ['Seller_ID'],
+    'sellerInfo':       ['Seller_Info'],
 
-  // Link
-  'Amazon_Link'
-];
+    // Links
+    'link':             ['Link', 'link', 'Amazon_Link', 'Url']
+  };
+}
 
 // ==================== MENU FUNCTIONS ====================
 
 /**
- * Menu: Fetch single ASIN via SP-API
+ * Menu: Fetch single ASIN via SP-API (Główny only)
  */
 function menuSPApiFetchByASIN() {
   const ui = SpreadsheetApp.getUi();
@@ -139,33 +156,19 @@ function menuSPApiFetchByASIN() {
     return;
   }
 
-  // Select marketplace
   const marketplace = spShowMarketplaceSelector();
   if (!marketplace) return;
 
-  // Ask about A+ Content
-  const aplusConfirm = ui.alert(
-    'A+ Content',
-    'Sprawdzac A+ Content?\n\n' +
-    'TAK = Sprawdzaj (wolniej, ~2s/produkt)\n' +
-    'NIE = Pomin (szybciej)\n\n' +
-    'A+ dziala tylko dla produktow Twojej marki.',
-    ui.ButtonSet.YES_NO
-  );
-  const checkAPlus = (aplusConfirm === ui.Button.YES);
-
-  // Confirm
   const confirmMsg = `Pobrac ${asins.length} produkt(ow) z Amazon ${marketplace} przez SP-API?\n\n` +
     `ASIN: ${asins.slice(0, 5).join(', ')}${asins.length > 5 ? '...' : ''}\n` +
-    `A+ Content: ${checkAPlus ? 'TAK' : 'POMINIETE'}\n` +
-    `Dane zapisane w: RESEARCH tab (Data_Source = SP-API)`;
+    `Typ: Tylko glowny (ASIN_Type = Glowny)\n` +
+    `Dane zapisane w: RESEARCH tab`;
 
   if (ui.alert('Potwierdzenie', confirmMsg, ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
 
-  // Execute
   try {
     SpreadsheetApp.getActiveSpreadsheet().toast(`Pobieram ${asins.length} produktow z SP-API...`, 'SP-API', 30);
-    const results = spFetchAndWriteProducts(asins, marketplace, { checkAPlus });
+    const results = spFetchAndWriteProducts(asins, marketplace, { fetchSimilar: false });
 
     let resultMsg = `Zaimportowano: ${results.success}\n` +
       `Bledy: ${results.failed}\n` +
@@ -180,6 +183,70 @@ function menuSPApiFetchByASIN() {
   } catch (error) {
     ui.alert('SP-API Blad', `Wystapil blad:\n\n${error.message}`, ui.ButtonSet.OK);
     Logger.log(`[SP-API] Error in menuSPApiFetchByASIN: ${error.message}`);
+  }
+}
+
+/**
+ * Menu: Fetch ASIN + similar/related products via SP-API
+ * Main product = Główny, variations/siblings = Podobny
+ */
+function menuSPApiFetchWithSimilar() {
+  const ui = SpreadsheetApp.getUi();
+
+  if (!spHasCredentials()) {
+    ui.alert('SP-API nie skonfigurowane',
+      'Brak danych SP-API.\n\nUruchom: SP-API Data Collection > Setup SP-API Credentials',
+      ui.ButtonSet.OK);
+    return;
+  }
+
+  const response = ui.prompt(
+    'SP-API: Pobierz ASIN + podobne produkty',
+    'Wpisz ASIN(y) do pobrania:\n\n' +
+    'Jeden: B08N5WRWNW\n' +
+    'Wiele: B08N5WRWNW, B07XJ8C8F5\n\n' +
+    'Dla kazdego ASIN zostaną pobrane rowniez\n' +
+    'podobne produkty (warianty/rodzenstwo).\n\n' +
+    'Oddziel przecinkami.',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() !== ui.Button.OK) return;
+
+  const input = response.getResponseText().trim();
+  if (!input) return;
+
+  const asins = input.split(',').map(a => a.trim().toUpperCase()).filter(a => /^[A-Z0-9]{10}$/.test(a));
+
+  if (asins.length === 0) {
+    ui.alert('Blad', 'Nie znaleziono prawidlowych ASIN-ow.', ui.ButtonSet.OK);
+    return;
+  }
+
+  const marketplace = spShowMarketplaceSelector();
+  if (!marketplace) return;
+
+  const confirmMsg = `Pobrac ${asins.length} produkt(ow) + podobne z Amazon ${marketplace}?\n\n` +
+    `ASIN: ${asins.slice(0, 5).join(', ')}${asins.length > 5 ? '...' : ''}\n\n` +
+    `Glowny ASIN -> ASIN_Type = "Glowny"\n` +
+    `Podobne/warianty -> ASIN_Type = "Podobny"\n` +
+    `Dane zapisane w: RESEARCH tab`;
+
+  if (ui.alert('Potwierdzenie', confirmMsg, ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+
+  try {
+    SpreadsheetApp.getActiveSpreadsheet().toast(`Pobieram ${asins.length} produktow + podobne z SP-API...`, 'SP-API', 30);
+    const results = spFetchAndWriteProducts(asins, marketplace, { fetchSimilar: true });
+
+    let resultMsg = `Glowne: ${results.success}\n` +
+      `Podobne: ${results.similar}\n` +
+      `Bledy: ${results.failed}\n` +
+      `Pominiete (duplikaty): ${results.skipped}`;
+
+    SpreadsheetApp.getActiveSpreadsheet().toast(resultMsg, 'SP-API - zakonczone', 15);
+
+  } catch (error) {
+    ui.alert('SP-API Blad', `Wystapil blad:\n\n${error.message}`, ui.ButtonSet.OK);
   }
 }
 
@@ -216,7 +283,6 @@ function menuSPApiSearchByKeyword() {
     const accessToken = spGetAccessToken();
     const mpConfig = SP_MARKETPLACE_CONFIG[marketplace];
 
-    // Search with pagination (up to 5 pages = 100 results)
     const searchResults = spSearchProducts(searchTerm, mpConfig, accessToken, 5);
 
     if (searchResults.length === 0) {
@@ -224,7 +290,6 @@ function menuSPApiSearchByKeyword() {
       return;
     }
 
-    // Show preview of results
     const preview = searchResults.slice(0, 10).map(r => `${r.asin} - ${(r.title || '').substring(0, 60)}`).join('\n');
     const countResponse = ui.prompt(
       `Znaleziono: ${searchResults.length} produktow`,
@@ -251,19 +316,18 @@ function menuSPApiSearchByKeyword() {
     const asinsToImport = searchResults.slice(0, importCount).map(r => r.asin);
 
     SpreadsheetApp.getActiveSpreadsheet().toast(`Importuje ${asinsToImport.length} produktow...`, 'SP-API', 30);
-    const results = spFetchAndWriteProducts(asinsToImport, marketplace, { checkAPlus: false });
+    const results = spFetchAndWriteProducts(asinsToImport, marketplace, { fetchSimilar: false });
 
     let resultMsg = `Zaimportowano: ${results.success}\nBledy: ${results.failed}\nPominiete: ${results.skipped}`;
     SpreadsheetApp.getActiveSpreadsheet().toast(resultMsg, 'SP-API - zakonczone', 15);
 
   } catch (error) {
     ui.alert('SP-API Blad', `Wystapil blad:\n\n${error.message}`, ui.ButtonSet.OK);
-    Logger.log(`[SP-API] Error in menuSPApiSearchByKeyword: ${error.message}`);
   }
 }
 
 /**
- * Menu: Fetch ASIN from selected cell in RESEARCH tab
+ * Menu: Fetch ASINs from selected cells in RESEARCH tab
  */
 function menuSPApiFetchFromSelection() {
   const ui = SpreadsheetApp.getUi();
@@ -276,23 +340,18 @@ function menuSPApiFetchFromSelection() {
   }
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getActiveSheet();
-  const selection = sheet.getActiveRange();
-
+  const selection = ss.getActiveSheet().getActiveRange();
   if (!selection) {
     ui.alert('Zaznacz komorki', 'Zaznacz komorki z ASIN-ami i sprobuj ponownie.', ui.ButtonSet.OK);
     return;
   }
 
-  // Extract ASINs from selection
   const values = selection.getValues();
   const asins = [];
   for (const row of values) {
     for (const cell of row) {
       const val = cell.toString().trim().toUpperCase();
-      if (/^[A-Z0-9]{10}$/.test(val)) {
-        asins.push(val);
-      }
+      if (/^[A-Z0-9]{10}$/.test(val)) asins.push(val);
     }
   }
 
@@ -304,14 +363,13 @@ function menuSPApiFetchFromSelection() {
   const marketplace = spShowMarketplaceSelector();
   if (!marketplace) return;
 
-  const confirmMsg = `Pobrac ${asins.length} ASIN(ow) z Amazon ${marketplace}?\n\n` +
-    `${asins.slice(0, 10).join(', ')}${asins.length > 10 ? '...' : ''}`;
-
-  if (ui.alert('Potwierdzenie', confirmMsg, ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  if (ui.alert('Potwierdzenie',
+    `Pobrac ${asins.length} ASIN(ow) z Amazon ${marketplace}?\n${asins.slice(0, 10).join(', ')}`,
+    ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
 
   try {
     SpreadsheetApp.getActiveSpreadsheet().toast(`Pobieram ${asins.length} produktow...`, 'SP-API', 30);
-    const results = spFetchAndWriteProducts(asins, marketplace, { checkAPlus: false });
+    const results = spFetchAndWriteProducts(asins, marketplace, { fetchSimilar: false });
     SpreadsheetApp.getActiveSpreadsheet().toast(
       `Gotowe! Dodano: ${results.success}, Bledy: ${results.failed}, Pominiete: ${results.skipped}`,
       'SP-API', 10
@@ -327,8 +385,8 @@ function menuSPApiFetchFromSelection() {
  * Fetch product data for multiple ASINs and write to RESEARCH tab
  * @param {string[]} asins - Array of ASINs to fetch
  * @param {string} marketplace - Marketplace code (DE, FR, etc.)
- * @param {Object} options - { checkAPlus: boolean }
- * @returns {Object} { success, failed, skipped, errors }
+ * @param {Object} options - { fetchSimilar: boolean }
+ * @returns {Object} { success, failed, skipped, similar, errors }
  */
 function spFetchAndWriteProducts(asins, marketplace, options) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -336,42 +394,26 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
 
   if (!mpConfig) throw new Error(`Unknown marketplace: ${marketplace}`);
 
-  // Ensure RESEARCH tab exists with proper headers
-  const researchSheet = spEnsureResearchSheet(ss);
+  const researchSheet = ss.getSheetByName('RESEARCH');
+  if (!researchSheet) throw new Error('RESEARCH tab not found!');
 
-  // Get existing ASIN+Marketplace+DataSource combinations to avoid duplicates
-  const existing = spGetExistingKeys(researchSheet);
+  // Build header map
+  const headerInfo = spBuildHeaderMap(researchSheet);
 
-  // Get access token once
+  // Get existing ASIN+Marketplace+DataSource combinations
+  const existing = spGetExistingKeys(researchSheet, headerInfo);
+
   const accessToken = spGetAccessToken();
-
-  const results = { success: 0, failed: 0, skipped: 0, errors: [] };
+  const results = { success: 0, failed: 0, skipped: 0, similar: 0, errors: [] };
   const startTime = Date.now();
-  const maxTime = 4.5 * 60 * 1000; // 4.5 min safety margin
-
-  // Pre-fetch A+ cache if needed
-  let aplusCache = null;
-  if (options.checkAPlus) {
-    try {
-      SpreadsheetApp.getActiveSpreadsheet().toast('Laduje cache A+ Content...', 'SP-API', 30);
-      aplusCache = spFetchAPlusCache(mpConfig, accessToken);
-      Logger.log(`[SP-API] A+ cache: ${Object.keys(aplusCache.asinToContent).length} ASIN mappings`);
-    } catch (e) {
-      Logger.log(`[SP-API] A+ cache failed: ${e.message}`);
-      aplusCache = { allRecords: [], asinToContent: {} };
-    }
-  }
+  const maxTime = 4.5 * 60 * 1000;
 
   for (let i = 0; i < asins.length; i++) {
     const asin = asins[i];
 
-    // Time check
     if (Date.now() - startTime > maxTime) {
-      Logger.log(`[SP-API] Timeout after ${i} products. Remaining: ${asins.length - i}`);
-      SpreadsheetApp.getActiveSpreadsheet().toast(
-        `Timeout! Zaimportowano ${results.success}. Pozostalo: ${asins.length - i}`,
-        'SP-API', 10
-      );
+      Logger.log(`[SP-API] Timeout after ${i} products.`);
+      SpreadsheetApp.getActiveSpreadsheet().toast(`Timeout! Zaimportowano ${results.success}.`, 'SP-API', 10);
       break;
     }
 
@@ -384,8 +426,7 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
 
     try {
       SpreadsheetApp.getActiveSpreadsheet().toast(
-        `Pobieram ${asin} (${i + 1}/${asins.length})...`, 'SP-API', 30
-      );
+        `Pobieram ${asin} (${i + 1}/${asins.length})...`, 'SP-API', 30);
 
       // Fetch product data
       const productData = spFetchProductData(asin, mpConfig, accessToken);
@@ -394,36 +435,121 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
       // Fetch pricing
       try {
         const pricing = spFetchPricing(asin, mpConfig, accessToken);
-        productData.listPrice = pricing.listPrice || productData.catalogListPrice || '';
+        productData.price = pricing.listPrice || productData.catalogListPrice || '';
         productData.currentPrice = pricing.currentPrice || '';
-        productData.priceCurrency = pricing.currency || productData.catalogCurrency || '';
+        productData.currency = pricing.currency || productData.catalogCurrency || '';
         productData.sellerId = pricing.sellerId || '';
         productData.sellerInfo = pricing.sellerInfo || '';
       } catch (e) {
         Logger.log(`[SP-API] Pricing failed for ${asin}: ${e.message}`);
-        productData.listPrice = productData.catalogListPrice || '';
+        productData.price = productData.catalogListPrice || '';
         productData.currentPrice = '';
-        productData.priceCurrency = productData.catalogCurrency || '';
-        productData.sellerId = '';
-        productData.sellerInfo = '';
+        productData.currency = productData.catalogCurrency || '';
       }
       Utilities.sleep(200);
 
-      // A+ Content
-      if (options.checkAPlus && aplusCache) {
-        const aplusData = spGetAPlusForASIN(asin, aplusCache, mpConfig, accessToken);
-        productData.hasAPlus = aplusData.hasAPlus;
-        productData.aplusType = aplusData.aplusType;
-        productData.aplusModuleCount = aplusData.aplusModuleCount;
-      }
-
-      // Write to RESEARCH tab
-      spAppendToResearchSheet(researchSheet, productData, marketplace);
+      // Write main product as "Główny"
+      productData.asinType = 'Główny';
+      productData.relatedToAsin = '';
+      spWriteProductRow(researchSheet, headerInfo, productData, marketplace);
       existing.add(key);
       results.success++;
 
+      // Fetch similar products if requested
+      if (options.fetchSimilar && productData.childAsins) {
+        const childList = productData.childAsins.split(',').map(a => a.trim()).filter(a => a && a !== asin);
+        const maxSimilar = Math.min(childList.length, 20);
+
+        for (let j = 0; j < maxSimilar; j++) {
+          const childAsin = childList[j];
+          const childKey = `${childAsin}|${marketplace}|SP-API`;
+          if (existing.has(childKey)) continue;
+
+          if (Date.now() - startTime > maxTime) break;
+
+          try {
+            SpreadsheetApp.getActiveSpreadsheet().toast(
+              `Podobny ${childAsin} (${j + 1}/${maxSimilar})...`, 'SP-API', 30);
+
+            const childData = spFetchProductData(childAsin, mpConfig, accessToken);
+            Utilities.sleep(300);
+
+            try {
+              const childPricing = spFetchPricing(childAsin, mpConfig, accessToken);
+              childData.price = childPricing.listPrice || childData.catalogListPrice || '';
+              childData.currentPrice = childPricing.currentPrice || '';
+              childData.currency = childPricing.currency || childData.catalogCurrency || '';
+              childData.sellerId = childPricing.sellerId || '';
+              childData.sellerInfo = childPricing.sellerInfo || '';
+            } catch (e) {
+              childData.price = childData.catalogListPrice || '';
+            }
+            Utilities.sleep(200);
+
+            childData.asinType = 'Podobny';
+            childData.relatedToAsin = asin;
+            spWriteProductRow(researchSheet, headerInfo, childData, marketplace);
+            existing.add(childKey);
+            results.similar++;
+
+          } catch (e) {
+            Logger.log(`[SP-API] Similar ${childAsin} failed: ${e.message}`);
+          }
+
+          Utilities.sleep(500);
+        }
+      }
+
+      // If no children but has parent, try siblings
+      if (options.fetchSimilar && !productData.childAsins && productData.parentAsin) {
+        const parentAsin = productData.parentAsin;
+        const parentKey = `${parentAsin}|${marketplace}|SP-API`;
+
+        if (!existing.has(parentKey)) {
+          try {
+            const parentData = spFetchProductData(parentAsin, mpConfig, accessToken);
+            Utilities.sleep(300);
+
+            // Get siblings from parent's children
+            if (parentData.childAsins) {
+              const siblings = parentData.childAsins.split(',').map(a => a.trim()).filter(a => a && a !== asin);
+              const maxSiblings = Math.min(siblings.length, 20);
+
+              for (let j = 0; j < maxSiblings; j++) {
+                const sibAsin = siblings[j];
+                const sibKey = `${sibAsin}|${marketplace}|SP-API`;
+                if (existing.has(sibKey)) continue;
+
+                if (Date.now() - startTime > maxTime) break;
+
+                try {
+                  SpreadsheetApp.getActiveSpreadsheet().toast(
+                    `Podobny ${sibAsin} (${j + 1}/${maxSiblings})...`, 'SP-API', 30);
+
+                  const sibData = spFetchProductData(sibAsin, mpConfig, accessToken);
+                  Utilities.sleep(300);
+
+                  sibData.asinType = 'Podobny';
+                  sibData.relatedToAsin = asin;
+                  spWriteProductRow(researchSheet, headerInfo, sibData, marketplace);
+                  existing.add(sibKey);
+                  results.similar++;
+
+                } catch (e) {
+                  Logger.log(`[SP-API] Sibling ${sibAsin} failed: ${e.message}`);
+                }
+
+                Utilities.sleep(500);
+              }
+            }
+          } catch (e) {
+            Logger.log(`[SP-API] Parent ${parentAsin} failed: ${e.message}`);
+          }
+        }
+      }
+
     } catch (error) {
-      Logger.log(`[SP-API] Failed to fetch ${asin}: ${error.message}`);
+      Logger.log(`[SP-API] Failed ${asin}: ${error.message}`);
       results.failed++;
       results.errors.push(`${asin}: ${error.message}`);
     }
@@ -433,6 +559,8 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
 
   return results;
 }
+
+// ==================== PRODUCT DATA FETCHING ====================
 
 /**
  * Fetch product details from SP-API Catalog Items API
@@ -457,11 +585,9 @@ function spFetchProductData(asin, mpConfig, accessToken) {
 
   const summary = summaries[0] || {};
 
-  // Attribute helpers
   const getAttr = (name) => attributes[name]?.[0]?.value || '';
-  const getAttrArray = (name) => (attributes[name] || []).map(a => a.value).filter(v => v);
 
-  // Extract identifiers for this marketplace
+  // Identifiers
   const ids = {};
   for (const idGroup of identifiers) {
     if (idGroup.marketplaceId === mpConfig.marketplaceId) {
@@ -474,19 +600,19 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     }
   }
 
-  // Extract images
+  // Images
   const imageGroup = images[0]?.images || [];
   const mainImage = imageGroup.find(i => i.variant === 'MAIN')?.link || imageGroup[0]?.link || '';
   const additionalImages = imageGroup.filter(i => i.variant !== 'MAIN');
 
-  // Extract pricing from catalog attributes (more reliable)
+  // Price from catalog attributes
   let catalogListPrice = '';
   let catalogCurrency = '';
   if (attributes.list_price && attributes.list_price[0]) {
     const priceData = attributes.list_price[0];
     if (priceData.value_with_tax !== undefined) {
       const rawValue = priceData.value_with_tax;
-      catalogListPrice = Number.isInteger(rawValue) && rawValue > 100
+      catalogListPrice = (Number.isInteger(rawValue) && rawValue > 100)
         ? (rawValue / 100).toFixed(2)
         : parseFloat(rawValue).toFixed(2);
     } else if (priceData.value) {
@@ -495,7 +621,7 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     catalogCurrency = priceData.currency || 'EUR';
   }
 
-  // Extract dimensions
+  // Dimensions
   const dimData = {};
   for (const dim of dimensions) {
     if (dim.marketplaceId === mpConfig.marketplaceId) {
@@ -503,13 +629,19 @@ function spFetchProductData(asin, mpConfig, accessToken) {
       const pkgDims = dim.package || {};
       dimData.itemWeight = itemDims.weight?.value || '';
       dimData.itemWeightUnit = itemDims.weight?.unit || '';
+      dimData.itemHeight = itemDims.height?.value || '';
+      dimData.itemHeightUnit = itemDims.height?.unit || '';
+      dimData.itemWidth = itemDims.width?.value || '';
+      dimData.itemWidthUnit = itemDims.width?.unit || '';
+      dimData.itemLength = itemDims.length?.value || '';
+      dimData.itemLengthUnit = itemDims.length?.unit || '';
       dimData.packageWeight = pkgDims.weight?.value || '';
       dimData.packageWeightUnit = pkgDims.weight?.unit || '';
       break;
     }
   }
 
-  // Extract sales ranks
+  // Sales Ranks
   const ranks = {};
   for (const rankGroup of salesRanks) {
     if (rankGroup.marketplaceId === mpConfig.marketplaceId) {
@@ -522,7 +654,7 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     }
   }
 
-  // Extract classifications (browse nodes)
+  // Classifications (Browse Nodes)
   const cats = {};
   for (const classGroup of classifications) {
     if (classGroup.marketplaceId === mpConfig.marketplaceId) {
@@ -533,8 +665,9 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     }
   }
 
-  // Extract relationships
+  // Relationships
   const rels = {};
+  let childAsinsList = [];
   for (const relGroup of relationships) {
     if (relGroup.marketplaceId === mpConfig.marketplaceId) {
       const relList = relGroup.relationships || [];
@@ -544,8 +677,8 @@ function spFetchProductData(asin, mpConfig, accessToken) {
       }
       const childRels = relList.filter(r => r.type === 'VARIATION' && r.childAsins);
       if (childRels.length > 0) {
-        const allChildren = childRels.flatMap(r => r.childAsins || []);
-        rels.childCount = allChildren.length;
+        childAsinsList = childRels.flatMap(r => r.childAsins || []);
+        rels.childCount = childAsinsList.length;
       }
       const variationRel = relList.find(r => r.variationTheme);
       if (variationRel) {
@@ -555,16 +688,22 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     }
   }
 
+  const brandName = summary.brand || getAttr('brand') || '';
+
   return {
     asin: asin,
     title: summary.itemName || getAttr('item_name') || '',
-    brand: summary.brand || getAttr('brand') || '',
+    brand: brandName,
+    brandLower: brandName.toLowerCase(),
     manufacturer: getAttr('manufacturer') || '',
     productType: response.productTypes?.[0]?.productType || '',
+    binding: getAttr('binding') || '',
 
     ean: ids.ean || '',
     upc: ids.upc || '',
     gtin: ids.gtin || '',
+    partNumber: getAttr('part_number') || getAttr('manufacturer_part_number') || '',
+    modelNumber: getAttr('model_number') || getAttr('model') || '',
 
     bullet1: attributes.bullet_point?.[0]?.value || '',
     bullet2: attributes.bullet_point?.[1]?.value || '',
@@ -575,26 +714,32 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     description: getAttr('product_description') || getAttr('item_description') || '',
 
     mainImageURL: mainImage,
-    imageCount: imageGroup.length,
     image2: additionalImages[0]?.link || '',
     image3: additionalImages[1]?.link || '',
     image4: additionalImages[2]?.link || '',
     image5: additionalImages[3]?.link || '',
     image6: additionalImages[4]?.link || '',
     image7: additionalImages[5]?.link || '',
+    imageCount: imageGroup.length,
 
     catalogListPrice: catalogListPrice,
     catalogCurrency: catalogCurrency,
 
     itemWeight: dimData.itemWeight || '',
     itemWeightUnit: dimData.itemWeightUnit || '',
+    itemHeight: dimData.itemHeight || '',
+    itemHeightUnit: dimData.itemHeightUnit || '',
+    itemWidth: dimData.itemWidth || '',
+    itemWidthUnit: dimData.itemWidthUnit || '',
+    itemLength: dimData.itemLength || '',
+    itemLengthUnit: dimData.itemLengthUnit || '',
     packageWeight: dimData.packageWeight || '',
     packageWeightUnit: dimData.packageWeightUnit || '',
 
     salesRank1: ranks.rank1 || '',
-    salesRank1Category: ranks.rank1Cat || '',
+    salesRank1Cat: ranks.rank1Cat || '',
     salesRank2: ranks.rank2 || '',
-    salesRank2Category: ranks.rank2Cat || '',
+    salesRank2Cat: ranks.rank2Cat || '',
     displayGroupRank: ranks.displayRank || '',
     displayGroupName: ranks.displayName || '',
 
@@ -602,42 +747,37 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     browseNodeName: cats.nodeName || '',
     categoryPath: cats.path || '',
 
-    parentASIN: rels.parentAsin || '',
+    parentAsin: rels.parentAsin || '',
     variationTheme: rels.variationTheme || '',
     childCount: rels.childCount || '',
+    childAsins: childAsinsList.join(', '),
 
     color: getAttr('color') || getAttr('color_name') || '',
     size: getAttr('size') || getAttr('size_name') || '',
     material: getAttr('material') || getAttr('material_type') || '',
+    unitCount: getAttr('unit_count') || '',
 
-    hasAPlus: null,
+    hasAPlus: '',
     aplusType: '',
     aplusModuleCount: ''
   };
 }
 
 /**
- * Fetch pricing and seller info from SP-API Pricing API
+ * Fetch pricing and seller info
  */
 function spFetchPricing(asin, mpConfig, accessToken) {
   const path = `/products/pricing/v0/items/${asin}/offers`;
-  const params = {
-    MarketplaceId: mpConfig.marketplaceId,
-    ItemCondition: 'New'
-  };
+  const params = { MarketplaceId: mpConfig.marketplaceId, ItemCondition: 'New' };
 
   const response = spCallAPI('GET', path, params, accessToken);
   const payload = response.payload || response;
   const summary = payload.Summary || payload.summary || {};
   const offers = payload.Offers || payload.offers || [];
 
-  let listPrice = '';
-  let currentPrice = '';
-  let currency = mpConfig.currency || 'EUR';
-  let sellerId = '';
-  let sellerInfo = '';
+  let listPrice = '', currentPrice = '', currency = mpConfig.currency || 'EUR';
+  let sellerId = '', sellerInfo = '';
 
-  // Pricing from summary
   const lowestPrices = summary.LowestPrices || [];
   if (lowestPrices.length > 0) {
     const fbaPrice = lowestPrices.find(p => p.fulfillmentChannel === 'Amazon');
@@ -647,14 +787,12 @@ function spFetchPricing(asin, mpConfig, accessToken) {
     listPrice = bestPrice.ListingPrice?.Amount || '';
   }
 
-  // BuyBox fallback
   if (!currentPrice && summary.BuyBoxPrices && summary.BuyBoxPrices.length > 0) {
     const buyBox = summary.BuyBoxPrices[0];
     currentPrice = buyBox.LandedPrice?.Amount || buyBox.ListingPrice?.Amount || '';
     currency = buyBox.LandedPrice?.CurrencyCode || currency;
   }
 
-  // Seller info from first offer
   if (offers.length > 0) {
     const offer = offers[0];
     sellerId = offer.SellerId || offer.sellerId || '';
@@ -691,8 +829,6 @@ function spSearchProducts(searchTerm, mpConfig, accessToken, maxPages) {
 
     nextToken = response.pagination?.nextToken;
     pageCount++;
-
-    Logger.log(`[SP-API SEARCH] Page ${pageCount}: ${items.length} items. Total: ${allItems.length}`);
     if (nextToken) Utilities.sleep(300);
 
   } while (nextToken && pageCount < maxPages);
@@ -703,151 +839,65 @@ function spSearchProducts(searchTerm, mpConfig, accessToken, maxPages) {
   }));
 }
 
-// ==================== A+ CONTENT ====================
-
-/**
- * Pre-fetch A+ Content cache (list of all A+ documents + ASIN mappings)
- */
-function spFetchAPlusCache(mpConfig, accessToken) {
-  const cache = { allRecords: [], asinToContent: {} };
-
-  let pageToken = null;
-  let pageCount = 0;
-
-  do {
-    const params = { marketplaceId: mpConfig.marketplaceId };
-    if (pageToken) params.pageToken = pageToken;
-
-    const response = spCallAPI('GET', '/aplus/2020-11-01/contentDocuments', params, accessToken);
-    const records = response.contentMetadataRecords || [];
-    cache.allRecords.push(...records);
-
-    pageToken = response.nextPageToken;
-    pageCount++;
-    if (pageToken) Utilities.sleep(100);
-
-  } while (pageToken && pageCount < 10);
-
-  // Build ASIN -> contentKey mapping
-  for (const record of cache.allRecords) {
-    const contentKey = record.contentReferenceKey;
-    try {
-      const asinsPath = `/aplus/2020-11-01/contentDocuments/${contentKey}/asins`;
-      const asinsResponse = spCallAPI('GET', asinsPath, { marketplaceId: mpConfig.marketplaceId }, accessToken);
-      for (const asinMeta of (asinsResponse.asinMetadataSet || [])) {
-        cache.asinToContent[asinMeta.asin] = contentKey;
-      }
-      Utilities.sleep(50);
-    } catch (e) {
-      Logger.log(`[SP-API A+] Error for ${contentKey}: ${e.message}`);
-    }
-  }
-
-  return cache;
-}
-
-/**
- * Get A+ Content data for a single ASIN from cache
- */
-function spGetAPlusForASIN(asin, cache, mpConfig, accessToken) {
-  const empty = { hasAPlus: false, aplusType: '', aplusModuleCount: '' };
-
-  const contentKey = cache.asinToContent[asin];
-  if (!contentKey) return empty;
-
-  try {
-    const contentPath = `/aplus/2020-11-01/contentDocuments/${contentKey}`;
-    const contentParams = { marketplaceId: mpConfig.marketplaceId, includedDataSet: 'CONTENTS' };
-    const response = spCallAPI('GET', contentPath, contentParams, accessToken);
-
-    const contentRecord = response.contentRecord || {};
-    const contentDocument = contentRecord.contentDocument || response.contentDocument || {};
-    const modules = contentDocument.contentModuleList || [];
-
-    return {
-      hasAPlus: true,
-      aplusType: contentDocument.contentType || 'STANDARD',
-      aplusModuleCount: modules.length
-    };
-  } catch (e) {
-    Logger.log(`[SP-API A+] Error fetching ${asin}: ${e.message}`);
-    return empty;
-  }
-}
-
 // ==================== RESEARCH SHEET MANAGEMENT ====================
 
 /**
- * Ensure RESEARCH tab exists with SP-API headers
- * If tab exists, adds missing columns. If not, creates it.
+ * Build header map from existing RESEARCH sheet
+ * Returns { headers: [...], headerIndex: { columnName: colIndex } }
  */
-function spEnsureResearchSheet(ss) {
-  let sheet = ss.getSheetByName('RESEARCH');
+function spBuildHeaderMap(sheet) {
+  const lastCol = sheet.getLastColumn();
+  if (lastCol === 0) return { headers: [], headerIndex: {} };
 
-  if (!sheet) {
-    sheet = ss.insertSheet('RESEARCH');
-    // Set all SP-API headers
-    sheet.getRange(1, 1, 1, SP_RESEARCH_HEADERS.length).setValues([SP_RESEARCH_HEADERS]);
-    sheet.getRange(1, 1, 1, SP_RESEARCH_HEADERS.length)
-      .setFontWeight('bold')
-      .setBackground('#1565C0')
-      .setFontColor('#FFFFFF')
-      .setWrap(true);
-    sheet.setFrozenRows(1);
-    Logger.log(`[SP-API] Created RESEARCH sheet with ${SP_RESEARCH_HEADERS.length} columns`);
-    return sheet;
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const headerIndex = {};
+
+  for (let c = 0; c < headers.length; c++) {
+    const h = headers[c].toString().trim();
+    if (h) headerIndex[h] = c;
   }
 
-  // Sheet exists - check if our headers are present
-  const existingHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const existingSet = new Set(existingHeaders.map(h => h.toString().trim()));
+  return { headers, headerIndex };
+}
 
-  // Check if Data_Source column exists (key SP-API column)
-  if (!existingSet.has('Data_Source')) {
-    // Add all SP-API headers that are missing (append to right side)
-    const missingHeaders = SP_RESEARCH_HEADERS.filter(h => !existingSet.has(h));
-    if (missingHeaders.length > 0) {
-      const startCol = sheet.getLastColumn() + 1;
-      sheet.getRange(1, startCol, 1, missingHeaders.length).setValues([missingHeaders]);
-      sheet.getRange(1, startCol, 1, missingHeaders.length)
-        .setFontWeight('bold')
-        .setBackground('#1565C0')
-        .setFontColor('#FFFFFF');
-      Logger.log(`[SP-API] Added ${missingHeaders.length} SP-API columns to existing RESEARCH sheet`);
+/**
+ * Find the column index for a field using the mapping.
+ * Returns column index (0-based) or -1 if not found.
+ */
+function spFindColumn(headerIndex, fieldName) {
+  const mapping = spGetColumnMapping();
+  const candidates = mapping[fieldName] || [];
+
+  for (const colName of candidates) {
+    if (headerIndex[colName] !== undefined) {
+      return headerIndex[colName];
     }
   }
 
-  return sheet;
+  return -1;
 }
 
 /**
  * Get existing ASIN+Marketplace+DataSource keys from RESEARCH tab
- * Returns Set of "ASIN|MARKETPLACE|DATA_SOURCE" strings
  */
-function spGetExistingKeys(sheet) {
+function spGetExistingKeys(sheet, headerInfo) {
   const keys = new Set();
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return keys;
 
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const hi = headerInfo.headerIndex;
+  const asinCol = hi['ASIN'] !== undefined ? hi['ASIN'] : -1;
+  const mpCol = hi['Marketplace'] !== undefined ? hi['Marketplace'] : -1;
+  const dsCol = hi['Data_Source'] !== undefined ? hi['Data_Source'] : -1;
 
-  // Find column indices
-  let dataSourceCol = -1, marketplaceCol = -1, asinCol = -1;
-  for (let c = 0; c < headers.length; c++) {
-    const h = headers[c].toString().trim();
-    if (h === 'Data_Source') dataSourceCol = c;
-    if (h === 'Marketplace') marketplaceCol = c;
-    if (h === 'ASIN') asinCol = c;
-  }
-
-  if (asinCol === -1) return keys; // No ASIN column yet
+  if (asinCol === -1) return keys;
 
   const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
   for (const row of data) {
     const asin = (row[asinCol] || '').toString().trim();
     if (!asin) continue;
-    const mp = marketplaceCol >= 0 ? (row[marketplaceCol] || '').toString().trim().toUpperCase() : '';
-    const ds = dataSourceCol >= 0 ? (row[dataSourceCol] || '').toString().trim() : '';
+    const mp = mpCol >= 0 ? (row[mpCol] || '').toString().trim().toUpperCase() : '';
+    const ds = dsCol >= 0 ? (row[dsCol] || '').toString().trim() : '';
     keys.add(`${asin}|${mp}|${ds}`);
   }
 
@@ -855,94 +905,105 @@ function spGetExistingKeys(sheet) {
 }
 
 /**
- * Append product data row to RESEARCH sheet
+ * Write a single product row to RESEARCH sheet, mapping to existing columns.
+ * Does NOT add new columns - only writes to columns that already exist.
  */
-function spAppendToResearchSheet(sheet, data, marketplace) {
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const headerMap = {};
-  for (let c = 0; c < headers.length; c++) {
-    headerMap[headers[c].toString().trim()] = c;
-  }
+function spWriteProductRow(sheet, headerInfo, data, marketplace) {
+  const hi = headerInfo.headerIndex;
+  const numCols = headerInfo.headers.length;
+  const row = new Array(numCols).fill('');
 
   const mpConfig = SP_MARKETPLACE_CONFIG[marketplace] || {};
   const amazonLink = `https://${mpConfig.domain || 'www.amazon.de'}/dp/${data.asin}`;
   const fetchDate = Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm');
 
-  // Build row based on header positions
-  const row = new Array(headers.length).fill('');
-
-  const setValue = (headerName, value) => {
-    if (headerMap[headerName] !== undefined) {
-      row[headerMap[headerName]] = value || '';
+  // Helper: set value in the first matching column
+  const set = (fieldName, value) => {
+    const col = spFindColumn(hi, fieldName);
+    if (col >= 0 && col < numCols) {
+      row[col] = value || '';
     }
   };
 
-  setValue('Data_Source', 'SP-API');
-  setValue('Fetch_Date', fetchDate);
-  setValue('Marketplace', marketplace);
-  setValue('ASIN', data.asin);
-  setValue('Title', data.title);
-  setValue('Brand', data.brand);
-  setValue('Manufacturer', data.manufacturer);
-  setValue('Product_Type', data.productType);
+  set('dataSource', 'SP-API');
+  set('fetchDate', fetchDate);
+  set('marketplace', marketplace);
+  set('asin', data.asin);
+  set('asinType', data.asinType || 'Główny');
+  set('relatedToAsin', data.relatedToAsin || '');
+  set('title', data.title);
+  set('brand', data.brand);
+  set('brandLower', data.brandLower);
+  set('manufacturer', data.manufacturer);
+  set('productType', data.productType);
+  set('binding', data.binding);
 
-  setValue('EAN', data.ean);
-  setValue('UPC', data.upc);
-  setValue('GTIN', data.gtin);
+  set('ean', data.ean);
+  set('upc', data.upc);
+  set('gtin', data.gtin);
+  set('partNumber', data.partNumber);
+  set('modelNumber', data.modelNumber);
 
-  setValue('Bullet_1', data.bullet1);
-  setValue('Bullet_2', data.bullet2);
-  setValue('Bullet_3', data.bullet3);
-  setValue('Bullet_4', data.bullet4);
-  setValue('Bullet_5', data.bullet5);
+  set('bullet1', data.bullet1);
+  set('bullet2', data.bullet2);
+  set('bullet3', data.bullet3);
+  set('bullet4', data.bullet4);
+  set('bullet5', data.bullet5);
 
-  setValue('Description', data.description);
+  set('description', data.description);
 
-  setValue('Main_Image_URL', data.mainImageURL);
-  setValue('Image_Count', data.imageCount);
-  setValue('Image_2_URL', data.image2);
-  setValue('Image_3_URL', data.image3);
-  setValue('Image_4_URL', data.image4);
-  setValue('Image_5_URL', data.image5);
-  setValue('Image_6_URL', data.image6);
-  setValue('Image_7_URL', data.image7);
+  set('mainImageURL', data.mainImageURL);
+  set('image2', data.image2);
+  set('image3', data.image3);
+  set('image4', data.image4);
+  set('image5', data.image5);
+  set('image6', data.image6);
+  set('image7', data.image7);
+  set('imageCount', data.imageCount);
 
-  setValue('List_Price', data.listPrice);
-  setValue('Current_Price', data.currentPrice);
-  setValue('Currency', data.priceCurrency || data.catalogCurrency);
+  set('price', data.price);
+  set('currentPrice', data.currentPrice);
+  set('currency', data.currency);
 
-  setValue('Item_Weight', data.itemWeight);
-  setValue('Item_Weight_Unit', data.itemWeightUnit);
-  setValue('Package_Weight', data.packageWeight);
-  setValue('Package_Weight_Unit', data.packageWeightUnit);
+  set('itemWeight', data.itemWeight);
+  set('itemWeightUnit', data.itemWeightUnit);
+  set('itemHeight', data.itemHeight);
+  set('itemHeightUnit', data.itemHeightUnit);
+  set('itemWidth', data.itemWidth);
+  set('itemWidthUnit', data.itemWidthUnit);
+  set('itemLength', data.itemLength);
+  set('itemLengthUnit', data.itemLengthUnit);
+  set('packageWeight', data.packageWeight);
+  set('packageWeightUnit', data.packageWeightUnit);
 
-  setValue('Sales_Rank_1', data.salesRank1);
-  setValue('Sales_Rank_1_Category', data.salesRank1Category);
-  setValue('Sales_Rank_2', data.salesRank2);
-  setValue('Sales_Rank_2_Category', data.salesRank2Category);
-  setValue('Display_Group_Rank', data.displayGroupRank);
-  setValue('Display_Group_Name', data.displayGroupName);
+  set('salesRank1', data.salesRank1);
+  set('salesRank1Cat', data.salesRank1Cat);
+  set('salesRank2', data.salesRank2);
+  set('salesRank2Cat', data.salesRank2Cat);
+  set('displayGroupRank', data.displayGroupRank);
+  set('displayGroupName', data.displayGroupName);
 
-  setValue('Browse_Node_ID', data.browseNodeId);
-  setValue('Browse_Node_Name', data.browseNodeName);
-  setValue('Category_Path', data.categoryPath);
+  set('browseNodeId', data.browseNodeId);
+  set('browseNodeName', data.browseNodeName);
+  set('categoryPath', data.categoryPath);
 
-  setValue('Parent_ASIN', data.parentASIN);
-  setValue('Variation_Theme', data.variationTheme);
-  setValue('Child_Count', data.childCount);
+  set('parentAsin', data.parentAsin);
+  set('variationTheme', data.variationTheme);
+  set('childCount', data.childCount);
 
-  setValue('Color', data.color);
-  setValue('Size', data.size);
-  setValue('Material', data.material);
+  set('color', data.color);
+  set('size', data.size);
+  set('material', data.material);
+  set('unitCount', data.unitCount);
 
-  setValue('Has_APlus', data.hasAPlus === null ? '' : (data.hasAPlus ? 'TAK' : 'NIE'));
-  setValue('APlus_Type', data.aplusType);
-  setValue('APlus_Module_Count', data.aplusModuleCount);
+  set('hasAPlus', data.hasAPlus);
+  set('aplusType', data.aplusType);
+  set('aplusModuleCount', data.aplusModuleCount);
 
-  setValue('Seller_ID', data.sellerId);
-  setValue('Seller_Info', data.sellerInfo);
+  set('sellerId', data.sellerId);
+  set('sellerInfo', data.sellerInfo);
 
-  setValue('Amazon_Link', amazonLink);
+  set('link', amazonLink);
 
   sheet.appendRow(row);
 }
