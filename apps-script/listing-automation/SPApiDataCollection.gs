@@ -11,7 +11,7 @@
  * - /products/pricing/v0/items/{asin}/offers - Pricing & seller info
  * - /aplus/2020-11-01/contentDocuments - A+ Content (optional)
  *
- * @version 2.0
+ * @version 2.1
  * @author NetAnaliza / LUKO
  */
 
@@ -19,12 +19,11 @@
 
 /**
  * Maps SP-API data fields to existing PA-API column names in RESEARCH tab.
- * If a PA-API column exists, SP-API data goes there.
- * If no match, a new column may be added (only for SP-API-specific fields).
+ * ALL matching columns get filled (PA-API fills both PascalCase and snake_case).
  */
 function spGetColumnMapping() {
+  // Field name -> list of PA-API column names to fill (ALL matches get written)
   return {
-    // Field name -> list of possible PA-API column names (first match wins)
     'dataSource':       ['Data_Source'],
     'fetchDate':        ['Timestamp_Research'],
     'marketplace':      ['Marketplace'],
@@ -32,11 +31,12 @@ function spGetColumnMapping() {
     'asinType':         ['ASIN_Type'],
     'relatedToAsin':    ['Related_To_ASIN'],
     'title':            ['Title'],
-    'brand':            ['BrandName', 'brand_name', 'Brand'],
+    'brand':            ['BrandName'],
     'brandLower':       ['BrandNameLower'],
     'manufacturer':     ['Manufacturer'],
-    'productType':      ['ProductGroup', 'product_group', 'Product_Type'],
-    'binding':          ['Binding', 'binding'],
+    'manufacturerLower':['ManufacturerNameLower'],
+    'productType':      ['ProductGroup', 'product_group'],
+    'binding':          ['Binding'],
 
     // Identifiers
     'ean':              ['EAN', 'EAN1', 'PrimaryEAN'],
@@ -44,67 +44,82 @@ function spGetColumnMapping() {
     'gtin':             ['GTIN'],
     'partNumber':       ['PartNumber', 'part_number'],
     'modelNumber':      ['Model', 'model_number'],
+    'mpn':              ['MPN', 'mpn'],
 
-    // Bullet points -> both BulletPoint AND Feature columns
+    // Bullet points -> BulletPoint AND Feature columns
     'bullet1':          ['BulletPoint1', 'Feature1'],
     'bullet2':          ['BulletPoint2', 'Feature2'],
     'bullet3':          ['BulletPoint3', 'Feature3'],
     'bullet4':          ['BulletPoint4', 'Feature4'],
     'bullet5':          ['BulletPoint5', 'Feature5'],
+    'features':         ['Features'],
 
     // Description
     'description':      ['Description'],
 
-    // Images -> PA-API uses Image0Source, Image1Source...
-    'mainImageURL':     ['Image0Source', 'image_0_source', 'FeaturedImageSource', 'featured_image_source', 'Main_Image_URL'],
-    'image2':           ['Image1Source', 'image_1_source', 'Image_2_URL'],
-    'image3':           ['Image2Source', 'Image_3_URL'],
-    'image4':           ['Image3Source', 'Image_4_URL'],
-    'image5':           ['Image4Source', 'Image_5_URL'],
-    'image6':           ['Image5Source', 'Image_6_URL'],
-    'image7':           ['Image6Source', 'Image_7_URL'],
-    'imageCount':       ['TotalImagesCount', 'Image_Count'],
+    // Images (PA-API: Image0Source = FeaturedImageSource = main image)
+    'mainImageURL':     ['Image0Source', 'image_0_source', 'FeaturedImageSource', 'featured_image_source'],
+    'mainImageHeight':  ['PrimaryLargeImageHeight'],
+    'mainImageWidth':   ['PrimaryLargeImageWidth'],
+    'image2':           ['Image1Source', 'image_1_source'],
+    'image3':           ['Image2Source', 'image_2_source'],
+    'image4':           ['Image3Source', 'image_3_source'],
+    'image5':           ['Image4Source', 'image_4_source'],
+    'image6':           ['Image5Source', 'image_5_source'],
+    'image7':           ['Image6Source', 'image_6_source'],
+    'image8':           ['Image7Source', 'image_7_source'],
+    'image9':           ['Image8Source', 'image_8_source'],
+    'imageCount':       ['TotalImagesCount'],
+    'largeImageCount':  ['LargeImageCount'],
+    'smallImageCount':  ['SmallImageCount'],
 
     // Pricing
-    'price':            ['Price', 'price', 'List_Price'],
+    'price':            ['Price', 'price'],
     'currentPrice':     ['Current_Price'],
-    'currency':         ['PriceCurrency', 'currency', 'Currency'],
+    'currency':         ['PriceCurrency', 'currency'],
 
     // Dimensions
-    'itemWeight':       ['ItemWeight', 'Item_Weight'],
-    'itemWeightUnit':   ['ItemWeightUnitOfMeasure', 'ItemWeightUnit', 'Item_Weight_Unit'],
-    'itemHeight':       ['ItemHeight', 'Item_Height'],
-    'itemHeightUnit':   ['ItemHeightUnitOfMeasure', 'ItemHeightUnit'],
-    'itemWidth':        ['ItemWidth', 'Item_Width'],
-    'itemWidthUnit':    ['ItemWidthUnitOfMeasure', 'ItemWidthUnit'],
-    'itemLength':       ['ItemLength', 'Item_Length'],
-    'itemLengthUnit':   ['ItemLengthUnitOfMeasure', 'ItemLengthUnit'],
-    'packageWeight':    ['Package_Weight'],
-    'packageWeightUnit':['Package_Weight_Unit'],
+    'itemWeight':       ['ItemWeight'],
+    'itemWeightUnit':   ['ItemWeightUnit', 'ItemWeightUnitOfMeasure'],
+    'itemHeight':       ['ItemHeight'],
+    'itemHeightUnit':   ['ItemHeightUnit', 'ItemHeightUnitOfMeasure'],
+    'itemWidth':        ['ItemWidth'],
+    'itemWidthUnit':    ['ItemWidthUnit', 'ItemWidthUnitOfMeasure'],
+    'itemLength':       ['ItemLength'],
+    'itemLengthUnit':   ['ItemLengthUnit', 'ItemLengthUnitOfMeasure'],
+    'packageWeight':    ['PackageDimensionsWeight'],
+    'packageWeightUnit':['PackageDimensionsWeightUnit'],
 
-    // Sales Ranks
-    'salesRank1':       ['BestSellerRank', 'BestSellerRank1', 'best_seller_rank_1', 'best_seller_main_rank', 'Sales_Rank_1'],
-    'salesRank1Cat':    ['BSRProductCategoryName', 'category_name', 'Sales_Rank_1_Category'],
-    'salesRank2':       ['Sales_Rank_2'],
-    'salesRank2Cat':    ['Sales_Rank_2_Category'],
+    // Sales Ranks (PA-API fills BOTH PascalCase and snake_case)
+    'salesRank1':       ['BestSellerRank', 'best_seller_rank_1'],
+    'salesRank1Cat':    ['BSRProductCategoryName', 'SalesRankCategory', 'best_seller_rank_1_category'],
+    'salesRank2':       ['best_seller_rank_2'],
+    'salesRank2Cat':    ['best_seller_rank_2_category'],
     'displayGroupRank': ['Display_Group_Rank'],
     'displayGroupName': ['Display_Group_Name'],
 
     // Browse Nodes / Categories
-    'browseNodeId':     ['BrowseNodeId', 'browse_node_id', 'Browse_Node_ID'],
-    'browseNodeName':   ['BrowseNodeDisplayName', 'Browse_Node_Name'],
-    'categoryPath':     ['Category_Path'],
+    'browseNodeId':     ['BrowseNodeId', 'browse_node_id'],
+    'browseNodeName':   ['BrowseNodeDisplayName'],
+    'categoryPath':     ['CategoryName', 'Category_Path'],
 
     // Relationships
-    'parentAsin':       ['ParentAsin', 'parent_asin', 'Parent_ASIN'],
+    'parentAsin':       ['ParentAsin', 'parent_asin'],
     'variationTheme':   ['Variation_Theme'],
     'childCount':       ['Child_Count'],
+    'variationCount':   ['VariationCount'],
 
     // Product Attributes
-    'color':            ['ColorName', 'color_name', 'Color'],
-    'size':             ['SizeName', 'size_name', 'Size'],
+    'color':            ['ColorName'],
+    'colorLower':       ['ColorNameLower'],
+    'size':             ['SizeName', 'size_name'],
+    'sizeLower':        ['SizeNameLower'],
     'material':         ['Material'],
     'unitCount':        ['UnitCount', 'unit_count'],
+
+    // Title stats (PA-API computes these)
+    'titleLength':      ['TitleLength', 'ProductTitleLength'],
+    'titleWords':       ['TitleWords', 'ProductTitleWords'],
 
     // A+ Content
     'hasAPlus':         ['Has_APlus'],
@@ -116,7 +131,7 @@ function spGetColumnMapping() {
     'sellerInfo':       ['Seller_Info'],
 
     // Links
-    'link':             ['Link', 'link', 'Amazon_Link', 'Url']
+    'link':             ['Link', 'link']
   };
 }
 
@@ -602,8 +617,13 @@ function spFetchProductData(asin, mpConfig, accessToken) {
 
   // Images
   const imageGroup = images[0]?.images || [];
-  const mainImage = imageGroup.find(i => i.variant === 'MAIN')?.link || imageGroup[0]?.link || '';
+  const mainImageObj = imageGroup.find(i => i.variant === 'MAIN') || imageGroup[0] || {};
+  const mainImage = mainImageObj.link || '';
+  const mainImageHeight = mainImageObj.height || '';
+  const mainImageWidth = mainImageObj.width || '';
   const additionalImages = imageGroup.filter(i => i.variant !== 'MAIN');
+  const largeImages = imageGroup.filter(i => (i.height || 0) >= 500 || (i.width || 0) >= 500);
+  const smallImages = imageGroup.filter(i => (i.height || 0) < 500 && (i.width || 0) < 500 && (i.height || 0) > 0);
 
   // Price from catalog attributes
   let catalogListPrice = '';
@@ -689,38 +709,62 @@ function spFetchProductData(asin, mpConfig, accessToken) {
   }
 
   const brandName = summary.brand || getAttr('brand') || '';
+  const manufacturerName = getAttr('manufacturer') || '';
+  const titleText = summary.itemName || getAttr('item_name') || '';
+  const colorValue = getAttr('color') || getAttr('color_name') || '';
+  const sizeValue = getAttr('size') || getAttr('size_name') || '';
+  const partNum = getAttr('part_number') || getAttr('manufacturer_part_number') || '';
+  const modelNum = getAttr('model_number') || getAttr('model') || '';
+
+  // Bullet points
+  const bullets = [];
+  for (let b = 0; b < 5; b++) {
+    bullets.push(attributes.bullet_point?.[b]?.value || '');
+  }
+  const featuresText = bullets.filter(b => b).join(' | ');
 
   return {
     asin: asin,
-    title: summary.itemName || getAttr('item_name') || '',
+    title: titleText,
+    titleLength: titleText.length,
+    titleWords: titleText ? titleText.split(/\s+/).length : 0,
     brand: brandName,
     brandLower: brandName.toLowerCase(),
-    manufacturer: getAttr('manufacturer') || '',
+    manufacturer: manufacturerName,
+    manufacturerLower: manufacturerName.toLowerCase(),
     productType: response.productTypes?.[0]?.productType || '',
     binding: getAttr('binding') || '',
 
     ean: ids.ean || '',
     upc: ids.upc || '',
     gtin: ids.gtin || '',
-    partNumber: getAttr('part_number') || getAttr('manufacturer_part_number') || '',
-    modelNumber: getAttr('model_number') || getAttr('model') || '',
+    partNumber: partNum,
+    modelNumber: modelNum,
+    mpn: partNum || modelNum,
 
-    bullet1: attributes.bullet_point?.[0]?.value || '',
-    bullet2: attributes.bullet_point?.[1]?.value || '',
-    bullet3: attributes.bullet_point?.[2]?.value || '',
-    bullet4: attributes.bullet_point?.[3]?.value || '',
-    bullet5: attributes.bullet_point?.[4]?.value || '',
+    bullet1: bullets[0],
+    bullet2: bullets[1],
+    bullet3: bullets[2],
+    bullet4: bullets[3],
+    bullet5: bullets[4],
+    features: featuresText,
 
     description: getAttr('product_description') || getAttr('item_description') || '',
 
     mainImageURL: mainImage,
+    mainImageHeight: mainImageHeight,
+    mainImageWidth: mainImageWidth,
     image2: additionalImages[0]?.link || '',
     image3: additionalImages[1]?.link || '',
     image4: additionalImages[2]?.link || '',
     image5: additionalImages[3]?.link || '',
     image6: additionalImages[4]?.link || '',
     image7: additionalImages[5]?.link || '',
+    image8: additionalImages[6]?.link || '',
+    image9: additionalImages[7]?.link || '',
     imageCount: imageGroup.length,
+    largeImageCount: largeImages.length,
+    smallImageCount: smallImages.length,
 
     catalogListPrice: catalogListPrice,
     catalogCurrency: catalogCurrency,
@@ -750,10 +794,13 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     parentAsin: rels.parentAsin || '',
     variationTheme: rels.variationTheme || '',
     childCount: rels.childCount || '',
+    variationCount: rels.childCount || '',
     childAsins: childAsinsList.join(', '),
 
-    color: getAttr('color') || getAttr('color_name') || '',
-    size: getAttr('size') || getAttr('size_name') || '',
+    color: colorValue,
+    colorLower: colorValue.toLowerCase(),
+    size: sizeValue,
+    sizeLower: sizeValue.toLowerCase(),
     material: getAttr('material') || getAttr('material_type') || '',
     unitCount: getAttr('unit_count') || '',
 
@@ -861,20 +908,22 @@ function spBuildHeaderMap(sheet) {
 }
 
 /**
- * Find the column index for a field using the mapping.
- * Returns column index (0-based) or -1 if not found.
+ * Find ALL column indices for a field using the mapping.
+ * PA-API fills multiple columns (e.g. Price AND price), so SP-API should too.
+ * Returns array of 0-based column indices.
  */
-function spFindColumn(headerIndex, fieldName) {
+function spFindAllColumns(headerIndex, fieldName) {
   const mapping = spGetColumnMapping();
   const candidates = mapping[fieldName] || [];
+  const cols = [];
 
   for (const colName of candidates) {
     if (headerIndex[colName] !== undefined) {
-      return headerIndex[colName];
+      cols.push(headerIndex[colName]);
     }
   }
 
-  return -1;
+  return cols;
 }
 
 /**
@@ -917,11 +966,13 @@ function spWriteProductRow(sheet, headerInfo, data, marketplace) {
   const amazonLink = `https://${mpConfig.domain || 'www.amazon.de'}/dp/${data.asin}`;
   const fetchDate = Utilities.formatDate(new Date(), 'Europe/Berlin', 'dd.MM.yyyy HH:mm');
 
-  // Helper: set value in the first matching column
+  // Helper: set value in ALL matching columns (PA-API fills both PascalCase and snake_case)
   const set = (fieldName, value) => {
-    const col = spFindColumn(hi, fieldName);
-    if (col >= 0 && col < numCols) {
-      row[col] = value || '';
+    const cols = spFindAllColumns(hi, fieldName);
+    for (const col of cols) {
+      if (col >= 0 && col < numCols) {
+        row[col] = value !== undefined && value !== null ? value : '';
+      }
     }
   };
 
@@ -935,6 +986,7 @@ function spWriteProductRow(sheet, headerInfo, data, marketplace) {
   set('brand', data.brand);
   set('brandLower', data.brandLower);
   set('manufacturer', data.manufacturer);
+  set('manufacturerLower', data.manufacturerLower);
   set('productType', data.productType);
   set('binding', data.binding);
 
@@ -943,23 +995,31 @@ function spWriteProductRow(sheet, headerInfo, data, marketplace) {
   set('gtin', data.gtin);
   set('partNumber', data.partNumber);
   set('modelNumber', data.modelNumber);
+  set('mpn', data.mpn);
 
   set('bullet1', data.bullet1);
   set('bullet2', data.bullet2);
   set('bullet3', data.bullet3);
   set('bullet4', data.bullet4);
   set('bullet5', data.bullet5);
+  set('features', data.features);
 
   set('description', data.description);
 
   set('mainImageURL', data.mainImageURL);
+  set('mainImageHeight', data.mainImageHeight);
+  set('mainImageWidth', data.mainImageWidth);
   set('image2', data.image2);
   set('image3', data.image3);
   set('image4', data.image4);
   set('image5', data.image5);
   set('image6', data.image6);
   set('image7', data.image7);
+  set('image8', data.image8);
+  set('image9', data.image9);
   set('imageCount', data.imageCount);
+  set('largeImageCount', data.largeImageCount);
+  set('smallImageCount', data.smallImageCount);
 
   set('price', data.price);
   set('currentPrice', data.currentPrice);
@@ -990,11 +1050,17 @@ function spWriteProductRow(sheet, headerInfo, data, marketplace) {
   set('parentAsin', data.parentAsin);
   set('variationTheme', data.variationTheme);
   set('childCount', data.childCount);
+  set('variationCount', data.variationCount);
 
   set('color', data.color);
+  set('colorLower', data.colorLower);
   set('size', data.size);
+  set('sizeLower', data.sizeLower);
   set('material', data.material);
   set('unitCount', data.unitCount);
+
+  set('titleLength', data.titleLength);
+  set('titleWords', data.titleWords);
 
   set('hasAPlus', data.hasAPlus);
   set('aplusType', data.aplusType);
