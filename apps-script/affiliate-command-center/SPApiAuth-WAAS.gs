@@ -1,14 +1,14 @@
 /**
- * SP-API Authentication & Token Management for WAAS (Affiliate Command Center)
+ * SP-API Authentication & Token Management for WAAS System
  * Handles OAuth token exchange and refresh for Amazon SP-API
  *
- * Credentials stored in Config sheet:
- * - SP_LWA_Client_ID
- * - SP_LWA_Client_Secret
- * - SP_Refresh_Token
- * - SP_Seller_ID
+ * Credentials stored in Script Properties (alongside PA-API keys):
+ * - SP_LWA_CLIENT_ID
+ * - SP_LWA_CLIENT_SECRET
+ * - SP_REFRESH_TOKEN
+ * - SP_SELLER_ID
  *
- * @version 1.0
+ * @version 1.1
  * @author NetAnaliza / LUKO
  */
 
@@ -27,33 +27,20 @@ const SP_MARKETPLACE_CONFIG = {
   'IE': { marketplaceId: 'A1QA6N5NQHZ0EW', endpoint: 'https://sellingpartnerapi-eu.amazon.com', primary: 'en-GB', currency: 'EUR', domain: 'www.amazon.ie' }
 };
 
-// ==================== CREDENTIAL MANAGEMENT ====================
+// ==================== CREDENTIAL MANAGEMENT (Script Properties) ====================
 
 /**
- * Get SP-API credentials from Config sheet
+ * Get SP-API credentials from Script Properties
+ * (same place as PA_ACCESS_KEY, DIVI_API_KEY, etc.)
  */
 function spGetConfig() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const configSheet = ss.getSheetByName('Config');
-
-  if (!configSheet) {
-    return { clientId: '', clientSecret: '', refreshToken: '', sellerId: '' };
-  }
-
-  const data = configSheet.getDataRange().getValues();
-  const config = {};
-
-  for (let i = 0; i < data.length; i++) {
-    if (data[i][0] && data[i][1]) {
-      config[data[i][0].toString().trim()] = data[i][1].toString().trim();
-    }
-  }
+  const props = PropertiesService.getScriptProperties();
 
   return {
-    clientId: config['SP_LWA_Client_ID'] || config['SP_LWA_CLIENT_ID'] || '',
-    clientSecret: config['SP_LWA_Client_Secret'] || config['SP_LWA_CLIENT_SECRET'] || '',
-    refreshToken: config['SP_Refresh_Token'] || config['SP_REFRESH_TOKEN'] || '',
-    sellerId: config['SP_Seller_ID'] || config['SP_SELLER_ID'] || ''
+    clientId: props.getProperty('SP_LWA_CLIENT_ID') || '',
+    clientSecret: props.getProperty('SP_LWA_CLIENT_SECRET') || '',
+    refreshToken: props.getProperty('SP_REFRESH_TOKEN') || '',
+    sellerId: props.getProperty('SP_SELLER_ID') || ''
   };
 }
 
@@ -91,11 +78,11 @@ function spGetAccessToken() {
   const config = spGetConfig();
 
   if (!config.clientId || !config.clientSecret) {
-    throw new Error('SP-API credentials not configured. Go to: Products > SP-API Import > Setup Credentials');
+    throw new Error('SP-API credentials not configured.\n\nGo to: WAAS > Settings > SP-API Setup Credentials\n\nOr add manually in Script Properties:\nSP_LWA_CLIENT_ID, SP_LWA_CLIENT_SECRET, SP_REFRESH_TOKEN');
   }
 
   if (!config.refreshToken) {
-    throw new Error('SP-API Refresh Token not configured. Add SP_Refresh_Token to Config sheet.');
+    throw new Error('SP-API Refresh Token not configured.\n\nAdd SP_REFRESH_TOKEN in Apps Script > Project Settings > Script Properties');
   }
 
   const url = 'https://api.amazon.com/auth/o2/token';
@@ -212,60 +199,69 @@ function spCallAPI(method, path, params, accessToken) {
 // ==================== SETUP & CREDENTIALS UI ====================
 
 /**
- * Setup SP-API credentials dialog
+ * Setup SP-API credentials - prompts for each key and saves to Script Properties
  */
 function spSetupCredentials() {
   const ui = SpreadsheetApp.getUi();
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let configSheet = ss.getSheetByName('Config');
+  const props = PropertiesService.getScriptProperties();
 
-  if (!configSheet) {
-    configSheet = ss.insertSheet('Config');
-    configSheet.getRange(1, 1, 1, 3).setValues([['Key', 'Value', 'Description']]);
-    configSheet.getRange(1, 1, 1, 3)
-      .setFontWeight('bold')
-      .setBackground('#4285F4')
-      .setFontColor('#FFFFFF');
-    configSheet.setColumnWidth(1, 200);
-    configSheet.setColumnWidth(2, 350);
-    configSheet.setColumnWidth(3, 250);
-    configSheet.setFrozenRows(1);
-    Logger.log('[SP-API] Created Config sheet');
+  const currentConfig = spGetConfig();
+  const hasExisting = !!(currentConfig.clientId || currentConfig.refreshToken);
+
+  if (hasExisting) {
+    const check = ui.alert('SP-API Credentials',
+      'SP-API credentials juz istnieja w Script Properties.\n\n' +
+      `Client ID: ${currentConfig.clientId ? currentConfig.clientId.substring(0, 20) + '...' : '(brak)'}\n` +
+      `Refresh Token: ${currentConfig.refreshToken ? '***configured***' : '(brak)'}\n` +
+      `Seller ID: ${currentConfig.sellerId || '(brak)'}\n\n` +
+      'Chcesz je zaktualizowac?',
+      ui.ButtonSet.YES_NO);
+
+    if (check !== ui.Button.YES) return;
   }
 
-  const data = configSheet.getDataRange().getValues();
-  const existingKeys = new Set();
-  for (let i = 0; i < data.length; i++) {
-    if (data[i][0]) existingKeys.add(data[i][0].toString().trim());
-  }
-
-  const spKeys = [
-    { key: 'SP_LWA_Client_ID', label: 'SP-API LWA Client ID' },
-    { key: 'SP_LWA_Client_Secret', label: 'SP-API LWA Client Secret' },
-    { key: 'SP_Refresh_Token', label: 'SP-API Refresh Token' },
-    { key: 'SP_Seller_ID', label: 'SP-API Seller ID' }
+  // Prompt for each credential
+  const fields = [
+    { key: 'SP_LWA_CLIENT_ID', label: 'LWA Client ID', current: currentConfig.clientId,
+      help: 'Z Amazon Seller Central > Apps & Services > Develop Apps' },
+    { key: 'SP_LWA_CLIENT_SECRET', label: 'LWA Client Secret', current: currentConfig.clientSecret,
+      help: 'Secret z tej samej aplikacji LWA' },
+    { key: 'SP_REFRESH_TOKEN', label: 'Refresh Token', current: currentConfig.refreshToken,
+      help: 'Token z procesu autoryzacji SP-API' },
+    { key: 'SP_SELLER_ID', label: 'Seller ID', current: currentConfig.sellerId,
+      help: 'Twoj Amazon Seller ID (np. A1XXXXXXXXXXXX)' }
   ];
 
-  let addedCount = 0;
-  for (const spKey of spKeys) {
-    if (!existingKeys.has(spKey.key)) {
-      configSheet.appendRow([spKey.key, '', spKey.label]);
-      addedCount++;
+  let updated = 0;
+  for (const field of fields) {
+    const currentDisplay = field.current ? `Obecna wartosc: ${field.current.substring(0, 15)}...` : 'Brak wartosci';
+    const result = ui.prompt(
+      `SP-API: ${field.label}`,
+      `${field.help}\n\n${currentDisplay}\n\nWpisz nowa wartosc (lub zostaw puste aby pominac):`,
+      ui.ButtonSet.OK_CANCEL
+    );
+
+    if (result.getSelectedButton() !== ui.Button.OK) break;
+
+    const value = result.getResponseText().trim();
+    if (value) {
+      props.setProperty(field.key, value);
+      updated++;
     }
   }
 
-  if (addedCount > 0) {
+  if (updated > 0) {
     ui.alert('SP-API Config',
-      `Dodano ${addedCount} nowych kluczy SP-API do Config sheet.\n\n` +
-      'Uzupelnij wartosci:\n' +
-      '1. SP_LWA_Client_ID - z Amazon Seller Central > Apps & Services\n' +
-      '2. SP_LWA_Client_Secret - secret z LWA\n' +
-      '3. SP_Refresh_Token - token z autoryzacji SP-API\n' +
-      '4. SP_Seller_ID - Twoj Seller ID\n\n' +
-      'Nastepnie przetestuj polaczenie: Products > SP-API Import > Test Connection',
+      `Zaktualizowano ${updated} kluczy SP-API w Script Properties.\n\n` +
+      'Przetestuj polaczenie:\nWAAS > Products > SP-API Import > Test Connection',
       ui.ButtonSet.OK);
   } else {
-    ui.alert('SP-API Config', 'Klucze SP-API juz istnieja w Config sheet.\nUzupelnij wartosci recznie.', ui.ButtonSet.OK);
+    ui.alert('SP-API Config',
+      'Nie zaktualizowano zadnych kluczy.\n\n' +
+      'Mozesz tez dodac klucze recznie:\n' +
+      'Apps Script > Project Settings > Script Properties\n\n' +
+      'Klucze: SP_LWA_CLIENT_ID, SP_LWA_CLIENT_SECRET, SP_REFRESH_TOKEN, SP_SELLER_ID',
+      ui.ButtonSet.OK);
   }
 }
 
@@ -280,11 +276,11 @@ function spTestConnection() {
     if (!config.clientId || !config.clientSecret || !config.refreshToken) {
       ui.alert('Brak danych',
         'SP-API credentials nie sa skonfigurowane.\n\n' +
-        'Uzupelnij w Config sheet:\n' +
-        '- SP_LWA_Client_ID\n' +
-        '- SP_LWA_Client_Secret\n' +
-        '- SP_Refresh_Token\n\n' +
-        'Lub uruchom: Products > SP-API Import > Setup Credentials',
+        'Dodaj w Script Properties (Apps Script > Project Settings):\n' +
+        '- SP_LWA_CLIENT_ID\n' +
+        '- SP_LWA_CLIENT_SECRET\n' +
+        '- SP_REFRESH_TOKEN\n\n' +
+        'Lub uruchom: WAAS > Products > SP-API Import > Setup Credentials',
         ui.ButtonSet.OK);
       return;
     }

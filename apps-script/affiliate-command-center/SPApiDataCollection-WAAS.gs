@@ -1,9 +1,11 @@
 /**
- * SP-API Data Collection for WAAS (Affiliate Command Center)
+ * SP-API Data Collection for WAAS System
  * Fetches product data via Amazon SP-API and writes to Products sheet
  *
- * KEY: Maps SP-API data to EXISTING Products sheet columns.
- * Writes to ALL matching columns (same as PA-API behavior).
+ * KEY FEATURES:
+ * - Maps SP-API data to EXISTING Products sheet columns (like PA-API)
+ * - Writes to ALL matching columns (same as PA-API behavior)
+ * - AUTO-CREATES missing columns for SP-API-specific data
  *
  * Target sheet: Products
  *
@@ -12,7 +14,7 @@
  * - /catalog/2022-04-01/items - Search by keyword
  * - /products/pricing/v0/items/{asin}/offers - Pricing & seller info
  *
- * @version 1.0
+ * @version 2.0
  * @author NetAnaliza / LUKO
  */
 
@@ -20,7 +22,8 @@
 
 /**
  * Maps SP-API data fields to WAAS Products sheet column names.
- * ALL matching columns get filled.
+ * ALL matching columns get filled (same behavior as PA-API).
+ * If none of the candidate columns exist, spEnsureProductColumns() creates the first one.
  */
 function spGetColumnMapping() {
   return {
@@ -28,6 +31,7 @@ function spGetColumnMapping() {
     'asin':             ['ASIN'],
     'title':            ['Product Name', 'Title'],
     'titleShort':       ['TitleShort'],
+    'titleLabel':       ['TitleLabel'],
     'brand':            ['Brand', 'BrandName'],
     'price':            ['Price'],
     'listPrice':        ['ListPrice'],
@@ -54,9 +58,17 @@ function spGetColumnMapping() {
     // Bullet Points / Features
     'bulletPoints':     ['BulletPoints'],
     'features':         ['Features'],
+    'featuresLabel':    ['FeaturesLabel'],
+
+    // Description
+    'description':      ['Description'],
 
     // Identifiers
     'ean':              ['EAN'],
+    'upc':              ['UPC'],
+    'gtin':             ['GTIN'],
+    'mpn':              ['MPN'],
+    'partNumber':       ['PartNumber'],
     'colorName':        ['ColorName'],
     'sizeName':         ['SizeName'],
     'sizeLabel':        ['SizeLabel'],
@@ -64,6 +76,8 @@ function spGetColumnMapping() {
     'manufacturerLabel':['ManufacturerLabel'],
     'model':            ['Model'],
     'modelLabel':       ['ModelLabel'],
+    'material':         ['Material'],
+    'unitCount':        ['UnitCount'],
 
     // Images
     'image1':           ['Image1Source'],
@@ -75,24 +89,135 @@ function spGetColumnMapping() {
     'image7':           ['Image7Source'],
     'image8':           ['Image8Source'],
     'image9':           ['Image9Source'],
+    'imagesSources':    ['images_sources'],
 
     // Relationships
     'parentAsin':       ['ParentAsin'],
     'isVariant':        ['IsVariant'],
     'hasParent':        ['HasParent'],
+    'variationCount':   ['VariationCount'],
+    'variationTheme':   ['VariationTheme'],
 
     // Boolean flags
     'hasImages':        ['HasImages'],
     'hasPrimaryImage':  ['HasPrimaryImage'],
     'hasDimensions':    ['HasDimensions'],
+    'hasVariantImages': ['HasVariantImages'],
 
     // Prime / Availability
     'isPrime':          ['IsPrime'],
+    'availability':     ['Availability'],
+    'availabilityMsg':  ['AvailabilityMessage'],
 
     // Savings
     'savingsAmount':    ['SavingsAmount'],
-    'savingsPercent':   ['SavingsPercent']
+    'savingsPercent':   ['SavingsPercent'],
+
+    // Dimensions
+    'itemWeight':       ['ItemWeight'],
+    'itemWeightUnit':   ['ItemWeightUnit'],
+    'itemHeight':       ['ItemHeight'],
+    'itemHeightUnit':   ['ItemHeightUnit'],
+    'itemWidth':        ['ItemWidth'],
+    'itemWidthUnit':    ['ItemWidthUnit'],
+    'itemLength':       ['ItemLength'],
+    'itemLengthUnit':   ['ItemLengthUnit'],
+
+    // Product attributes
+    'productType':      ['ProductType'],
+    'titleLength':      ['TitleLength'],
+    'titleWords':       ['TitleWords']
   };
+}
+
+/**
+ * List of SP-API fields that carry actual product data (not metadata/flags).
+ * Used by spEnsureProductColumns() to decide which columns to auto-create.
+ * Excludes boolean flags, status fields, and metadata that are always set.
+ */
+function spGetDataFields() {
+  return [
+    'asin', 'title', 'titleShort', 'titleLabel', 'brand', 'price', 'listPrice',
+    'priceFormatted', 'priceText', 'priceCurrency', 'category', 'link',
+    'mainImageURL', 'marketplace', 'source', 'status', 'lastUpdated', 'addedDate',
+    'salesRank1', 'salesRank1Cat',
+    'browseNodeName', 'browseNodeId',
+    'bulletPoints', 'features', 'featuresLabel', 'description',
+    'ean', 'upc', 'gtin', 'mpn', 'partNumber',
+    'colorName', 'sizeName', 'sizeLabel',
+    'manufacturer', 'manufacturerLabel',
+    'model', 'modelLabel', 'material', 'unitCount',
+    'image1', 'image2', 'image3', 'image4', 'image5',
+    'image6', 'image7', 'image8', 'image9', 'imagesSources',
+    'parentAsin', 'isVariant', 'hasParent',
+    'variationCount', 'variationTheme',
+    'hasImages', 'hasPrimaryImage', 'hasDimensions', 'hasVariantImages',
+    'isPrime', 'availability', 'availabilityMsg',
+    'savingsAmount', 'savingsPercent',
+    'itemWeight', 'itemWeightUnit',
+    'itemHeight', 'itemHeightUnit',
+    'itemWidth', 'itemWidthUnit',
+    'itemLength', 'itemLengthUnit',
+    'productType', 'titleLength', 'titleWords'
+  ];
+}
+
+// ==================== AUTO-CREATE MISSING COLUMNS ====================
+
+/**
+ * Ensures all SP-API data fields have at least one target column in Products sheet.
+ * If a field has NO matching column in the sheet, the first candidate column name
+ * from the mapping is appended to the sheet header row.
+ *
+ * @param {Sheet} sheet - Products sheet
+ * @returns {Object} Updated headerInfo { headers, headerIndex }
+ */
+function spEnsureProductColumns(sheet) {
+  const lastCol = sheet.getLastColumn();
+  const headers = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+  const headerIndex = {};
+
+  for (let c = 0; c < headers.length; c++) {
+    const h = headers[c].toString().trim();
+    if (h) headerIndex[h] = c;
+  }
+
+  const mapping = spGetColumnMapping();
+  const dataFields = spGetDataFields();
+  const newColumns = [];
+
+  for (const field of dataFields) {
+    const candidates = mapping[field];
+    if (!candidates || candidates.length === 0) continue;
+
+    // Check if at least one candidate column exists
+    const found = candidates.some(colName => headerIndex[colName] !== undefined);
+
+    if (!found) {
+      // Use the first candidate name as the new column
+      const newColName = candidates[0];
+      // Avoid duplicates in newColumns list
+      if (!newColumns.includes(newColName)) {
+        newColumns.push(newColName);
+      }
+    }
+  }
+
+  if (newColumns.length > 0) {
+    const startCol = lastCol + 1;
+    const range = sheet.getRange(1, startCol, 1, newColumns.length);
+    range.setValues([newColumns]);
+
+    Logger.log(`[SP-API] Auto-created ${newColumns.length} new columns: ${newColumns.join(', ')}`);
+
+    // Rebuild headerIndex with new columns
+    for (let i = 0; i < newColumns.length; i++) {
+      headerIndex[newColumns[i]] = lastCol + i;
+      headers.push(newColumns[i]);
+    }
+  }
+
+  return { headers, headerIndex };
 }
 
 // ==================== MENU FUNCTIONS ====================
@@ -105,7 +230,7 @@ function spMenuImportByASIN() {
 
   if (!spHasCredentials()) {
     ui.alert('SP-API nie skonfigurowane',
-      'Brak danych SP-API.\n\nUruchom: Products > SP-API Import > Setup Credentials',
+      'Brak danych SP-API.\n\nUruchom: WAAS > Products > SP-API Import > Setup Credentials',
       ui.ButtonSet.OK);
     return;
   }
@@ -168,7 +293,7 @@ function spMenuImportWithVariants() {
 
   if (!spHasCredentials()) {
     ui.alert('SP-API nie skonfigurowane',
-      'Brak danych SP-API.\n\nUruchom: Products > SP-API Import > Setup Credentials',
+      'Brak danych SP-API.\n\nUruchom: WAAS > Products > SP-API Import > Setup Credentials',
       ui.ButtonSet.OK);
     return;
   }
@@ -178,7 +303,7 @@ function spMenuImportWithVariants() {
     'Wpisz ASIN(y) do zaimportowania:\n\n' +
     'Jeden: B08N5WRWNW\n' +
     'Wiele: B08N5WRWNW, B07XJ8C8F5\n\n' +
-    'Dla kazdego ASIN zostaną pobrane rowniez\n' +
+    'Dla kazdego ASIN zostan\u0105 pobrane rowniez\n' +
     'inne ASIN-y tego samego Parent ASIN (warianty).\n\n' +
     'Oddziel przecinkami.',
     ui.ButtonSet.OK_CANCEL
@@ -216,6 +341,10 @@ function spMenuImportWithVariants() {
       `Bledy: ${results.failed}\n` +
       `Pominiete (duplikaty): ${results.skipped}`;
 
+    if (results.newColumns > 0) {
+      resultMsg += `\nNowe kolumny: ${results.newColumns}`;
+    }
+
     SpreadsheetApp.getActiveSpreadsheet().toast(resultMsg, 'SP-API - zakonczone', 15);
 
   } catch (error) {
@@ -231,7 +360,7 @@ function spMenuSearchByKeyword() {
 
   if (!spHasCredentials()) {
     ui.alert('SP-API nie skonfigurowane',
-      'Brak danych SP-API.\n\nUruchom: Products > SP-API Import > Setup Credentials',
+      'Brak danych SP-API.\n\nUruchom: WAAS > Products > SP-API Import > Setup Credentials',
       ui.ButtonSet.OK);
     return;
   }
@@ -307,7 +436,7 @@ function spMenuImportFromSelection() {
 
   if (!spHasCredentials()) {
     ui.alert('SP-API nie skonfigurowane',
-      'Brak danych SP-API.\n\nUruchom: Products > SP-API Import > Setup Credentials',
+      'Brak danych SP-API.\n\nUruchom: WAAS > Products > SP-API Import > Setup Credentials',
       ui.ButtonSet.OK);
     return;
   }
@@ -359,7 +488,7 @@ function spMenuImportFromSelection() {
  * @param {string[]} asins - Array of ASINs to fetch
  * @param {string} marketplace - Marketplace code (DE, FR, etc.)
  * @param {Object} options - { fetchVariants: boolean }
- * @returns {Object} { success, failed, skipped, variants, errors }
+ * @returns {Object} { success, failed, skipped, variants, newColumns, errors }
  */
 function spFetchAndWriteProducts(asins, marketplace, options) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -370,8 +499,15 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
   const productsSheet = ss.getSheetByName('Products');
   if (!productsSheet) throw new Error('Products tab not found!');
 
-  // Build header map
-  const headerInfo = spBuildHeaderMap(productsSheet);
+  // Auto-create missing columns BEFORE building header map
+  const colsBefore = productsSheet.getLastColumn();
+  const headerInfo = spEnsureProductColumns(productsSheet);
+  const colsAfter = productsSheet.getLastColumn();
+  const newColumnsCreated = colsAfter - colsBefore;
+
+  if (newColumnsCreated > 0) {
+    Logger.log(`[SP-API] Created ${newColumnsCreated} new columns in Products sheet`);
+  }
 
   // Get existing ASIN+Marketplace combinations
   const existing = spGetExistingKeys(productsSheet, headerInfo);
@@ -380,7 +516,7 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
   let nextId = spGetNextId(productsSheet, headerInfo);
 
   const accessToken = spGetAccessToken();
-  const results = { success: 0, failed: 0, skipped: 0, variants: 0, errors: [] };
+  const results = { success: 0, failed: 0, skipped: 0, variants: 0, newColumns: newColumnsCreated, errors: [] };
   const startTime = Date.now();
   const maxTime = 4.5 * 60 * 1000;
 
@@ -414,6 +550,7 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
         productData.price = pricing.listPrice || productData.catalogListPrice || '';
         productData.currentPrice = pricing.currentPrice || '';
         productData.currency = pricing.currency || productData.catalogCurrency || '';
+        productData.isPrime = pricing.isPrime || '';
       } catch (e) {
         Logger.log(`[SP-API] Pricing failed for ${asin}: ${e.message}`);
         productData.price = productData.catalogListPrice || '';
@@ -451,6 +588,7 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
               childData.price = childPricing.listPrice || childData.catalogListPrice || '';
               childData.currentPrice = childPricing.currentPrice || '';
               childData.currency = childPricing.currency || childData.catalogCurrency || '';
+              childData.isPrime = childPricing.isPrime || '';
             } catch (e) {
               childData.price = childData.catalogListPrice || '';
             }
@@ -495,6 +633,17 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
 
                 const sibData = spFetchProductData(sibAsin, mpConfig, accessToken);
                 Utilities.sleep(300);
+
+                try {
+                  const sibPricing = spFetchPricing(sibAsin, mpConfig, accessToken);
+                  sibData.price = sibPricing.listPrice || sibData.catalogListPrice || '';
+                  sibData.currentPrice = sibPricing.currentPrice || '';
+                  sibData.currency = sibPricing.currency || sibData.catalogCurrency || '';
+                  sibData.isPrime = sibPricing.isPrime || '';
+                } catch (e) {
+                  sibData.price = sibData.catalogListPrice || '';
+                }
+                Utilities.sleep(200);
 
                 sibData.isVariant = true;
                 sibData.parentAsinOverride = asin;
@@ -559,6 +708,8 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     if (idGroup.marketplaceId === mpConfig.marketplaceId) {
       for (const id of (idGroup.identifiers || [])) {
         if (id.identifierType === 'EAN') ids.ean = id.identifier;
+        if (id.identifierType === 'UPC') ids.upc = id.identifier;
+        if (id.identifierType === 'GTIN') ids.gtin = id.identifier;
       }
       break;
     }
@@ -569,6 +720,8 @@ function spFetchProductData(asin, mpConfig, accessToken) {
   const mainImageObj = imageGroup.find(i => i.variant === 'MAIN') || imageGroup[0] || {};
   const mainImage = mainImageObj.link || '';
   const additionalImages = imageGroup.filter(i => i.variant !== 'MAIN');
+  const allImageUrls = imageGroup.map(i => i.link).filter(Boolean);
+  const variantImages = imageGroup.filter(i => i.variant && i.variant !== 'MAIN');
 
   // Price from catalog attributes
   let catalogListPrice = '';
@@ -586,14 +739,20 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     catalogCurrency = priceData.currency || 'EUR';
   }
 
-  // Dimensions (for HasDimensions flag)
-  let hasDimensions = false;
+  // Dimensions
+  const dimData = {};
   for (const dim of dimensions) {
     if (dim.marketplaceId === mpConfig.marketplaceId) {
       const itemDims = dim.item || {};
-      if (itemDims.weight || itemDims.height || itemDims.width || itemDims.length) {
-        hasDimensions = true;
-      }
+      dimData.itemWeight = itemDims.weight?.value || '';
+      dimData.itemWeightUnit = itemDims.weight?.unit || '';
+      dimData.itemHeight = itemDims.height?.value || '';
+      dimData.itemHeightUnit = itemDims.height?.unit || '';
+      dimData.itemWidth = itemDims.width?.value || '';
+      dimData.itemWidthUnit = itemDims.width?.unit || '';
+      dimData.itemLength = itemDims.length?.value || '';
+      dimData.itemLengthUnit = itemDims.length?.unit || '';
+      dimData.hasDimensions = !!(itemDims.weight || itemDims.height || itemDims.width || itemDims.length);
       break;
     }
   }
@@ -634,6 +793,11 @@ function spFetchProductData(asin, mpConfig, accessToken) {
       const childRels = relList.filter(r => r.type === 'VARIATION' && r.childAsins);
       if (childRels.length > 0) {
         childAsinsList = childRels.flatMap(r => r.childAsins || []);
+        rels.childCount = childAsinsList.length;
+      }
+      const variationRel = relList.find(r => r.variationTheme);
+      if (variationRel) {
+        rels.variationTheme = variationRel.variationTheme?.attributes?.join(', ') || '';
       }
       break;
     }
@@ -653,11 +817,15 @@ function spFetchProductData(asin, mpConfig, accessToken) {
   const colorValue = getAttr('color') || getAttr('color_name') || '';
   const sizeValue = getAttr('size') || getAttr('size_name') || '';
   const modelValue = getAttr('model_number') || getAttr('model') || '';
+  const partNum = getAttr('part_number') || getAttr('manufacturer_part_number') || '';
 
   return {
     asin: asin,
     title: titleText,
     titleShort: titleText.length > 80 ? titleText.substring(0, 80) + '...' : titleText,
+    titleLabel: titleText,
+    titleLength: titleText.length,
+    titleWords: titleText ? titleText.split(/\s+/).length : 0,
     brand: brandName,
     manufacturer: manufacturerName,
     manufacturerLabel: manufacturerName,
@@ -666,12 +834,20 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     productType: response.productTypes?.[0]?.productType || '',
 
     ean: ids.ean || '',
+    upc: ids.upc || '',
+    gtin: ids.gtin || '',
+    mpn: partNum || modelValue,
+    partNumber: partNum,
     colorName: colorValue,
     sizeName: sizeValue,
     sizeLabel: sizeValue,
+    material: getAttr('material') || getAttr('material_type') || '',
+    unitCount: getAttr('unit_count') || '',
 
     bulletPoints: bulletsText,
     features: featuresText,
+    featuresLabel: featuresText,
+    description: getAttr('product_description') || getAttr('item_description') || '',
 
     mainImageURL: mainImage,
     image1: additionalImages[0]?.link || '',
@@ -683,13 +859,23 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     image7: additionalImages[6]?.link || '',
     image8: additionalImages[7]?.link || '',
     image9: additionalImages[8]?.link || '',
+    imagesSources: allImageUrls.join(', '),
     hasImages: imageGroup.length > 0,
     hasPrimaryImage: !!mainImage,
+    hasVariantImages: variantImages.length > 0,
 
     catalogListPrice: catalogListPrice,
     catalogCurrency: catalogCurrency,
 
-    hasDimensions: hasDimensions,
+    hasDimensions: dimData.hasDimensions || false,
+    itemWeight: dimData.itemWeight || '',
+    itemWeightUnit: dimData.itemWeightUnit || '',
+    itemHeight: dimData.itemHeight || '',
+    itemHeightUnit: dimData.itemHeightUnit || '',
+    itemWidth: dimData.itemWidth || '',
+    itemWidthUnit: dimData.itemWidthUnit || '',
+    itemLength: dimData.itemLength || '',
+    itemLengthUnit: dimData.itemLengthUnit || '',
 
     salesRank1: ranks.rank1 || '',
     salesRank1Cat: ranks.rank1Cat || ranks.displayName || '',
@@ -699,7 +885,9 @@ function spFetchProductData(asin, mpConfig, accessToken) {
     categoryPath: cats.path || '',
 
     parentAsin: rels.parentAsin || '',
-    childAsins: childAsinsList.join(', ')
+    childAsins: childAsinsList.join(', '),
+    variationCount: rels.childCount || '',
+    variationTheme: rels.variationTheme || ''
   };
 }
 
@@ -716,6 +904,7 @@ function spFetchPricing(asin, mpConfig, accessToken) {
   const offers = payload.Offers || payload.offers || [];
 
   let listPrice = '', currentPrice = '', currency = mpConfig.currency || 'EUR';
+  let isPrime = false;
 
   const lowestPrices = summary.LowestPrices || [];
   if (lowestPrices.length > 0) {
@@ -724,6 +913,7 @@ function spFetchPricing(asin, mpConfig, accessToken) {
     currentPrice = bestPrice.LandedPrice?.Amount || bestPrice.ListingPrice?.Amount || '';
     currency = bestPrice.LandedPrice?.CurrencyCode || bestPrice.ListingPrice?.CurrencyCode || currency;
     listPrice = bestPrice.ListingPrice?.Amount || '';
+    if (fbaPrice) isPrime = true;
   }
 
   if (!currentPrice && summary.BuyBoxPrices && summary.BuyBoxPrices.length > 0) {
@@ -732,7 +922,13 @@ function spFetchPricing(asin, mpConfig, accessToken) {
     currency = buyBox.LandedPrice?.CurrencyCode || currency;
   }
 
-  return { listPrice, currentPrice, currency };
+  if (offers.length > 0) {
+    const offer = offers[0];
+    const isFBA = offer.IsFulfilledByAmazon || offer.isFulfilledByAmazon || false;
+    if (isFBA) isPrime = true;
+  }
+
+  return { listPrice, currentPrice, currency, isPrime };
 }
 
 /**
@@ -854,7 +1050,7 @@ function spGetNextId(sheet, headerInfo) {
 }
 
 /**
- * Write a single product row to Products sheet, mapping to existing columns.
+ * Write a single product row to Products sheet, mapping to ALL matching columns.
  */
 function spWriteProductRow(sheet, headerInfo, data, marketplace, id) {
   const hi = headerInfo.headerIndex;
@@ -884,6 +1080,7 @@ function spWriteProductRow(sheet, headerInfo, data, marketplace, id) {
   set('asin', data.asin);
   set('title', data.title);
   set('titleShort', data.titleShort);
+  set('titleLabel', data.titleLabel);
   set('brand', data.brand);
   set('manufacturer', data.manufacturer);
   set('manufacturerLabel', data.manufacturerLabel);
@@ -902,10 +1099,14 @@ function spWriteProductRow(sheet, headerInfo, data, marketplace, id) {
   set('listPrice', priceValue);
   set('priceCurrency', currencyValue);
   if (priceValue && currencyValue) {
-    const currencySymbol = currencyValue === 'EUR' ? '€' : currencyValue === 'GBP' ? '£' : currencyValue;
+    const currencySymbol = currencyValue === 'EUR' ? '\u20AC' : currencyValue === 'GBP' ? '\u00A3' : currencyValue;
     set('priceFormatted', `${priceValue} ${currencySymbol}`);
     set('priceText', `${priceValue} ${currencySymbol}`);
   }
+
+  // Savings
+  set('savingsAmount', data.savingsAmount || '');
+  set('savingsPercent', data.savingsPercent || '');
 
   // Category
   set('category', data.salesRank1Cat || data.categoryPath || '');
@@ -930,23 +1131,57 @@ function spWriteProductRow(sheet, headerInfo, data, marketplace, id) {
   set('image7', data.image7);
   set('image8', data.image8);
   set('image9', data.image9);
+  set('imagesSources', data.imagesSources);
   set('hasImages', data.hasImages);
   set('hasPrimaryImage', data.hasPrimaryImage);
+  set('hasVariantImages', data.hasVariantImages);
 
   // Content
   set('bulletPoints', data.bulletPoints);
   set('features', data.features);
+  set('featuresLabel', data.featuresLabel);
+  set('description', data.description);
+
+  // Identifiers
   set('ean', data.ean);
+  set('upc', data.upc);
+  set('gtin', data.gtin);
+  set('mpn', data.mpn);
+  set('partNumber', data.partNumber);
   set('colorName', data.colorName);
   set('sizeName', data.sizeName);
   set('sizeLabel', data.sizeLabel);
+  set('material', data.material);
+  set('unitCount', data.unitCount);
+
+  // Dimensions
   set('hasDimensions', data.hasDimensions);
+  set('itemWeight', data.itemWeight);
+  set('itemWeightUnit', data.itemWeightUnit);
+  set('itemHeight', data.itemHeight);
+  set('itemHeightUnit', data.itemHeightUnit);
+  set('itemWidth', data.itemWidth);
+  set('itemWidthUnit', data.itemWidthUnit);
+  set('itemLength', data.itemLength);
+  set('itemLengthUnit', data.itemLengthUnit);
 
   // Relationships / Variant flags
   const parentAsin = data.parentAsinOverride || data.parentAsin || '';
   set('parentAsin', parentAsin);
   set('isVariant', data.isVariant ? 'TRUE' : 'FALSE');
   set('hasParent', parentAsin ? 'TRUE' : 'FALSE');
+  set('variationCount', data.variationCount);
+  set('variationTheme', data.variationTheme);
+
+  // Product attributes
+  set('productType', data.productType);
+  set('titleLength', data.titleLength);
+  set('titleWords', data.titleWords);
+
+  // Prime / Availability
+  set('isPrime', data.isPrime ? 'TRUE' : 'FALSE');
+  set('availability', data.availability || '');
+  set('availabilityMsg', data.availabilityMsg || '');
 
   sheet.appendRow(row);
 }
