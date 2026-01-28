@@ -595,7 +595,6 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
             Utilities.sleep(200);
 
             childData.isVariant = true;
-            childData.parentAsinOverride = asin;
             spWriteProductRow(productsSheet, headerInfo, childData, marketplace, nextId++);
             existing.add(childKey);
             results.variants++;
@@ -646,7 +645,6 @@ function spFetchAndWriteProducts(asins, marketplace, options) {
                 Utilities.sleep(200);
 
                 sibData.isVariant = true;
-                sibData.parentAsinOverride = asin;
                 spWriteProductRow(productsSheet, headerInfo, sibData, marketplace, nextId++);
                 existing.add(sibKey);
                 results.variants++;
@@ -1166,7 +1164,7 @@ function spWriteProductRow(sheet, headerInfo, data, marketplace, id) {
   set('itemLengthUnit', data.itemLengthUnit);
 
   // Relationships / Variant flags
-  const parentAsin = data.parentAsinOverride || data.parentAsin || '';
+  const parentAsin = data.parentAsin || '';
   set('parentAsin', parentAsin);
   set('isVariant', data.isVariant ? 'TRUE' : 'FALSE');
   set('hasParent', parentAsin ? 'TRUE' : 'FALSE');
